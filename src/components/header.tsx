@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { ModeToggle } from "@/components/mode-toggle";
 import { QuoteIcon, ImageIcon, DownloadIcon, HomeIcon } from "lucide-react";
 
 export function Header() {
@@ -34,7 +33,6 @@ export function Header() {
 					</Link>
 				</nav>
 				<div className='flex items-center gap-2'>
-					<ModeToggle />
 					<Button size='sm'>Sign In</Button>
 				</div>
 			</div>
