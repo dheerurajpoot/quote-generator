@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { QuoteIcon, HomeIcon } from "lucide-react";
+import { QuoteIcon } from "lucide-react";
 
 export function Header() {
 	return (

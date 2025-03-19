@@ -49,6 +49,7 @@ export default function ContactPage() {
 			setMessage("");
 		} catch (err) {
 			setError("Failed to send message. Please try again.");
+			console.log(err);
 		} finally {
 			setIsSubmitting(false);
 		}

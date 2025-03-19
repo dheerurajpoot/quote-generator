@@ -91,9 +91,6 @@ export default function QuoteGenerator() {
 	const [backgroundImage, setBackgroundImage] = useState(
 		DEFAULT_BACKGROUNDS[0]
 	);
-	const [customBackground, setCustomBackground] = useState<string | null>(
-		null
-	);
 	const [searchQuery, setSearchQuery] = useState("");
 	const [searchResults, setSearchResults] = useState<ImageSearchResult[]>([]);
 	const [isSearching, setIsSearching] = useState(false);
@@ -108,7 +105,7 @@ export default function QuoteGenerator() {
 		const opacity = backgroundOpacity / 100;
 		const color = backgroundColor.replace(/[\d.]+\)$/g, `${opacity})`);
 		setBackgroundColor(color);
-	}, [backgroundOpacity]);
+	}, [backgroundOpacity, backgroundColor]);
 
 	// Handle custom background upload
 	const handleBackgroundUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -117,7 +114,6 @@ export default function QuoteGenerator() {
 			const reader = new FileReader();
 			reader.onload = (event) => {
 				if (event.target?.result) {
-					setCustomBackground(event.target.result as string);
 					setBackgroundImage(event.target.result as string);
 				}
 			};
@@ -454,8 +450,9 @@ export default function QuoteGenerator() {
 											) : hasSearched ? (
 												<div className='flex flex-col items-center justify-center py-4 text-center text-muted-foreground'>
 													<p>
-														No results found for "
-														{searchQuery}"
+														No results found for
+														&quot;
+														{searchQuery}&quot;
 													</p>
 													<p className='text-sm'>
 														Try a different search

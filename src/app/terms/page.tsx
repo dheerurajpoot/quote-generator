@@ -59,7 +59,8 @@ export default function TermsPage() {
 							</li>
 							<li>
 								Transfer the materials to another person or
-								"mirror" the materials on any other server
+								&quot;mirror&quot; the materials on any other
+								server
 							</li>
 						</ul>
 						<p>
@@ -99,12 +100,13 @@ export default function TermsPage() {
 					</CardHeader>
 					<CardContent className='space-y-4'>
 						<p>
-							The materials on QuoteArt are provided on an 'as is'
-							basis. QuoteArt makes no warranties, expressed or
-							implied, and hereby disclaims and negates all other
-							warranties including, without limitation, implied
-							warranties or conditions of merchantability, fitness
-							for a particular purpose, or non-infringement of
+							The materials on QuoteArt are provided on an
+							&apos;as is&apos; basis. QuoteArt makes no
+							warranties, expressed or implied, and hereby
+							disclaims and negates all other warranties
+							including, without limitation, implied warranties or
+							conditions of merchantability, fitness for a
+							particular purpose, or non-infringement of
 							intellectual property or other violation of rights.
 						</p>
 						<p>
