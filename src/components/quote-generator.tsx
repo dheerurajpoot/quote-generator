@@ -24,16 +24,37 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { Download, Upload, ImageIcon, Search, Loader2 } from "lucide-react";
+import {
+	Download,
+	Upload,
+	ImageIcon,
+	Search,
+	Loader2,
+	Palette,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { searchImages, type ImageSearchResult } from "@/lib/image-service";
 import { downloadQuoteImage } from "@/lib/download-utils";
 
 const DEFAULT_BACKGROUNDS = [
-	"/placeholder.svg?height=600&width=600",
-	"/placeholder.svg?height=600&width=600&text=Nature",
-	"/placeholder.svg?height=600&width=600&text=Abstract",
-	"/placeholder.svg?height=600&width=600&text=Gradient",
+	"/img1.jpg?height=600&width=600",
+	"/img2.jpg?height=600&width=600&text=Nature",
+	"/img3.jpg?height=600&width=600&text=Abstract",
+	"/img4.jpg?height=600&width=600&text=Gradient",
+	"/img5.jpg?height=600&width=600&text=Gradient",
+	"/img6.jpg?height=600&width=600&text=Gradient",
+	"/img7.jpg?height=600&width=600&text=Gradient",
+	"/img8.jpg?height=600&width=600&text=Gradient",
+	"/img9.jpg?height=600&width=600&text=Gradient",
+	"/img10.jpg?height=600&width=600&text=Gradient",
+	"/img11.jpg?height=600&width=600&text=Gradient",
+	"/img12.jpg?height=600&width=600&text=Gradient",
+	"/img13.jpg?height=600&width=600&text=Gradient",
+	"/img14.jpg?height=600&width=600&text=Gradient",
+	"/img15.jpg?height=600&width=600&text=Gradient",
+	"/img16.jpg?height=600&width=600&text=Gradient",
+	"/img17.jpg?height=600&width=600&text=Gradient",
+	"/img18.jpg?height=600&width=600&text=Road",
 ];
 
 // Extended font options including Devanagari support
@@ -76,6 +97,9 @@ export default function QuoteGenerator() {
 	const [searchQuery, setSearchQuery] = useState("");
 	const [searchResults, setSearchResults] = useState<ImageSearchResult[]>([]);
 	const [isSearching, setIsSearching] = useState(false);
+	const [useSolidBackground, setUseSolidBackground] = useState(false);
+	const [solidBackgroundColor, setSolidBackgroundColor] = useState("#3b82f6");
+	const [hasSearched, setHasSearched] = useState(false);
 
 	const canvasRef = useRef<HTMLDivElement>(null);
 
@@ -103,17 +127,29 @@ export default function QuoteGenerator() {
 
 	// Handle image search
 	const handleImageSearch = async () => {
-		if (!searchQuery.trim()) return;
+		if (!searchQuery.trim()) {
+			setHasSearched(false);
+			setSearchResults([]);
+			return;
+		}
 
 		setIsSearching(true);
 		try {
 			const response = await searchImages(searchQuery);
 			setSearchResults(response.photos);
+			setHasSearched(true);
 		} catch (error) {
 			console.error("Error searching for images:", error);
 		} finally {
 			setIsSearching(false);
 		}
+	};
+
+	// Clear search
+	const clearSearch = () => {
+		setSearchQuery("");
+		setSearchResults([]);
+		setHasSearched(false);
 	};
 
 	// Handle download
@@ -138,13 +174,22 @@ export default function QuoteGenerator() {
 								ref={canvasRef}
 								className='absolute inset-0 flex flex-col items-center justify-center p-8 text-center'
 								style={{
-									backgroundImage: `url(${backgroundImage})`,
-									backgroundSize: "cover",
-									backgroundPosition: "center",
+									...(useSolidBackground
+										? {
+												backgroundColor:
+													solidBackgroundColor,
+										  }
+										: {
+												backgroundImage: `url(${backgroundImage})`,
+												backgroundSize: "cover",
+												backgroundPosition: "center",
+										  }),
 								}}>
-								<div
-									className='absolute inset-0'
-									style={{ backgroundColor }}></div>
+								{!useSolidBackground && (
+									<div
+										className='absolute inset-0'
+										style={{ backgroundColor }}></div>
+								)}
 
 								<div className='relative z-10 flex flex-col items-center justify-center h-full w-full'>
 									<p
@@ -198,11 +243,10 @@ export default function QuoteGenerator() {
 
 			<div>
 				<Tabs defaultValue='content'>
-					<TabsList className='grid w-full grid-cols-4'>
+					<TabsList className='grid w-full grid-cols-3'>
 						<TabsTrigger value='content'>Content</TabsTrigger>
 						<TabsTrigger value='background'>Background</TabsTrigger>
 						<TabsTrigger value='style'>Style</TabsTrigger>
-						<TabsTrigger value='search'>Search</TabsTrigger>
 					</TabsList>
 
 					<TabsContent value='content' className='space-y-4 mt-4'>
@@ -262,78 +306,261 @@ export default function QuoteGenerator() {
 					<TabsContent value='background' className='space-y-4 mt-4'>
 						<Card>
 							<CardHeader>
-								<CardTitle>Background Image</CardTitle>
+								<CardTitle>Background</CardTitle>
 								<CardDescription>
-									Choose or upload a background image
+									Choose a background type and customize it
 								</CardDescription>
 							</CardHeader>
 							<CardContent className='space-y-4'>
-								<div className='grid grid-cols-2 gap-2'>
-									{DEFAULT_BACKGROUNDS.map((bg, index) => (
-										<div
-											key={index}
-											className={cn(
-												"relative aspect-square rounded-md overflow-hidden cursor-pointer border-2",
-												backgroundImage === bg
-													? "border-primary"
-													: "border-transparent"
-											)}
-											onClick={() =>
-												setBackgroundImage(bg)
-											}>
-											<img
-												src={bg || "/placeholder.svg"}
-												alt={`Background ${index + 1}`}
-												className='w-full h-full object-cover'
+								<div className='flex items-center space-x-2'>
+									<Button
+										variant={
+											useSolidBackground
+												? "outline"
+												: "default"
+										}
+										className='flex-1'
+										onClick={() =>
+											setUseSolidBackground(false)
+										}>
+										<ImageIcon className='mr-2 h-4 w-4' />
+										Image
+									</Button>
+									<Button
+										variant={
+											useSolidBackground
+												? "default"
+												: "outline"
+										}
+										className='flex-1'
+										onClick={() =>
+											setUseSolidBackground(true)
+										}>
+										<Palette className='mr-2 h-4 w-4' />
+										Solid Color
+									</Button>
+								</div>
+
+								{useSolidBackground ? (
+									<div className='space-y-2'>
+										<Label htmlFor='solid-bg-color'>
+											Background Color
+										</Label>
+										<div className='flex gap-2'>
+											<div
+												className='w-10 h-10 rounded border'
+												style={{
+													backgroundColor:
+														solidBackgroundColor,
+												}}></div>
+											<Input
+												id='solid-bg-color'
+												type='color'
+												value={solidBackgroundColor}
+												onChange={(e) =>
+													setSolidBackgroundColor(
+														e.target.value
+													)
+												}
+												className='w-full h-10'
 											/>
 										</div>
-									))}
-								</div>
-
-								<div className='space-y-2'>
-									<Label htmlFor='custom-bg'>
-										Upload Custom Background
-									</Label>
-									<div className='flex items-center gap-2'>
-										<Button
-											variant='outline'
-											onClick={() =>
-												document
-													.getElementById("bg-upload")
-													?.click()
-											}
-											className='w-full'>
-											<Upload className='mr-2 h-4 w-4' />
-											Upload Image
-										</Button>
-										<input
-											id='bg-upload'
-											type='file'
-											accept='image/*'
-											className='hidden'
-											onChange={handleBackgroundUpload}
-										/>
 									</div>
-								</div>
+								) : (
+									<>
+										<div className='space-y-2'>
+											<Label>Search Images</Label>
+											<div className='flex items-center gap-2'>
+												<Input
+													placeholder='Search for images...'
+													value={searchQuery}
+													onChange={(e) =>
+														setSearchQuery(
+															e.target.value
+														)
+													}
+													onKeyDown={(e) =>
+														e.key === "Enter" &&
+														handleImageSearch()
+													}
+												/>
+												<Button
+													onClick={handleImageSearch}
+													disabled={isSearching}>
+													{isSearching ? (
+														<Loader2 className='h-4 w-4 animate-spin' />
+													) : (
+														<Search className='h-4 w-4' />
+													)}
+												</Button>
+												{hasSearched && (
+													<Button
+														variant='ghost'
+														size='icon'
+														onClick={clearSearch}>
+														×
+													</Button>
+												)}
+											</div>
+										</div>
 
-								<div className='space-y-2'>
-									<div className='flex justify-between'>
-										<Label htmlFor='overlay-opacity'>
-											Overlay Opacity
-										</Label>
-										<span>{backgroundOpacity}%</span>
-									</div>
-									<Slider
-										id='overlay-opacity'
-										min={0}
-										max={100}
-										step={1}
-										value={[backgroundOpacity]}
-										onValueChange={(value) =>
-											setBackgroundOpacity(value[0])
-										}
-									/>
-								</div>
+										<div className='space-y-2'>
+											{hasSearched &&
+											searchResults.length > 0 ? (
+												<>
+													<Label>
+														Search Results
+													</Label>
+													<div className='h-[390px] overflow-y-auto pr-2 -mr-2'>
+														<div className='grid grid-cols-2 gap-2'>
+															{searchResults.map(
+																(image) => (
+																	<div
+																		key={
+																			image.id
+																		}
+																		className={cn(
+																			"relative aspect-square rounded-md overflow-hidden cursor-pointer border-2",
+																			backgroundImage ===
+																				image
+																					.src
+																					.medium
+																				? "border-primary"
+																				: "border-transparent"
+																		)}
+																		onClick={() =>
+																			setBackgroundImage(
+																				image
+																					.src
+																					.medium
+																			)
+																		}>
+																		<img
+																			src={
+																				image
+																					.src
+																					.medium ||
+																				"/placeholder.svg"
+																			}
+																			alt={`Photo by ${image.photographer}`}
+																			className='w-full h-full object-cover'
+																		/>
+																	</div>
+																)
+															)}
+														</div>
+													</div>
+												</>
+											) : hasSearched ? (
+												<div className='flex flex-col items-center justify-center py-4 text-center text-muted-foreground'>
+													<p>
+														No results found for "
+														{searchQuery}"
+													</p>
+													<p className='text-sm'>
+														Try a different search
+														term
+													</p>
+												</div>
+											) : (
+												<>
+													<Label>
+														Preset Backgrounds
+													</Label>
+													<div className='h-[390px] overflow-y-auto pr-2 -mr-2'>
+														<div className='grid grid-cols-2 gap-2'>
+															{DEFAULT_BACKGROUNDS.map(
+																(bg, index) => (
+																	<div
+																		key={
+																			index
+																		}
+																		className={cn(
+																			"relative aspect-square rounded-md overflow-hidden cursor-pointer border-2",
+																			backgroundImage ===
+																				bg
+																				? "border-primary"
+																				: "border-transparent"
+																		)}
+																		onClick={() =>
+																			setBackgroundImage(
+																				bg
+																			)
+																		}>
+																		<img
+																			src={
+																				bg ||
+																				"/placeholder.svg"
+																			}
+																			alt={`Background ${
+																				index +
+																				1
+																			}`}
+																			className='w-full h-full object-cover'
+																		/>
+																	</div>
+																)
+															)}
+														</div>
+													</div>
+												</>
+											)}
+										</div>
+
+										<div className='space-y-2'>
+											<Label htmlFor='custom-bg'>
+												Upload Custom Background
+											</Label>
+											<div className='flex items-center gap-2'>
+												<Button
+													variant='outline'
+													onClick={() =>
+														document
+															.getElementById(
+																"bg-upload"
+															)
+															?.click()
+													}
+													className='w-full'>
+													<Upload className='mr-2 h-4 w-4' />
+													Upload Image
+												</Button>
+												<input
+													id='bg-upload'
+													type='file'
+													accept='image/*'
+													className='hidden'
+													onChange={
+														handleBackgroundUpload
+													}
+												/>
+											</div>
+										</div>
+
+										<div className='space-y-2'>
+											<div className='flex justify-between'>
+												<Label htmlFor='overlay-opacity'>
+													Overlay Opacity
+												</Label>
+												<span>
+													{backgroundOpacity}%
+												</span>
+											</div>
+											<Slider
+												id='overlay-opacity'
+												min={0}
+												max={100}
+												step={1}
+												value={[backgroundOpacity]}
+												onValueChange={(value) =>
+													setBackgroundOpacity(
+														value[0]
+													)
+												}
+											/>
+										</div>
+									</>
+								)}
 							</CardContent>
 						</Card>
 					</TabsContent>
@@ -369,6 +596,7 @@ export default function QuoteGenerator() {
 									</Select>
 								</div>
 
+								{/* adding font weight  */}
 								<div className='space-y-2'>
 									<Label htmlFor='font-weight'>
 										Font Weight
@@ -391,6 +619,7 @@ export default function QuoteGenerator() {
 									</Select>
 								</div>
 
+								{/* adding font size  */}
 								<div className='space-y-2'>
 									<div className='flex justify-between'>
 										<Label htmlFor='font-size'>
@@ -410,6 +639,7 @@ export default function QuoteGenerator() {
 									/>
 								</div>
 
+								{/* adding text color  */}
 								<div className='space-y-2'>
 									<Label htmlFor='text-color'>
 										Text Color
@@ -432,6 +662,7 @@ export default function QuoteGenerator() {
 									</div>
 								</div>
 
+								{/* add a watermark on quote */}
 								<div className='space-y-2'>
 									<Label htmlFor='watermark-color'>
 										Watermark Color
@@ -455,7 +686,7 @@ export default function QuoteGenerator() {
 										/>
 									</div>
 								</div>
-
+								{/* add a background overlay on quote */}
 								<div className='space-y-2'>
 									<Label htmlFor='overlay-color'>
 										Overlay Color
@@ -507,83 +738,6 @@ export default function QuoteGenerator() {
 										/>
 									</div>
 								</div>
-							</CardContent>
-						</Card>
-					</TabsContent>
-
-					<TabsContent value='search' className='space-y-4 mt-4'>
-						<Card>
-							<CardHeader>
-								<CardTitle>Search Images</CardTitle>
-								<CardDescription>
-									Find the perfect background from Pexels
-								</CardDescription>
-							</CardHeader>
-							<CardContent className='space-y-4'>
-								<div className='flex items-center gap-2'>
-									<Input
-										placeholder='Search for images...'
-										value={searchQuery}
-										onChange={(e) =>
-											setSearchQuery(e.target.value)
-										}
-										onKeyDown={(e) =>
-											e.key === "Enter" &&
-											handleImageSearch()
-										}
-									/>
-									<Button
-										onClick={handleImageSearch}
-										disabled={isSearching}>
-										{isSearching ? (
-											<Loader2 className='h-4 w-4 animate-spin' />
-										) : (
-											<Search className='h-4 w-4' />
-										)}
-									</Button>
-								</div>
-
-								{searchResults.length > 0 ? (
-									<div className='grid grid-cols-2 gap-2 mt-4 max-h-[400px] overflow-y-auto'>
-										{searchResults.map((image) => (
-											<div
-												key={image.id}
-												className={cn(
-													"relative aspect-square rounded-md overflow-hidden cursor-pointer border-2",
-													backgroundImage ===
-														image.src.medium
-														? "border-primary"
-														: "border-transparent"
-												)}
-												onClick={() =>
-													setBackgroundImage(
-														image.src.medium
-													)
-												}>
-												<img
-													src={
-														image.src.medium ||
-														"/placeholder.svg"
-													}
-													alt={`Photo by ${image.photographer}`}
-													className='w-full h-full object-cover'
-												/>
-											</div>
-										))}
-									</div>
-								) : (
-									<div className='flex flex-col items-center justify-center py-8 text-center text-muted-foreground'>
-										<ImageIcon className='h-12 w-12 mb-2 opacity-20' />
-										<p>
-											Search for images to use as
-											backgrounds
-										</p>
-										<p className='text-sm'>
-											Try "nature", "abstract", "city",
-											etc.
-										</p>
-									</div>
-								)}
 							</CardContent>
 						</Card>
 					</TabsContent>
