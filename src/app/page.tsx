@@ -1,7 +1,5 @@
 import QuoteGenerator from "@/components/quote-generator";
-import { Button } from "@/components/ui/button";
-import { ArrowRight, ImageIcon, Type, Download } from "lucide-react";
-import Link from "next/link";
+import { ImageIcon, Type, Download } from "lucide-react";
 
 export default function Home() {
 	return (
