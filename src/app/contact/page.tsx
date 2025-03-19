@@ -61,8 +61,8 @@ export default function ContactPage() {
 					Contact Us
 				</h1>
 				<p className='text-lg text-center text-muted-foreground mb-12 max-w-2xl mx-auto'>
-					Have questions or feedback? We'd love to hear from you. Fill
-					out the form below or use our contact information.
+					Have questions or feedback? We had love to hear from you.
+					Fill out the form below or use our contact information.
 				</p>
 
 				<div className='grid grid-cols-1 md:grid-cols-3 gap-8'>
@@ -113,7 +113,7 @@ export default function ContactPage() {
 							<CardHeader>
 								<CardTitle>Business Hours</CardTitle>
 								<CardDescription>
-									When we're available
+									When we are available
 								</CardDescription>
 							</CardHeader>
 							<CardContent>
@@ -140,14 +140,14 @@ export default function ContactPage() {
 							<CardHeader>
 								<CardTitle>Send us a message</CardTitle>
 								<CardDescription>
-									We'll get back to you as soon as possible
+									We will get back to you as soon as possible
 								</CardDescription>
 							</CardHeader>
 							<CardContent>
 								{submitted ? (
 									<Alert className='bg-primary/10 border-primary/20'>
 										<AlertDescription className='text-center py-4'>
-											Thank you for your message! We'll
+											Thank you for your message! We will
 											get back to you soon.
 										</AlertDescription>
 									</Alert>

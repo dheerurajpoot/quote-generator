@@ -99,8 +99,8 @@ export default function AboutPage() {
 							<li className='flex flex-col'>
 								<strong className='text-lg'>Simplicity</strong>
 								<span>
-									Creating intuitive interfaces that don't
-									sacrifice functionality.
+									Creating intuitive interfaces that
+									don&apos;t sacrifice functionality.
 								</span>
 							</li>
 							<li className='flex flex-col'>
