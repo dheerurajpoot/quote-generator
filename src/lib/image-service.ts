@@ -31,7 +31,7 @@ export interface SearchResponse {
 export async function searchImages(
 	query: string,
 	page = 1,
-	perPage = 15
+	perPage = 50
 ): Promise<SearchResponse> {
 	// For demo purposes, we'll use a mock response if no API key is provided
 	if (!PEXELS_API_KEY) {

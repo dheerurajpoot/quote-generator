@@ -75,17 +75,15 @@ const FONT_WEIGHTS = [
 ];
 
 export default function QuoteGenerator() {
-	const [quote, setQuote] = useState(
-		"Your inspirational quote goes here\nAdd line breaks for better formatting"
-	);
-	const [author, setAuthor] = useState("Author Name");
-	const [watermark, setWatermark] = useState("@your_brand");
+	const [quote, setQuote] = useState("Enter your quote text here...");
+	const [author, setAuthor] = useState("");
+	const [watermark, setWatermark] = useState("@quote_art");
 	const [backgroundColor, setBackgroundColor] =
 		useState("rgba(0, 0, 0, 0.5)");
 	const [backgroundOpacity, setBackgroundOpacity] = useState(50);
 	const [textColor, setTextColor] = useState("#ffffff");
 	const [watermarkColor, setWatermarkColor] = useState("#cccccc");
-	const [fontSize, setFontSize] = useState(32);
+	const [fontSize, setFontSize] = useState(24);
 	const [fontFamily, setFontFamily] = useState("font-sans");
 	const [fontWeight, setFontWeight] = useState("font-semibold");
 	const [backgroundImage, setBackgroundImage] = useState(
@@ -217,7 +215,7 @@ export default function QuoteGenerator() {
 
 									{watermark && (
 										<p
-											className='absolute bottom-4 right-4 text-sm opacity-70'
+											className='absolute bottom-4 right-4 text-[8px] md:text-sm opacity-70'
 											style={{ color: watermarkColor }}>
 											{watermark}
 										</p>
@@ -626,7 +624,7 @@ export default function QuoteGenerator() {
 									</div>
 									<Slider
 										id='font-size'
-										min={16}
+										min={8}
 										max={72}
 										step={1}
 										value={[fontSize]}

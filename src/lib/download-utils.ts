@@ -1,6 +1,6 @@
 export async function downloadQuoteImage(
 	element: HTMLElement,
-	filename = "quote-image.png"
+	filename = "quote-art.png"
 ) {
 	try {
 		const html2canvas = (await import("html2canvas")).default;
