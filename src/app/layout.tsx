@@ -3,6 +3,8 @@ import "@/app/globals.css";
 import { Inter, Poppins } from "next/font/google";
 import { Footer } from "@/components/footer";
 import { Header } from "@/components/header";
+import { AuthProvider } from "@/context/auth-context";
+import { SubscriptionProvider } from "@/context/subscription-context";
 
 // Load Inter for Latin text
 const inter = Inter({
@@ -32,9 +34,13 @@ export default function RootLayout({
 		<html lang='en' suppressHydrationWarning>
 			<body
 				className={`${inter.variable} ${poppins.variable} font-sans min-h-screen flex flex-col`}>
-				<Header />
-				<main className='flex-1'>{children}</main>
-				<Footer />
+				<AuthProvider>
+					<SubscriptionProvider>
+						<Header />
+						<main className='flex-1'>{children}</main>
+						<Footer />
+					</SubscriptionProvider>
+				</AuthProvider>
 			</body>
 		</html>
 	);

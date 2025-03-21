@@ -1,0 +1,154 @@
+export interface MetaApiConfig {
+	accessToken: string;
+	apiVersion?: string;
+}
+
+export class MetaApi {
+	private accessToken: string;
+	private apiVersion: string;
+	private baseUrl: string;
+
+	constructor(config: MetaApiConfig) {
+		this.accessToken = config.accessToken;
+		this.apiVersion = config.apiVersion || "v18.0";
+		this.baseUrl = `https://graph.facebook.com/${this.apiVersion}`;
+	}
+
+	// Get user profile information
+	async getUserProfile() {
+		const response = await fetch(
+			`${this.baseUrl}/me?fields=id,name,picture&access_token=${this.accessToken}`
+		);
+
+		if (!response.ok) {
+			const error = await response.json();
+			throw new Error(
+				`Failed to get user profile: ${error.error.message}`
+			);
+		}
+
+		return await response.json();
+	}
+
+	// Get user's Facebook pages
+	async getUserPages() {
+		const response = await fetch(
+			`${this.baseUrl}/me/accounts?fields=id,name,access_token,picture&access_token=${this.accessToken}`
+		);
+
+		if (!response.ok) {
+			const error = await response.json();
+			throw new Error(`Failed to get user pages: ${error.error.message}`);
+		}
+
+		return await response.json();
+	}
+
+	// Get Instagram business accounts connected to Facebook pages
+	async getInstagramAccounts(pageId: string, pageAccessToken: string) {
+		const response = await fetch(
+			`${this.baseUrl}/${pageId}?fields=instagram_business_account{id,name,username,profile_picture_url}&access_token=${pageAccessToken}`
+		);
+
+		if (!response.ok) {
+			const error = await response.json();
+			throw new Error(
+				`Failed to get Instagram accounts: ${error.error.message}`
+			);
+		}
+
+		return await response.json();
+	}
+
+	// Post to Facebook page
+	async postToFacebook(
+		pageId: string,
+		pageAccessToken: string,
+		imageUrl: string,
+		caption: string
+	) {
+		const formData = new FormData();
+		formData.append("url", imageUrl);
+		formData.append("caption", caption);
+
+		const response = await fetch(
+			`${this.baseUrl}/${pageId}/photos?access_token=${pageAccessToken}`,
+			{
+				method: "POST",
+				body: formData,
+			}
+		);
+
+		if (!response.ok) {
+			const error = await response.json();
+			throw new Error(
+				`Failed to post to Facebook: ${error.error.message}`
+			);
+		}
+
+		const result = await response.json();
+
+		return {
+			success: true,
+			postId: result.id,
+			url: `https://facebook.com/${pageId}/posts/${
+				result.post_id || result.id
+			}`,
+		};
+	}
+
+	// Post to Instagram business account
+	async postToInstagram(
+		instagramAccountId: string,
+		pageAccessToken: string,
+		imageUrl: string,
+		caption: string
+	) {
+		// First, create a container
+		const containerResponse = await fetch(
+			`${
+				this.baseUrl
+			}/${instagramAccountId}/media?image_url=${encodeURIComponent(
+				imageUrl
+			)}&caption=${encodeURIComponent(
+				caption
+			)}&access_token=${pageAccessToken}`,
+			{
+				method: "POST",
+			}
+		);
+
+		if (!containerResponse.ok) {
+			const error = await containerResponse.json();
+			throw new Error(
+				`Failed to create Instagram container: ${error.error.message}`
+			);
+		}
+
+		const containerResult = await containerResponse.json();
+		const containerId = containerResult.id;
+
+		// Then publish the container
+		const publishResponse = await fetch(
+			`${this.baseUrl}/${instagramAccountId}/media_publish?creation_id=${containerId}&access_token=${pageAccessToken}`,
+			{
+				method: "POST",
+			}
+		);
+
+		if (!publishResponse.ok) {
+			const error = await publishResponse.json();
+			throw new Error(
+				`Failed to publish to Instagram: ${error.error.message}`
+			);
+		}
+
+		const publishResult = await publishResponse.json();
+
+		return {
+			success: true,
+			postId: publishResult.id,
+			url: `https://instagram.com/p/${publishResult.id}`,
+		};
+	}
+}
