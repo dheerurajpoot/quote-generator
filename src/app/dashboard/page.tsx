@@ -53,7 +53,7 @@ export default function DashboardPage() {
 	};
 
 	return (
-		<div className='container py-12'>
+		<div className='container mx-auto py-12'>
 			<div className='max-w-5xl mx-auto'>
 				<h1 className='text-3xl font-bold tracking-tight mb-6'>
 					Dashboard

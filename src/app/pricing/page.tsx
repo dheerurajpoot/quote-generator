@@ -142,7 +142,7 @@ export default function PricingPage() {
 	const currentPlan = getCurrentPlan();
 
 	return (
-		<div className='container py-12 md:py-16 lg:py-24'>
+		<div className='container mx-auto py-12 md:py-16 lg:py-24'>
 			<div className='max-w-5xl mx-auto'>
 				<div className='text-center mb-12'>
 					<h1 className='text-4xl font-bold tracking-tight mb-4'>
