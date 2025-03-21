@@ -124,8 +124,8 @@ export default function RefundPolicyPage() {
 						<p>
 							We may update our Refund Policy from time to time.
 							We will notify you of any changes by posting the new
-							policy on this page and updating the "Last updated"
-							date.
+							policy on this page and updating the &quot;Last
+							updated&quot; date.
 						</p>
 						<p className='mt-4'>
 							If you have any questions about our Refund Policy,

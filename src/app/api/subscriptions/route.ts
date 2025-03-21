@@ -199,7 +199,7 @@ export async function POST(request: Request) {
 			if (existingSubscription) {
 				existingSubscription.planId = "premium";
 				existingSubscription.tier = "premium";
-				existingSubscription.status = "pending"; // Will be updated to active after payment
+				existingSubscription.status = "pending";
 				existingSubscription.razorpayOrderId = order.id;
 				existingSubscription.updatedAt = new Date();
 				await existingSubscription.save();
