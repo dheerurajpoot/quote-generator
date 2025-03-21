@@ -7,7 +7,7 @@ if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
 export const RAZORPAY_KEY_ID = process.env.RAZORPAY_KEY_ID;
 export const RAZORPAY_KEY_SECRET = process.env.RAZORPAY_KEY_SECRET;
 
-export const PREMIUM_PLAN_PRICE = process.env.PREMIUM_PLAN_PRICE;
+export const PREMIUM_PLAN_PRICE = Number(process.env.PREMIUM_PLAN_PRICE);
 
 // Create a Razorpay order
 export async function createRazorpayOrder(amount: number, receipt: string) {
