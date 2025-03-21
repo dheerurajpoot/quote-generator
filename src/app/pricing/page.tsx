@@ -23,7 +23,7 @@ import { Check, AlertCircle, Loader2, ImageIcon, Share2 } from "lucide-react";
 export default function PricingPage() {
 	const router = useRouter();
 	const { user } = useAuth();
-	const { plans, subscription, loading, isSubscribed } = useSubscription();
+	const { plans, subscription, loading } = useSubscription();
 	const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan | null>(
 		null
 	);
@@ -120,11 +120,15 @@ export default function PricingPage() {
 			} else {
 				throw new Error("No checkout URL returned");
 			}
-		} catch (err: any) {
-			setError(
-				err.message ||
-					"An error occurred during subscription. Please try again."
-			);
+		} catch (err: unknown) {
+			if (err instanceof Error) {
+				setError(
+					err.message ||
+						"An error occurred during subscription. Please try again."
+				);
+			} else {
+				setError("An unknown error occurred. Please try again.");
+			}
 		} finally {
 			setIsProcessing(false);
 		}

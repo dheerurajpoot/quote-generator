@@ -15,7 +15,6 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Facebook, Instagram, Loader2, Check, AlertCircle } from "lucide-react";
-import { useSubscription } from "@/context/subscription-context";
 import { useAuth } from "@/context/auth-context";
 
 interface SocialShareDialogProps {
@@ -42,7 +41,6 @@ export function SocialShareDialog({
 	author,
 }: SocialShareDialogProps) {
 	const { user } = useAuth();
-	const { subscription } = useSubscription();
 	const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([
 		"facebook",
 		"instagram",
@@ -114,7 +112,7 @@ export function SocialShareDialog({
 				const successfulPlatforms = Object.entries(
 					result.platforms as Record<string, { success: boolean }>
 				)
-					.filter(([_, data]) => data.success)
+					.filter(([, data]) => data.success)
 					.map(([platform]) => platform);
 
 				if (successfulPlatforms.length > 0) {
@@ -128,7 +126,7 @@ export function SocialShareDialog({
 				const failedPlatforms = Object.entries(
 					result.platforms as Record<string, { success: boolean }>
 				)
-					.filter(([_, data]) => !data.success)
+					.filter(([, data]) => !data.success)
 					.map(([platform]) => platform);
 
 				if (failedPlatforms.length > 0) {
@@ -139,8 +137,12 @@ export function SocialShareDialog({
 					);
 				}
 			}
-		} catch (err: any) {
-			setError(err.message || "An error occurred. Please try again.");
+		} catch (err: unknown) {
+			if (err instanceof Error) {
+				setError(err.message || "An error occured please try again");
+			} else {
+				setError("An error occured please try again");
+			}
 		} finally {
 			setIsPosting(false);
 		}

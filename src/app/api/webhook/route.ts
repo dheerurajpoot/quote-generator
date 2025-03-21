@@ -122,11 +122,14 @@ export async function POST(req: Request) {
 		}
 
 		return NextResponse.json({ received: true });
-	} catch (error) {
-		console.error("Webhook error:", error);
-		return NextResponse.json(
-			{ error: "Webhook handler failed" },
-			{ status: 500 }
-		);
+	} catch (error: unknown) {
+		if (error instanceof Error) {
+			return new NextResponse(`Webhook Error: ${error.message}`, {
+				status: 400,
+			});
+		}
+		return new NextResponse("Webhook Error: Unknown error", {
+			status: 400,
+		});
 	}
 }

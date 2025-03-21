@@ -51,8 +51,12 @@ export function SocialConnections() {
 
 			const data = await response.json();
 			setConnections(data.connections || []);
-		} catch (err: any) {
-			setError(err.message || "Failed to load social connections");
+		} catch (err: unknown) {
+			if (err instanceof Error) {
+				setError(err.message || "Failed to load social connections");
+			} else {
+				setError("Failed to load social connections");
+			}
 		} finally {
 			setLoading(false);
 		}
@@ -84,8 +88,12 @@ export function SocialConnections() {
 				newConnection,
 			]);
 			setSuccess("Successfully connected to Facebook!");
-		} catch (err: any) {
-			setError(err.message || "Failed to connect to Facebook");
+		} catch (err: unknown) {
+			if (err instanceof Error) {
+				setError(err.message || "Failed to connect to facebook");
+			} else {
+				setError("Failed to connect to facebook");
+			}
 		} finally {
 			setIsConnecting((prev) => ({ ...prev, facebook: false }));
 		}
@@ -117,8 +125,12 @@ export function SocialConnections() {
 				newConnection,
 			]);
 			setSuccess("Successfully connected to Instagram!");
-		} catch (err: any) {
-			setError(err.message || "Failed to connect to Instagram");
+		} catch (err: unknown) {
+			if (err instanceof Error) {
+				setError(err.message || "Failed to connect to instagram");
+			} else {
+				setError("Failed to connect to instagram");
+			}
 		} finally {
 			setIsConnecting((prev) => ({ ...prev, instagram: false }));
 		}
@@ -138,8 +150,14 @@ export function SocialConnections() {
 				prev.filter((c) => c.platform !== platform)
 			);
 			setSuccess(`Successfully disconnected from ${platform}!`);
-		} catch (err: any) {
-			setError(err.message || `Failed to disconnect from ${platform}`);
+		} catch (err: unknown) {
+			if (err instanceof Error) {
+				setError(
+					err.message || `Failed to disconnect from ${platform}`
+				);
+			} else {
+				setError(`Failed to disconnect from ${platform}`);
+			}
 		} finally {
 			setIsConnecting((prev) => ({ ...prev, [platform]: false }));
 		}

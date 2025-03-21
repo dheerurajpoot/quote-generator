@@ -13,8 +13,17 @@ export async function GET() {
 		});
 
 		return response;
-	} catch (error: any) {
-		console.log(error);
-		return NextResponse.json({ error: error.message }, { status: 500 });
+	} catch (error: unknown) {
+		if (error instanceof Error) {
+			console.log(error);
+			return NextResponse.json(
+				{ message: error.message },
+				{ status: 500 }
+			);
+		}
+		return NextResponse.json(
+			{ message: "Internal Server Error" },
+			{ status: 500 }
+		);
 	}
 }

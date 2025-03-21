@@ -45,6 +45,7 @@ export default function DashboardPage() {
 				setError("Failed to cancel subscription. Please try again.");
 			}
 		} catch (err) {
+			console.log(err);
 			setError("An error occurred. Please try again.");
 		} finally {
 			setIsProcessing(false);
@@ -200,7 +201,8 @@ export default function DashboardPage() {
 									</div>
 								) : (
 									<p>
-										You don't have an active subscription.
+										You don&apos;t have an active
+										subscription.
 									</p>
 								)}
 							</CardContent>

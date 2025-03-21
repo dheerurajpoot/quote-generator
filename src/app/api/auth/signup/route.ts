@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
 			email,
 			password: hashedPassword,
 		});
-		const savedUser = await newUser.save();
+		await newUser.save();
 		// // send verification mail
 		// await sendMail({
 		// 	email,
@@ -37,7 +37,17 @@ export async function POST(request: NextRequest) {
 			message: "Account Created Successfully",
 			success: true,
 		});
-	} catch (error: any) {
-		return NextResponse.json({ message: error.message }, { status: 500 });
+	} catch (error: unknown) {
+		if (error instanceof Error) {
+			console.log(error);
+			return NextResponse.json(
+				{ message: error.message },
+				{ status: 500 }
+			);
+		}
+		return NextResponse.json(
+			{ message: "Internal Server Error" },
+			{ status: 500 }
+		);
 	}
 }

@@ -55,11 +55,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 				return true;
 			}
 			return false;
-		} catch (error: any) {
-			console.error(
-				"SignIn Error:",
-				error.response?.data?.message || error.message
-			);
+		} catch (error: unknown) {
+			if (axios.isAxiosError(error)) {
+				console.error(
+					"SignIn Error:",
+					error.response?.data?.message || error.message
+				);
+			} else if (error instanceof Error) {
+				console.error("SignIn Error:", error.message);
+			} else {
+				console.error("SignIn Error: Unknown error occurred");
+			}
 			return false;
 		} finally {
 			setLoading(false);
@@ -79,11 +85,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 				return true;
 			}
 			return false;
-		} catch (error: any) {
-			console.error(
-				"SignUp Error:",
-				error.response?.data?.message || error.message
-			);
+		} catch (error: unknown) {
+			if (axios.isAxiosError(error)) {
+				console.error(
+					"SignUp Error:",
+					error.response?.data?.message || error.message
+				);
+			} else if (error instanceof Error) {
+				console.error("SignUp Error:", error.message);
+			} else {
+				console.error("SignUp Error: Unknown error occurred");
+			}
 			return false;
 		} finally {
 			setLoading(false);
@@ -96,11 +108,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 			await axios.get("/api/auth/logout");
 			localStorage.removeItem("user");
 			setUser(null);
-		} catch (error: any) {
-			console.error(
-				"Sign out failed:",
-				error.response?.data?.message || error.message
-			);
+		} catch (error: unknown) {
+			if (axios.isAxiosError(error)) {
+				console.error(
+					"Sign out failed:",
+					error.response?.data?.message || error.message
+				);
+			} else if (error instanceof Error) {
+				console.error("Sign out failed:", error.message);
+			} else {
+				console.error("Sign out failed: Unknown error");
+			}
 		} finally {
 			setLoading(false);
 		}
