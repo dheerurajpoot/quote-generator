@@ -112,7 +112,7 @@ export default function DashboardPage() {
 										Active
 									</Badge>
 								)}
-								{subscription?.status === "cancelled" && (
+								{subscription?.status === "canceled" && (
 									<Badge
 										variant='outline'
 										className='bg-yellow-100 text-yellow-800 border-yellow-200'>

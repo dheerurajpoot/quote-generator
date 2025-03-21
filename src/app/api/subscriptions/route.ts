@@ -1,10 +1,12 @@
 import { NextResponse } from "next/server";
 import mongoose from "mongoose";
-import stripe, {
-	createCheckoutSession,
-	createPortalSession,
-	PREMIUM_PRICE_ID,
-} from "@/lib/stripe";
+import {
+	createRazorpayOrder,
+	createRazorpayCustomer,
+	cancelRazorpaySubscription,
+	PREMIUM_PLAN_PRICE,
+	RAZORPAY_KEY_ID,
+} from "@/lib/razorpay";
 import { connectDb } from "@/lib/dbconfig";
 import { Subscription } from "@/models/subscription.model";
 import { User } from "@/models/user.model";
@@ -26,7 +28,7 @@ export async function GET(request: Request) {
 		// Find active subscription for user
 		const subscription = await Subscription.findOne({
 			userId: new mongoose.Types.ObjectId(userId),
-			status: { $in: ["active", "cancelled"] },
+			status: { $in: ["active", "canceled"] },
 		});
 
 		if (!subscription) {
@@ -66,7 +68,7 @@ export async function GET(request: Request) {
 			status: subscription.status,
 			currentPeriodEnd: subscription.currentPeriodEnd,
 			createdAt: subscription.createdAt,
-			stripeSubscriptionId: subscription.stripeSubscriptionId,
+			razorpaySubscriptionId: subscription.razorpaySubscriptionId,
 		});
 	} catch (error) {
 		console.error("Error fetching subscription:", error);
@@ -108,15 +110,15 @@ export async function POST(request: Request) {
 			});
 
 			if (existingSubscription) {
-				// If they have a Stripe subscription, cancel it
-				if (existingSubscription.stripeSubscriptionId) {
+				// If they have a Razorpay subscription, cancel it
+				if (existingSubscription.razorpaySubscriptionId) {
 					try {
-						await stripe.subscriptions.cancel(
-							existingSubscription.stripeSubscriptionId
+						await cancelRazorpaySubscription(
+							existingSubscription.razorpaySubscriptionId
 						);
 					} catch (error) {
 						console.error(
-							"Error canceling Stripe subscription:",
+							"Error canceling Razorpay subscription:",
 							error
 						);
 					}
@@ -126,9 +128,9 @@ export async function POST(request: Request) {
 				existingSubscription.planId = "free";
 				existingSubscription.tier = "free";
 				existingSubscription.status = "active";
-				existingSubscription.stripeSubscriptionId = undefined;
-				existingSubscription.stripePriceId = undefined;
-				existingSubscription.stripeCurrentPeriodEnd = undefined;
+				existingSubscription.razorpaySubscriptionId = undefined;
+				existingSubscription.razorpayOrderId = undefined;
+				existingSubscription.razorpayPaymentId = undefined;
 				existingSubscription.currentPeriodEnd = new Date(
 					Date.now() + 365 * 24 * 60 * 60 * 1000
 				);
@@ -168,31 +170,59 @@ export async function POST(request: Request) {
 			});
 		}
 
-		// For premium plan, create a Stripe checkout session
+		// For premium plan, create a Razorpay order
 		if (planId === "premium") {
-			// Check if user already has a Stripe customer ID
-			if (!user.stripeCustomerId) {
-				// Create a Stripe customer
-				const customer = await stripe.customers.create({
-					email: user.email,
-					name: user.name || undefined,
-					metadata: {
-						userId: user._id.toString(),
-					},
-				});
+			// Check if user already has a Razorpay customer ID
+			if (!user.razorpayCustomerId) {
+				// Create a Razorpay customer
+				const customer = await createRazorpayCustomer(
+					user.name || user.email,
+					user.email
+				);
 
-				// Update user with Stripe customer ID
-				user.stripeCustomerId = customer.id;
+				// Update user with Razorpay customer ID
+				user.razorpayCustomerId = customer.id;
 				await user.save();
 			}
 
-			// Create a checkout session
-			const session = await createCheckoutSession(
-				user._id.toString(),
-				PREMIUM_PRICE_ID
+			// Create a Razorpay order
+			const order = await createRazorpayOrder(
+				PREMIUM_PLAN_PRICE,
+				`subscription_${user._id.toString()}`
 			);
 
-			return NextResponse.json({ url: session.url });
+			// Create or update subscription record
+			const existingSubscription = await Subscription.findOne({
+				userId: new mongoose.Types.ObjectId(userId),
+			});
+
+			if (existingSubscription) {
+				existingSubscription.planId = "premium";
+				existingSubscription.tier = "premium";
+				existingSubscription.status = "pending"; // Will be updated to active after payment
+				existingSubscription.razorpayOrderId = order.id;
+				existingSubscription.updatedAt = new Date();
+				await existingSubscription.save();
+			} else {
+				await Subscription.create({
+					userId: new mongoose.Types.ObjectId(userId),
+					planId: "premium",
+					tier: "premium",
+					status: "pending",
+					razorpayOrderId: order.id,
+					currentPeriodEnd: new Date(
+						Date.now() + 30 * 24 * 60 * 60 * 1000
+					), // Will be updated after payment
+				});
+			}
+
+			// Return order details for client-side payment
+			return NextResponse.json({
+				orderId: order.id,
+				amount: order.amount,
+				currency: order.currency,
+				keyId: RAZORPAY_KEY_ID,
+			});
 		}
 
 		return NextResponse.json({ error: "Invalid plan ID" }, { status: 400 });
@@ -205,47 +235,60 @@ export async function POST(request: Request) {
 	}
 }
 
-// Create a billing portal session
+// Cancel subscription
 export async function PUT(request: Request) {
 	try {
 		await connectDb();
 
 		const body = await request.json();
-		const { userId } = body;
+		const { subscriptionId } = body;
 
 		// Validate input
-		if (!userId) {
+		if (!subscriptionId) {
 			return NextResponse.json(
-				{ error: "User ID is required" },
+				{ error: "Subscription ID is required" },
 				{ status: 400 }
 			);
 		}
 
-		// Find user
-		const user = await User.findById(userId);
-		if (!user) {
+		// Find subscription
+		const subscription = await Subscription.findById(subscriptionId);
+		if (!subscription) {
 			return NextResponse.json(
-				{ error: "User not found" },
+				{ error: "Subscription not found" },
 				{ status: 404 }
 			);
 		}
 
-		// Check if user has a Stripe customer ID
-		if (!user.stripeCustomerId) {
-			return NextResponse.json(
-				{ error: "No subscription found" },
-				{ status: 404 }
-			);
+		// Cancel Razorpay subscription if exists
+		if (subscription.razorpaySubscriptionId) {
+			try {
+				await cancelRazorpaySubscription(
+					subscription.razorpaySubscriptionId
+				);
+			} catch (error) {
+				console.error("Error canceling Razorpay subscription:", error);
+			}
 		}
 
-		// Create a billing portal session
-		const session = await createPortalSession(user.stripeCustomerId);
+		// Update subscription status
+		subscription.status = "canceled";
+		subscription.updatedAt = new Date();
+		await subscription.save();
 
-		return NextResponse.json({ url: session.url });
+		return NextResponse.json({
+			id: subscription._id,
+			userId: subscription.userId.toString(),
+			planId: subscription.planId,
+			tier: subscription.tier,
+			status: subscription.status,
+			currentPeriodEnd: subscription.currentPeriodEnd,
+			createdAt: subscription.createdAt,
+		});
 	} catch (error) {
-		console.error("Error creating billing portal session:", error);
+		console.error("Error canceling subscription:", error);
 		return NextResponse.json(
-			{ error: "Failed to create billing portal session" },
+			{ error: "Failed to cancel subscription" },
 			{ status: 500 }
 		);
 	}

@@ -9,11 +9,21 @@ export function Footer() {
 					<QuoteIcon className='h-5 w-5' />
 					<span className='font-semibold'>QuoteArt</span>
 				</div>
-				<nav className='flex items-center gap-4 text-sm text-muted-foreground'>
+				<nav className='flex flex-wrap items-center justify-center gap-4 text-sm text-muted-foreground'>
 					<Link
 						href='/about'
 						className='transition-colors hover:text-foreground'>
 						About
+					</Link>
+					<Link
+						href='/pricing'
+						className='transition-colors hover:text-foreground'>
+						Pricing
+					</Link>
+					<Link
+						href='/contact'
+						className='transition-colors hover:text-foreground'>
+						Contact
 					</Link>
 					<Link
 						href='/privacy'
@@ -26,9 +36,19 @@ export function Footer() {
 						Terms
 					</Link>
 					<Link
-						href='/contact'
+						href='/refund-policy'
 						className='transition-colors hover:text-foreground'>
-						Contact
+						Refund Policy
+					</Link>
+					<Link
+						href='/cancellation-policy'
+						className='transition-colors hover:text-foreground'>
+						Cancellation Policy
+					</Link>
+					<Link
+						href='/disclaimer'
+						className='transition-colors hover:text-foreground'>
+						Disclaimer
 					</Link>
 				</nav>
 				<div className='text-sm text-muted-foreground'>

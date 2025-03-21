@@ -19,24 +19,32 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Check, AlertCircle, Loader2, ImageIcon, Share2 } from "lucide-react";
+import Script from "next/script";
+
+declare global {
+	interface Window {
+		Razorpay: any;
+	}
+}
 
 export default function PricingPage() {
 	const router = useRouter();
 	const { user } = useAuth();
-	const { plans, subscription, loading } = useSubscription();
+	const { plans, subscription, loading, isSubscribed } = useSubscription();
 	const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan | null>(
 		null
 	);
 	const [isProcessing, setIsProcessing] = useState(false);
 	const [error, setError] = useState("");
 	const [success, setSuccess] = useState("");
+	const [razorpayLoaded, setRazorpayLoaded] = useState(false);
 
 	// Check URL for success or canceled params
 	useEffect(() => {
 		if (typeof window !== "undefined") {
 			const urlParams = new URLSearchParams(window.location.search);
 			const successParam = urlParams.get("success");
-			const canceledParam = urlParams.get("cancelled");
+			const canceledParam = urlParams.get("canceled");
 
 			if (successParam) {
 				setSuccess(
@@ -61,6 +69,10 @@ export default function PricingPage() {
 			}
 		}
 	}, []);
+
+	const handleRazorpayLoad = () => {
+		setRazorpayLoaded(true);
+	};
 
 	const handleSubscribe = async (plan: SubscriptionPlan) => {
 		if (!user) {
@@ -114,21 +126,87 @@ export default function PricingPage() {
 					router.push("/dashboard");
 				}, 2000);
 			}
-			// For premium plan, redirect to Stripe checkout
-			else if (data.url) {
-				window.location.href = data.url;
+			// For premium plan, open Razorpay checkout
+			else if (data.orderId) {
+				if (!razorpayLoaded) {
+					throw new Error(
+						"Razorpay is not loaded yet. Please try again."
+					);
+				}
+
+				const options = {
+					key: data.keyId,
+					amount: data.amount,
+					currency: data.currency,
+					name: "QuoteArt",
+					description: "Premium Subscription",
+					order_id: data.orderId,
+					handler: async (response: any) => {
+						try {
+							// Verify payment
+							const verifyResponse = await fetch(
+								"/api/subscriptions/verify",
+								{
+									method: "POST",
+									headers: {
+										"Content-Type": "application/json",
+									},
+									body: JSON.stringify({
+										razorpay_order_id:
+											response.razorpay_order_id,
+										razorpay_payment_id:
+											response.razorpay_payment_id,
+										razorpay_signature:
+											response.razorpay_signature,
+									}),
+								}
+							);
+
+							if (!verifyResponse.ok) {
+								const errorData = await verifyResponse.json();
+								throw new Error(
+									errorData.error ||
+										"Payment verification failed"
+								);
+							}
+
+							// Payment successful
+							window.location.href = "/dashboard?success=true";
+						} catch (error: any) {
+							console.error("Payment verification error:", error);
+							window.location.href =
+								"/pricing?error=" +
+								encodeURIComponent(
+									error.message ||
+										"Payment verification failed"
+								);
+						}
+					},
+					prefill: {
+						name: user.name || "",
+						email: user.email,
+					},
+					theme: {
+						color: "#3B82F6",
+					},
+					modal: {
+						ondismiss: () => {
+							setIsProcessing(false);
+							setError("Payment was cancelled");
+						},
+					},
+				};
+
+				const razorpay = new window.Razorpay(options);
+				razorpay.open();
 			} else {
-				throw new Error("No checkout URL returned");
+				throw new Error("No order details returned");
 			}
-		} catch (err: unknown) {
-			if (err instanceof Error) {
-				setError(
-					err.message ||
-						"An error occurred during subscription. Please try again."
-				);
-			} else {
-				setError("An unknown error occurred. Please try again.");
-			}
+		} catch (err: any) {
+			setError(
+				err.message ||
+					"An error occurred during subscription. Please try again."
+			);
 		} finally {
 			setIsProcessing(false);
 		}
@@ -143,9 +221,15 @@ export default function PricingPage() {
 
 	return (
 		<div className='container mx-auto py-12 md:py-16 lg:py-24'>
+			{/* Load Razorpay script */}
+			<Script
+				src='https://checkout.razorpay.com/v1/checkout.js'
+				onLoad={handleRazorpayLoad}
+			/>
+
 			<div className='max-w-5xl mx-auto'>
 				<div className='text-center mb-12'>
-					<h1 className='text-4xl font-bold tracking-tight mb-4'>
+					<h1 className='text-4xl font-bold tracking-tighter mb-4'>
 						Choose Your Plan
 					</h1>
 					<p className='text-lg text-muted-foreground max-w-2xl mx-auto'>
@@ -180,7 +264,7 @@ export default function PricingPage() {
 									{subscription.status === "active"
 										? "end"
 										: "renew"}{" "}
-									on{" "}
+									on //need to change cancelled
 									{new Date(
 										subscription.currentPeriodEnd
 									).toLocaleDateString()}
@@ -216,7 +300,7 @@ export default function PricingPage() {
 								</div>
 								<div className='mt-4'>
 									<span className='text-3xl font-bold'>
-										${plan.price}
+										₹{plan.price}
 									</span>
 									{plan.price > 0 && (
 										<span className='text-muted-foreground ml-1'>

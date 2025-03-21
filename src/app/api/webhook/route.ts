@@ -1,137 +1,120 @@
-import { NextResponse } from "next/server";
-import { headers } from "next/headers";
-import stripe from "@/lib/stripe";
 import { connectDb } from "@/lib/dbconfig";
-import { User } from "@/models/user.model";
 import { Subscription } from "@/models/subscription.model";
+import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
-	const body = await req.text();
-	const headersList = await headers();
-	const signature = headersList.get("Stripe-Signature") as string;
-
-	let event;
-
 	try {
-		event = stripe.webhooks.constructEvent(
-			body,
-			signature,
-			process.env.STRIPE_WEBHOOK_SECRET || ""
-		);
-	} catch (error: unknown) {
-		const errMessage =
-			error instanceof Error ? error.message : "Unknown error";
-		return new NextResponse(`Webhook Error: ${errMessage}`, {
-			status: 400,
-		});
-	}
+		const body = await req.json();
+		const { payload, event } = body;
 
-	await connectDb();
+		// Verify webhook signature (in a production environment)
+		// const signature = req.headers.get('x-razorpay-signature');
+		// if (!verifyWebhookSignature(JSON.stringify(body), signature)) {
+		//   return new NextResponse('Invalid signature', { status: 400 });
+		// }
 
-	try {
-		switch (event.type) {
-			case "checkout.session.completed":
-				const checkoutSession = event.data.object;
-				const userId = checkoutSession.metadata?.userId;
+		await connectDb();
 
-				if (!userId) {
-					throw new Error("No userId found in session metadata");
-				}
+		switch (event) {
+			case "payment.authorized":
+				// Payment has been authorized
+				const paymentId = payload.payment.entity.id;
+				const orderId = payload.payment.entity.order_id;
 
-				// Update user with Stripe customer ID
-				await User.findByIdAndUpdate(userId, {
-					stripeCustomerId: checkoutSession.customer,
+				// Find subscription by order ID
+				const subscription = await Subscription.findOne({
+					razorpayOrderId: orderId,
 				});
 
-				break;
-
-			case "customer.subscription.created":
-			case "customer.subscription.updated":
-				const subscription = event.data.object;
-				const stripeCustomerId = subscription.customer as string;
-
-				// Find user by Stripe customer ID
-				const user = await User.findOne({ stripeCustomerId });
-				if (!user) {
-					throw new Error(
-						`No user found with Stripe customer ID: ${stripeCustomerId}`
-					);
+				if (subscription) {
+					// Update subscription with payment ID
+					subscription.razorpayPaymentId = paymentId;
+					subscription.status = "active";
+					subscription.updatedAt = new Date();
+					await subscription.save();
 				}
-
-				// Get subscription details
-				const subscriptionItem = subscription.items.data[0];
-				const stripePriceId = subscriptionItem.price.id;
-
-				// Determine tier based on price ID
-				const tier =
-					stripePriceId === process.env.STRIPE_PREMIUM_PRICE_ID
-						? "premium"
-						: "free";
-
-				// Update or create subscription
-				await Subscription.findOneAndUpdate(
-					{ userId: user._id },
-					{
-						planId: tier,
-						tier,
-						status:
-							subscription.status === "active"
-								? "active"
-								: "cancelled",
-						stripeSubscriptionId: subscription.id,
-						stripePriceId,
-						stripeCurrentPeriodEnd: new Date(
-							subscription.current_period_end * 1000
-						),
-						currentPeriodEnd: new Date(
-							subscription.current_period_end * 1000
-						),
-						updatedAt: new Date(),
-					},
-					{ upsert: true, new: true }
-				);
-
 				break;
 
-			case "customer.subscription.deleted":
-				const deletedSubscription = event.data.object;
-				const customerIdToDelete =
-					deletedSubscription.customer as string;
+			case "subscription.activated":
+				// Subscription has been activated
+				const subscriptionId = payload.subscription.entity.id;
 
-				// Find user by Stripe customer ID
-				const userToUpdate = await User.findOne({
-					stripeCustomerId: customerIdToDelete,
+				// Find subscription by Razorpay subscription ID
+				const activatedSubscription = await Subscription.findOne({
+					razorpaySubscriptionId: subscriptionId,
 				});
-				if (!userToUpdate) {
-					throw new Error(
-						`No user found with Stripe customer ID: ${customerIdToDelete}`
+
+				if (activatedSubscription) {
+					// Update subscription status
+					activatedSubscription.status = "active";
+					activatedSubscription.currentPeriodEnd = new Date(
+						payload.subscription.entity.current_end * 1000
 					);
+					activatedSubscription.updatedAt = new Date();
+					await activatedSubscription.save();
 				}
+				break;
 
-				// Update subscription status
-				await Subscription.findOneAndUpdate(
-					{
-						userId: userToUpdate._id,
-						stripeSubscriptionId: deletedSubscription.id,
-					},
-					{
-						status: "cancelled",
-						updatedAt: new Date(),
-					}
-				);
+			case "subscription.charged":
+				// Subscription has been charged (recurring payment)
+				const chargedSubscriptionId = payload.subscription.entity.id;
 
+				// Find subscription by Razorpay subscription ID
+				const chargedSubscription = await Subscription.findOne({
+					razorpaySubscriptionId: chargedSubscriptionId,
+				});
+
+				if (chargedSubscription) {
+					// Update subscription end date
+					chargedSubscription.currentPeriodEnd = new Date(
+						payload.subscription.entity.current_end * 1000
+					);
+					chargedSubscription.updatedAt = new Date();
+					await chargedSubscription.save();
+				}
+				break;
+
+			case "subscription.cancelled":
+				// Subscription has been cancelled
+				const cancelledSubscriptionId = payload.subscription.entity.id;
+
+				// Find subscription by Razorpay subscription ID
+				const cancelledSubscription = await Subscription.findOne({
+					razorpaySubscriptionId: cancelledSubscriptionId,
+				});
+
+				if (cancelledSubscription) {
+					// Update subscription status
+					cancelledSubscription.status = "canceled";
+					cancelledSubscription.updatedAt = new Date();
+					await cancelledSubscription.save();
+				}
+				break;
+
+			case "subscription.completed":
+				// Subscription has completed all charges
+				const completedSubscriptionId = payload.subscription.entity.id;
+
+				// Find subscription by Razorpay subscription ID
+				const completedSubscription = await Subscription.findOne({
+					razorpaySubscriptionId: completedSubscriptionId,
+				});
+
+				if (completedSubscription) {
+					// Update subscription status
+					completedSubscription.status = "expired";
+					completedSubscription.updatedAt = new Date();
+					await completedSubscription.save();
+				}
 				break;
 		}
 
 		return NextResponse.json({ received: true });
-	} catch (error: unknown) {
-		if (error instanceof Error) {
-			return new NextResponse(`Webhook Error: ${error.message}`, {
-				status: 400,
-			});
-		}
-		return new NextResponse("Webhook Error: Unknown error", {
-			status: 400,
-		});
+	} catch (error) {
+		console.error("Webhook error:", error);
+		return NextResponse.json(
+			{ error: "Webhook handler failed" },
+			{ status: 500 }
+		);
 	}
 }

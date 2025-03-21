@@ -1,4 +1,7 @@
+import Faq from "@/components/faq";
+import HowItWorks from "@/components/how-it-works";
 import QuoteGenerator from "@/components/quote-generator";
+import Testimonial from "@/components/testimonial";
 import { ImageIcon, Type, Download } from "lucide-react";
 
 export default function Home() {
@@ -77,6 +80,9 @@ export default function Home() {
 					</div>
 				</div>
 			</section>
+			<HowItWorks />
+			<Testimonial />
+			<Faq />
 		</div>
 	);
 }

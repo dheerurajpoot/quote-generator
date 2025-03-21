@@ -26,9 +26,10 @@ export interface Subscription {
 	userId: string;
 	planId: string;
 	tier: SubscriptionTier;
-	status: "active" | "cancelled" | "expired";
+	status: "active" | "canceled" | "expired" | "pending";
 	currentPeriodEnd: Date;
 	createdAt: Date;
+	razorpaySubscriptionId?: string;
 }
 
 interface SubscriptionContextType {
@@ -95,46 +96,37 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
 
 			try {
 				setLoading(true);
-				// In a real app, this would be an API call to check subscription
-				// Simulating subscription check for demo
-				const storedSubscription = localStorage.getItem(
-					`subscription_${user._id}`
+
+				// In a real app, fetch subscription from API
+				const response = await fetch(
+					`/api/subscriptions?userId=${user._id}`
 				);
-				if (storedSubscription) {
-					const parsedSubscription = JSON.parse(storedSubscription);
-					// Check if subscription is expired
-					if (
-						new Date(parsedSubscription.currentPeriodEnd) <
-						new Date()
-					) {
-						parsedSubscription.status = "expired";
-						localStorage.setItem(
-							`subscription_${user._id}`,
-							JSON.stringify(parsedSubscription)
-						);
-					}
-					setSubscription(parsedSubscription);
-				} else {
-					// Create a free subscription for all users
-					const freeSubscription: Subscription = {
-						id: `sub_${Math.random().toString(36).substr(2, 9)}`,
-						userId: user._id,
-						planId: "free",
-						tier: "free",
-						status: "active",
-						currentPeriodEnd: new Date(
-							Date.now() + 365 * 24 * 60 * 60 * 1000
-						), // 1 year from now
-						createdAt: new Date(),
-					};
-					localStorage.setItem(
-						`subscription_${user._id}`,
-						JSON.stringify(freeSubscription)
-					);
-					setSubscription(freeSubscription);
+
+				if (!response.ok) {
+					throw new Error("Failed to fetch subscription");
 				}
+
+				const data = await response.json();
+				setSubscription({
+					...data,
+					currentPeriodEnd: new Date(data.currentPeriodEnd),
+					createdAt: new Date(data.createdAt),
+				});
 			} catch (error) {
 				console.error("Subscription check failed:", error);
+
+				// Fallback to free subscription
+				setSubscription({
+					id: `sub_${Math.random().toString(36).substr(2, 9)}`,
+					userId: user._id,
+					planId: "free",
+					tier: "free",
+					status: "active",
+					currentPeriodEnd: new Date(
+						Date.now() + 365 * 24 * 60 * 60 * 1000
+					), // 1 year from now
+					createdAt: new Date(),
+				});
 			} finally {
 				setLoading(false);
 			}
@@ -148,28 +140,35 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
 
 		try {
 			setLoading(true);
-			// In a real app, this would be an API call to create a subscription
-			// Simulating subscription creation for demo
-			const plan = subscriptionPlans.find((p) => p.id === planId);
-			if (!plan) return false;
 
-			const newSubscription: Subscription = {
-				id: `sub_${Math.random().toString(36).substr(2, 9)}`,
-				userId: user._id,
-				planId: plan.id,
-				tier: plan.tier,
-				status: "active",
-				currentPeriodEnd: new Date(
-					Date.now() + 30 * 24 * 60 * 60 * 1000
-				), // 30 days from now
-				createdAt: new Date(),
-			};
+			const response = await fetch("/api/subscriptions", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify({
+					userId: user._id,
+					planId,
+				}),
+			});
 
-			localStorage.setItem(
-				`subscription_${user._id}`,
-				JSON.stringify(newSubscription)
-			);
-			setSubscription(newSubscription);
+			if (!response.ok) {
+				throw new Error("Failed to create subscription");
+			}
+
+			const data = await response.json();
+
+			// For free plan, update subscription state
+			if (planId === "free") {
+				setSubscription({
+					...data,
+					currentPeriodEnd: new Date(data.currentPeriodEnd),
+					createdAt: new Date(data.createdAt),
+				});
+				return true;
+			}
+
+			// For premium plan, Razorpay checkout will be handled in the component
 			return true;
 		} catch (error) {
 			console.error("Subscribe failed:", error);
@@ -184,17 +183,29 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
 
 		try {
 			setLoading(true);
-			// In a real app, this would be an API call to cancel a subscription
-			// Simulating subscription cancellation for demo
-			const updatedSubscription = {
-				...subscription,
-				status: "cancelled" as const,
-			};
-			localStorage.setItem(
-				`subscription_${user._id}`,
-				JSON.stringify(updatedSubscription)
-			);
-			setSubscription(updatedSubscription);
+
+			const response = await fetch("/api/subscriptions", {
+				method: "PUT",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify({
+					subscriptionId: subscription.id,
+				}),
+			});
+
+			if (!response.ok) {
+				throw new Error("Failed to cancel subscription");
+			}
+
+			const data = await response.json();
+
+			setSubscription({
+				...data,
+				currentPeriodEnd: new Date(data.currentPeriodEnd),
+				createdAt: new Date(data.createdAt),
+			});
+
 			return true;
 		} catch (error) {
 			console.error("Cancel subscription failed:", error);

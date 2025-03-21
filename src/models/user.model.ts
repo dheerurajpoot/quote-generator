@@ -22,7 +22,7 @@ const userModel = new mongoose.Schema(
 			type: Boolean,
 			default: false,
 		},
-		stripeCustomerId: { type: String },
+		razorpayCustomerId: { type: String },
 		role: {
 			type: String,
 			enum: ["user", "admin"],
