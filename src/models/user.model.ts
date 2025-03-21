@@ -22,6 +22,10 @@ const userModel = new mongoose.Schema(
 			type: Boolean,
 			default: false,
 		},
+		isBlocked: {
+			type: Boolean,
+			default: false,
+		},
 		razorpayCustomerId: { type: String },
 		role: {
 			type: String,

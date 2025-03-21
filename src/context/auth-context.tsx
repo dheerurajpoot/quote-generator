@@ -13,9 +13,10 @@ export interface User {
 	_id: string;
 	name: string;
 	email: string;
-	role?: string;
+	role: "user" | "admin";
 	token?: string;
 	image?: string | null;
+	isBlocked: boolean;
 }
 
 interface AuthContextType {
@@ -24,6 +25,7 @@ interface AuthContextType {
 	signIn: (email: string, password: string) => Promise<boolean>;
 	signUp: (name: string, email: string, password: string) => Promise<boolean>;
 	signOut: () => Promise<void>;
+	isAdmin: () => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -33,12 +35,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 	const [loading, setLoading] = useState(true);
 
 	useEffect(() => {
-		// Check localStorage for existing user session
-		const storedUser = localStorage.getItem("user");
-		if (storedUser) {
-			setUser(JSON.parse(storedUser));
-		}
-		setLoading(false);
+		// Check if user is logged in
+		const checkAuth = async () => {
+			try {
+				// In a real app, this would be an API call to check session
+				const storedUser = localStorage.getItem("user");
+				if (storedUser) {
+					const parsedUser = JSON.parse(storedUser);
+					setUser(parsedUser);
+
+					// Set user role cookie for middleware
+					if (parsedUser.role === "admin") {
+						document.cookie = `user_role=admin; path=/; max-age=${
+							60 * 60 * 24 * 7
+						}`; // 7 days
+					}
+				}
+			} catch (error) {
+				console.error("Auth check failed:", error);
+			} finally {
+				setLoading(false);
+			}
+		};
+
+		checkAuth();
 	}, []);
 
 	const signIn = async (email: string, password: string) => {
@@ -50,8 +70,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 			});
 			if (res.data.success) {
 				const userData = res.data.user;
+				const isAdmin = userData.role === "admin";
 				setUser(userData);
 				localStorage.setItem("user", JSON.stringify(userData));
+
+				// Set user role cookie for middleware
+				if (isAdmin) {
+					document.cookie = `user_role=admin; path=/; max-age=${
+						60 * 60 * 24 * 7
+					}`; // 7 days
+				}
+
 				return true;
 			}
 			return false;
@@ -107,6 +136,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 			setLoading(true);
 			await axios.get("/api/auth/logout");
 			localStorage.removeItem("user");
+			// Clear cookies
+			document.cookie = "session=; path=/; max-age=0";
+			document.cookie = "user_role=; path=/; max-age=0";
 			setUser(null);
 		} catch (error: unknown) {
 			if (axios.isAxiosError(error)) {
@@ -124,6 +156,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 		}
 	};
 
+	const isAdmin = () => {
+		return user?.role === "admin";
+	};
+
 	return (
 		<AuthContext.Provider
 			value={{
@@ -132,6 +168,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 				signIn,
 				signUp,
 				signOut,
+				isAdmin,
 			}}>
 			{children}
 		</AuthContext.Provider>

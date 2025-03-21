@@ -5,7 +5,7 @@ export function middleware(request: NextRequest) {
 
 	// Get token and userRole from cookies
 	const token = request.cookies.get("token")?.value || "";
-	const userRole = request.cookies.get("userRole")?.value || "";
+	const isAdmin = request.cookies.get("user_role")?.value === "admin";
 
 	// Public paths (accessible without login)
 	const isPublicPath =
@@ -13,10 +13,10 @@ export function middleware(request: NextRequest) {
 		path === "/login" ||
 		path === "/register" ||
 		path === "/verifyemail" ||
-		path.startsWith("/product");
+		path.startsWith("/admin");
 
 	// Protected paths (require login)
-	const isProtectedPath = path.startsWith("/dashboard");
+	const isProtectedPath = path.startsWith("/admin");
 
 	// Admin-only paths (require login and admin role)
 	const isAdminPath = path.startsWith("/admin");
@@ -32,8 +32,8 @@ export function middleware(request: NextRequest) {
 	}
 
 	// Redirect non-admin users trying to access admin-only paths
-	if (isAdminPath && userRole !== "admin") {
-		return NextResponse.redirect(new URL("/", request.url));
+	if (isAdminPath && !isAdmin) {
+		return NextResponse.redirect(new URL("/unauthorized", request.url));
 	}
 
 	return NextResponse.next();
@@ -45,7 +45,6 @@ export const config = {
 		"/login",
 		"/signup",
 		"/logout",
-		"/dashboard",
 		"/admin/:path*",
 		"/verifyemail",
 	],

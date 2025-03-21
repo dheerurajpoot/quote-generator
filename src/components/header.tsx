@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { QuoteIcon } from "lucide-react";
+import { QuoteIcon, ShieldAlert } from "lucide-react";
 import { useAuth } from "@/context/auth-context";
 import { useSubscription } from "@/context/subscription-context";
 import {
@@ -16,7 +16,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 
 export function Header() {
-	const { user, signOut } = useAuth();
+	const { user, signOut, isAdmin } = useAuth();
 	const { isSubscribed } = useSubscription();
 
 	return (
@@ -49,6 +49,14 @@ export function Header() {
 						className='text-sm font-medium flex items-center gap-1 transition-colors hover:text-primary'>
 						<span className='hidden md:inline'>Pricing</span>
 					</Link>
+					{isAdmin() && (
+						<Link
+							href='/admin'
+							className='text-sm font-medium flex items-center gap-1 transition-colors hover:text-primary'>
+							<ShieldAlert className='h-4 w-4' />
+							<span className='hidden md:inline'>Admin</span>
+						</Link>
+					)}
 				</nav>
 				<div className='flex items-center gap-2'>
 					{user ? (
@@ -74,6 +82,13 @@ export function Header() {
 											PRO
 										</Badge>
 									)}
+									{isAdmin() && (
+										<Badge
+											variant='outline'
+											className='absolute -bottom-2 -right-2 h-4 px-1 text-[10px] bg-destructive text-destructive-foreground border-none'>
+											ADMIN
+										</Badge>
+									)}
 								</Button>
 							</DropdownMenuTrigger>
 							<DropdownMenuContent align='end'>
@@ -93,6 +108,16 @@ export function Header() {
 								<DropdownMenuItem asChild>
 									<Link href='/dashboard'>Dashboard</Link>
 								</DropdownMenuItem>
+								{isAdmin() && (
+									<>
+										<DropdownMenuSeparator />
+										<DropdownMenuItem asChild>
+											<Link href='/admin'>
+												Admin Dashboard
+											</Link>
+										</DropdownMenuItem>
+									</>
+								)}
 								<DropdownMenuSeparator />
 								<DropdownMenuItem
 									className='cursor-pointer'
