@@ -27,6 +27,33 @@ declare global {
 	}
 }
 
+// Add Razorpay response type definitions
+interface RazorpayResponse {
+	razorpay_payment_id: string;
+	razorpay_order_id: string;
+	razorpay_signature: string;
+}
+
+interface RazorpayOptions {
+	key: string;
+	amount: number;
+	currency: string;
+	name: string;
+	description: string;
+	order_id: string;
+	handler: (response: RazorpayResponse) => void;
+	prefill: {
+		name: string;
+		email: string;
+	};
+	theme: {
+		color: string;
+	};
+	modal: {
+		ondismiss: () => void;
+	};
+}
+
 export default function PricingPage() {
 	const router = useRouter();
 	const { user } = useAuth();
@@ -134,14 +161,14 @@ export default function PricingPage() {
 					);
 				}
 
-				const options = {
+				const options: RazorpayOptions = {
 					key: data.keyId,
 					amount: data.amount,
 					currency: data.currency,
 					name: "QuoteArt",
 					description: "Premium Subscription",
 					order_id: data.orderId,
-					handler: async (response: any) => {
+					handler: async (response: RazorpayResponse) => {
 						try {
 							// Verify payment
 							const verifyResponse = await fetch(
@@ -172,14 +199,19 @@ export default function PricingPage() {
 
 							// Payment successful
 							window.location.href = "/dashboard?success=true";
-						} catch (error: any) {
+						} catch (error) {
 							console.error("Payment verification error:", error);
-							window.location.href =
-								"/pricing?error=" +
-								encodeURIComponent(
-									error.message ||
-										"Payment verification failed"
-								);
+							if (error instanceof Error) {
+								window.location.href =
+									"/pricing?error=" +
+									encodeURIComponent(
+										error.message ||
+											"Payment verification failed"
+									);
+							} else {
+								window.location.href =
+									"/pricing?error=Payment verification failed";
+							}
 						}
 					},
 					prefill: {
