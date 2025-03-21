@@ -23,7 +23,9 @@ import Script from "next/script";
 
 declare global {
 	interface Window {
-		Razorpay: any;
+		Razorpay: new (options: RazorpayOptions) => {
+			open: () => void;
+		};
 	}
 }
 
@@ -234,11 +236,14 @@ export default function PricingPage() {
 			} else {
 				throw new Error("No order details returned");
 			}
-		} catch (err: any) {
-			setError(
-				err.message ||
+		} catch (err) {
+			if (err instanceof Error) {
+				setError(err.message);
+			} else {
+				setError(
 					"An error occurred during subscription. Please try again."
-			);
+				);
+			}
 		} finally {
 			setIsProcessing(false);
 		}
