@@ -61,7 +61,7 @@ export const subscriptionPlans: SubscriptionPlan[] = [
 		id: "premium",
 		name: "Premium",
 		description: "Enhanced features for serious creators",
-		price: 99,
+		price: 69,
 		tier: "premium",
 		recommended: true,
 		features: [
