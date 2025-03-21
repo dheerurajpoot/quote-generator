@@ -52,15 +52,45 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
+// Type for subscription status
+type SubscriptionStatus = "active" | "canceled" | "expired";
+type PaymentStatus = "successful" | "failed";
+
+interface Subscription {
+	id: string;
+	userId: string;
+	userName: string;
+	userEmail: string;
+	planId: string;
+	status: SubscriptionStatus;
+	currentPeriodEnd: string;
+	createdAt: string;
+	paymentMethod: string;
+	amount: number;
+	razorpayOrderId: string | null;
+	razorpayPaymentId: string | null;
+}
+
+interface Payment {
+	id: string;
+	subscriptionId: string;
+	userId: string;
+	userName: string;
+	amount: number;
+	status: PaymentStatus;
+	paymentMethod: string;
+	date: string;
+}
+
 // Sample subscription data
-const sampleSubscriptions = [
+const sampleSubscriptions: Subscription[] = [
 	{
 		id: "sub_1",
 		userId: "1",
 		userName: "John Doe",
 		userEmail: "john@example.com",
 		planId: "premium",
-		status: "active",
+		status: "active" as SubscriptionStatus,
 		currentPeriodEnd: "2023-12-15",
 		createdAt: "2023-01-15",
 		paymentMethod: "Credit Card",
@@ -74,7 +104,7 @@ const sampleSubscriptions = [
 		userName: "Jane Smith",
 		userEmail: "jane@example.com",
 		planId: "free",
-		status: "active",
+		status: "active" as SubscriptionStatus,
 		currentPeriodEnd: "2024-02-20",
 		createdAt: "2023-02-20",
 		paymentMethod: "N/A",
@@ -88,7 +118,7 @@ const sampleSubscriptions = [
 		userName: "Admin User",
 		userEmail: "admin@example.com",
 		planId: "premium",
-		status: "active",
+		status: "active" as SubscriptionStatus,
 		currentPeriodEnd: "2023-12-10",
 		createdAt: "2022-12-10",
 		paymentMethod: "UPI",
@@ -102,7 +132,7 @@ const sampleSubscriptions = [
 		userName: "Blocked User",
 		userEmail: "blocked@example.com",
 		planId: "free",
-		status: "canceled",
+		status: "canceled" as SubscriptionStatus,
 		currentPeriodEnd: "2023-04-05",
 		createdAt: "2023-03-05",
 		paymentMethod: "N/A",
@@ -116,7 +146,7 @@ const sampleSubscriptions = [
 		userName: "Sarah Johnson",
 		userEmail: "sarah@example.com",
 		planId: "premium",
-		status: "expired",
+		status: "expired" as SubscriptionStatus,
 		currentPeriodEnd: "2023-05-12",
 		createdAt: "2023-04-12",
 		paymentMethod: "Net Banking",
@@ -127,7 +157,7 @@ const sampleSubscriptions = [
 ];
 
 // Sample payment history
-const samplePayments = [
+const samplePayments: Payment[] = [
 	{
 		id: "pay_123456",
 		subscriptionId: "sub_1",
@@ -171,11 +201,13 @@ const samplePayments = [
 ];
 
 export default function AdminSubscriptionsPage() {
-	const [subscriptions, setSubscriptions] = useState(sampleSubscriptions);
-	const [payments, setPayments] = useState(samplePayments);
+	const [subscriptions, setSubscriptions] =
+		useState<Subscription[]>(sampleSubscriptions);
+	const [payments] = useState<Payment[]>(samplePayments);
 	const [searchQuery, setSearchQuery] = useState("");
 	const [isEditSubOpen, setIsEditSubOpen] = useState(false);
-	const [currentSubscription, setCurrentSubscription] = useState<any>(null);
+	const [currentSubscription, setCurrentSubscription] =
+		useState<Subscription | null>(null);
 	const [activeTab, setActiveTab] = useState("subscriptions");
 
 	// Filter subscriptions based on search query
@@ -210,16 +242,17 @@ export default function AdminSubscriptionsPage() {
 	};
 
 	// Handle canceling a subscription
-	const handleCancelSubscription = (subscription: any) => {
+	const handleCancelSubscription = (subscription: Subscription) => {
 		const updatedSubscriptions = subscriptions.map((sub) =>
-			sub.id === subscription.id ? { ...sub, status: "canceled" } : sub
+			sub.id === subscription.id
+				? { ...sub, status: "canceled" as SubscriptionStatus }
+				: sub
 		);
 		setSubscriptions(updatedSubscriptions);
 	};
 
 	// Handle extending a subscription
-	const handleExtendSubscription = (subscription: any) => {
-		// Add 30 days to the current period end
+	const handleExtendSubscription = (subscription: Subscription) => {
 		const currentDate = new Date(subscription.currentPeriodEnd);
 		const newDate = new Date(
 			currentDate.setDate(currentDate.getDate() + 30)
@@ -231,7 +264,7 @@ export default function AdminSubscriptionsPage() {
 				? {
 						...sub,
 						currentPeriodEnd: formattedDate,
-						status: "active", // Also reactivate if it was expired or canceled
+						status: "active" as SubscriptionStatus,
 				  }
 				: sub
 		);
@@ -419,7 +452,7 @@ export default function AdminSubscriptionsPage() {
 																					subscription.id
 																						? {
 																								...sub,
-																								status: "active",
+																								status: "active" as SubscriptionStatus,
 																						  }
 																						: sub
 																			);
@@ -521,7 +554,7 @@ export default function AdminSubscriptionsPage() {
 						<DialogTitle>Edit Subscription</DialogTitle>
 						<DialogDescription>
 							Make changes to the subscription. Click save when
-							you're done.
+							you&quot;re done.
 						</DialogDescription>
 					</DialogHeader>
 					{currentSubscription && (
@@ -561,7 +594,9 @@ export default function AdminSubscriptionsPage() {
 								</Label>
 								<Select
 									value={currentSubscription.status}
-									onValueChange={(value) =>
+									onValueChange={(
+										value: SubscriptionStatus
+									) =>
 										setCurrentSubscription({
 											...currentSubscription,
 											status: value,

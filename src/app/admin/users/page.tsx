@@ -55,8 +55,31 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 
+// Add these type definitions right after the imports
+type UserRole = "user" | "admin";
+type SubscriptionTier = "free" | "premium";
+type SubscriptionStatus = "active" | "canceled" | "expired";
+
+interface User {
+	id: string;
+	name: string;
+	email: string;
+	role: UserRole;
+	isBlocked: boolean;
+	subscriptionStatus: SubscriptionStatus;
+	subscriptionTier: SubscriptionTier;
+	createdAt: string;
+}
+
+interface NewUser {
+	name: string;
+	email: string;
+	role: UserRole;
+	subscriptionTier: SubscriptionTier;
+}
+
 // Sample user data
-const sampleUsers = [
+const sampleUsers: User[] = [
 	{
 		id: "1",
 		name: "John Doe",
@@ -110,13 +133,13 @@ const sampleUsers = [
 ];
 
 export default function AdminUsersPage() {
-	const [users, setUsers] = useState(sampleUsers);
+	const [users, setUsers] = useState<User[]>(sampleUsers);
 	const [searchQuery, setSearchQuery] = useState("");
 	const [isAddUserOpen, setIsAddUserOpen] = useState(false);
 	const [isEditUserOpen, setIsEditUserOpen] = useState(false);
 	const [isDeleteUserOpen, setIsDeleteUserOpen] = useState(false);
-	const [currentUser, setCurrentUser] = useState<any>(null);
-	const [newUser, setNewUser] = useState({
+	const [currentUser, setCurrentUser] = useState<User | null>(null);
+	const [newUser, setNewUser] = useState<NewUser>({
 		name: "",
 		email: "",
 		role: "user",
@@ -133,11 +156,11 @@ export default function AdminUsersPage() {
 	// Handle adding a new user
 	const handleAddUser = () => {
 		const id = Math.random().toString(36).substr(2, 9);
-		const newUserData = {
+		const newUserData: User = {
 			id,
 			...newUser,
 			isBlocked: false,
-			subscriptionStatus: "active",
+			subscriptionStatus: "active" as const,
 			createdAt: new Date().toISOString().split("T")[0],
 		};
 		setUsers([...users, newUserData]);
@@ -173,7 +196,7 @@ export default function AdminUsersPage() {
 	};
 
 	// Handle blocking/unblocking a user
-	const handleToggleBlock = (user: any) => {
+	const handleToggleBlock = (user: User) => {
 		const updatedUsers = users.map((u) =>
 			u.id === user.id ? { ...u, isBlocked: !u.isBlocked } : u
 		);
@@ -181,10 +204,15 @@ export default function AdminUsersPage() {
 	};
 
 	// Handle changing user role
-	const handleToggleAdmin = (user: any) => {
+	const handleToggleAdmin = (user: User) => {
 		const updatedUsers = users.map((u) =>
 			u.id === user.id
-				? { ...u, role: u.role === "admin" ? "user" : "admin" }
+				? {
+						...u,
+						role: (u.role === "admin"
+							? "user"
+							: "admin") as UserRole,
+				  }
 				: u
 		);
 		setUsers(updatedUsers);
@@ -364,8 +392,8 @@ export default function AdminUsersPage() {
 					<DialogHeader>
 						<DialogTitle>Add New User</DialogTitle>
 						<DialogDescription>
-							Create a new user account. Click save when you're
-							done.
+							Create a new user account. Click save when
+							you&quot;re done.
 						</DialogDescription>
 					</DialogHeader>
 					<div className='grid gap-4 py-4'>
@@ -408,7 +436,7 @@ export default function AdminUsersPage() {
 							</Label>
 							<Select
 								value={newUser.role}
-								onValueChange={(value) =>
+								onValueChange={(value: UserRole) =>
 									setNewUser({ ...newUser, role: value })
 								}>
 								<SelectTrigger className='col-span-3'>
@@ -428,7 +456,7 @@ export default function AdminUsersPage() {
 							</Label>
 							<Select
 								value={newUser.subscriptionTier}
-								onValueChange={(value) =>
+								onValueChange={(value: SubscriptionTier) =>
 									setNewUser({
 										...newUser,
 										subscriptionTier: value,
@@ -461,7 +489,7 @@ export default function AdminUsersPage() {
 						<DialogTitle>Edit User</DialogTitle>
 						<DialogDescription>
 							Make changes to the user account. Click save when
-							you're done.
+							you&quot;re done.
 						</DialogDescription>
 					</DialogHeader>
 					{currentUser && (
@@ -511,7 +539,7 @@ export default function AdminUsersPage() {
 								</Label>
 								<Select
 									value={currentUser.role}
-									onValueChange={(value) =>
+									onValueChange={(value: UserRole) =>
 										setCurrentUser({
 											...currentUser,
 											role: value,
@@ -538,7 +566,7 @@ export default function AdminUsersPage() {
 								</Label>
 								<Select
 									value={currentUser.subscriptionTier}
-									onValueChange={(value) =>
+									onValueChange={(value: SubscriptionTier) =>
 										setCurrentUser({
 											...currentUser,
 											subscriptionTier: value,
