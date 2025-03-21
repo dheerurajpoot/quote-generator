@@ -18,8 +18,10 @@ export async function POST(req: Request) {
 			signature,
 			process.env.STRIPE_WEBHOOK_SECRET || ""
 		);
-	} catch (error: any) {
-		return new NextResponse(`Webhook Error: ${error.message}`, {
+	} catch (error: unknown) {
+		const errMessage =
+			error instanceof Error ? error.message : "Unknown error";
+		return new NextResponse(`Webhook Error: ${errMessage}`, {
 			status: 400,
 		});
 	}
