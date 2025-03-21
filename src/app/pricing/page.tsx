@@ -22,37 +22,9 @@ import { Check, AlertCircle, Loader2, ImageIcon, Share2 } from "lucide-react";
 import Script from "next/script";
 
 declare global {
-	interface RazorpayOptions {
-		key: string;
-		amount: number;
-		currency: string;
-		name: string;
-		description?: string;
-		image?: string;
-		order_id?: string;
-		handler: (response: any) => void;
-		prefill?: {
-			name?: string;
-			email?: string;
-			contact?: string;
-		};
-		theme?: {
-			color?: string;
-		};
-	}
-
-	interface RazorpayInstance {
-		open(): void;
-	}
-
 	interface Window {
-		Razorpay: new (options: RazorpayOptions) => RazorpayInstance;
+		Razorpay: any;
 	}
-}
-interface RazorpayPaymentResponse {
-	razorpay_order_id: string;
-	razorpay_payment_id: string;
-	razorpay_signature: string;
 }
 
 export default function PricingPage() {
@@ -169,8 +141,9 @@ export default function PricingPage() {
 					name: "QuoteArt",
 					description: "Premium Subscription",
 					order_id: data.orderId,
-					handler: async (response: RazorpayPaymentResponse) => {
+					handler: async (response: any) => {
 						try {
+							// Verify payment
 							const verifyResponse = await fetch(
 								"/api/subscriptions/verify",
 								{
@@ -199,15 +172,14 @@ export default function PricingPage() {
 
 							// Payment successful
 							window.location.href = "/dashboard?success=true";
-						} catch (error: unknown) {
+						} catch (error: any) {
 							console.error("Payment verification error:", error);
-							const errorMessage =
-								error instanceof Error
-									? error.message
-									: "Payment verification failed";
 							window.location.href =
 								"/pricing?error=" +
-								encodeURIComponent(errorMessage);
+								encodeURIComponent(
+									error.message ||
+										"Payment verification failed"
+								);
 						}
 					},
 					prefill: {
