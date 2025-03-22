@@ -18,6 +18,9 @@ import type {
 	FacebookLoginResponse,
 	FacebookPagesResponse,
 	InstagramAccount,
+	FacebookError,
+	FacebookUserResponse,
+	FacebookPageResponse,
 } from "@/types/facebook";
 import { initializeFacebookSDK } from "@/lib/facebook-sdk";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -122,31 +125,40 @@ export function SocialConnections() {
 			// Get user's Facebook pages
 			const pagesResponse = await new Promise<FacebookPagesResponse>(
 				(resolve, reject) => {
-					window.FB.api("/me/accounts", (response: any) => {
-						console.log("Facebook pages response:", response); // Debug log
-						if (response.error) {
-							reject(
-								new Error(
-									response.error.message ||
-										"Failed to fetch Facebook pages"
-								)
-							);
-							return;
-						}
-						if (response.data && response.data.length > 0) {
-							resolve(response as FacebookPagesResponse);
-						} else {
-							// Try to get more information about why no pages were found
-							window.FB.api("/me", (userResponse: any) => {
-								console.log("User response:", userResponse);
+					window.FB.api<FacebookPagesResponse>(
+						"/me/accounts",
+						(response) => {
+							console.log("Facebook pages response:", response); // Debug log
+							if (response.error) {
 								reject(
 									new Error(
-										"No Facebook pages found. Please make sure you have at least one Facebook page and have granted the necessary permissions."
+										response.error.message ||
+											"Failed to fetch Facebook pages"
 									)
 								);
-							});
+								return;
+							}
+							if (response.data && response.data.length > 0) {
+								resolve(response);
+							} else {
+								// Try to get more information about why no pages were found
+								window.FB.api<FacebookUserResponse>(
+									"/me",
+									(userResponse) => {
+										console.log(
+											"User response:",
+											userResponse
+										);
+										reject(
+											new Error(
+												"No Facebook pages found. Please make sure you have at least one Facebook page and have granted the necessary permissions."
+											)
+										);
+									}
+								);
+							}
 						}
-					});
+					);
 				}
 			);
 
@@ -216,51 +228,50 @@ export function SocialConnections() {
 			await initializeFacebookSDK();
 
 			// Request Facebook login with Instagram permissions
-			const response = await new Promise<FacebookLoginResponse>(
-				(resolve, reject) => {
-					window.FB.login(
-						(response: FacebookLoginResponse) => {
-							if (response.authResponse) {
-								resolve(response);
-							} else {
-								reject(
-									new Error(
-										"Facebook login cancelled or failed"
-									)
-								);
-							}
-						},
-						{
-							scope: "instagram_basic,instagram_content_publish,pages_show_list,pages_read_engagement,pages_manage_posts,pages_manage_metadata,pages_read_user_content,pages_manage_ads",
-							return_scopes: true,
+			await new Promise<FacebookLoginResponse>((resolve, reject) => {
+				window.FB.login(
+					(response: FacebookLoginResponse) => {
+						if (response.authResponse) {
+							resolve(response);
+						} else {
+							reject(
+								new Error("Facebook login cancelled or failed")
+							);
 						}
-					);
-				}
-			);
+					},
+					{
+						scope: "instagram_basic,instagram_content_publish,pages_show_list,pages_read_engagement,pages_manage_posts,pages_manage_metadata,pages_read_user_content,pages_manage_ads",
+						return_scopes: true,
+					}
+				);
+			});
 
 			// Get user's Facebook pages
 			const pagesResponse = await new Promise<FacebookPagesResponse>(
 				(resolve, reject) => {
-					window.FB.api("/me/accounts", (response: any) => {
-						if (response.error) {
-							reject(
-								new Error(
-									response.error.message ||
-										"Failed to fetch Facebook pages"
-								)
-							);
-							return;
+					window.FB.api<FacebookPagesResponse>(
+						"/me/accounts",
+						(response) => {
+							if (response.error) {
+								reject(
+									new Error(
+										response.error.message ||
+											"Failed to fetch Facebook pages"
+									)
+								);
+								return;
+							}
+							if (response.data && response.data.length > 0) {
+								resolve(response);
+							} else {
+								reject(
+									new Error(
+										"No Facebook pages found. Please make sure you have at least one Facebook page."
+									)
+								);
+							}
 						}
-						if (response.data && response.data.length > 0) {
-							resolve(response as FacebookPagesResponse);
-						} else {
-							reject(
-								new Error(
-									"No Facebook pages found. Please make sure you have at least one Facebook page."
-								)
-							);
-						}
-					});
+					);
 				}
 			);
 
@@ -268,9 +279,9 @@ export function SocialConnections() {
 			const instagramAccounts = await Promise.all(
 				pagesResponse.data.map(async (page) => {
 					return new Promise<InstagramAccount>((resolve, reject) => {
-						window.FB.api(
+						window.FB.api<FacebookPageResponse>(
 							`/${page.id}?fields=instagram_business_account`,
-							(response: any) => {
+							(response) => {
 								if (response.error) {
 									reject(
 										new Error(
@@ -303,7 +314,7 @@ export function SocialConnections() {
 			);
 
 			// Get the first Instagram account
-			const instagramAccount = instagramAccounts[0] as InstagramAccount;
+			const instagramAccount = instagramAccounts[0];
 
 			// Send the connection data to your backend
 			const apiResponse = await fetch("/api/social", {
