@@ -1,15 +1,12 @@
-import type { FacebookSDK } from "@/types/facebook";
-
 declare global {
 	interface Window {
-		FB: FacebookSDK;
 		fbAsyncInit: () => void;
 	}
 }
 
 export async function initializeFacebookSDK(): Promise<void> {
 	if (!window.FB) {
-		return new Promise<void>((resolve, reject) => {
+		return new Promise<void>((resolve) => {
 			window.fbAsyncInit = function () {
 				window.FB.init({
 					appId: process.env.NEXT_PUBLIC_FACEBOOK_APP_ID || "",
@@ -20,7 +17,7 @@ export async function initializeFacebookSDK(): Promise<void> {
 				resolve();
 			};
 			(function (d, s, id) {
-				var js,
+				let js,
 					fjs = d.getElementsByTagName(s)[0];
 				if (d.getElementById(id)) return;
 				js = d.createElement(s) as HTMLScriptElement;

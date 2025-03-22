@@ -18,7 +18,6 @@ import type {
 	FacebookLoginResponse,
 	FacebookPagesResponse,
 	InstagramAccount,
-	FacebookError,
 	FacebookUserResponse,
 	FacebookPageResponse,
 } from "@/types/facebook";
@@ -33,6 +32,14 @@ interface SocialConnection {
 	profileName: string;
 	profileImage?: string;
 	connected: boolean;
+}
+
+interface SocialConnectionResponse {
+	_id: string;
+	platform: string;
+	profileId: string;
+	profileName: string;
+	profileImage?: string;
 }
 
 export function SocialConnections() {
@@ -67,7 +74,7 @@ export function SocialConnections() {
 			const transformedConnections: SocialConnection[] = Array.isArray(
 				data
 			)
-				? data.map((conn: any) => ({
+				? data.map((conn: SocialConnectionResponse) => ({
 						id: conn._id,
 						platform: conn.platform,
 						profileId: conn.profileId,
@@ -100,27 +107,23 @@ export function SocialConnections() {
 			await initializeFacebookSDK();
 
 			// Request Facebook login
-			const response = await new Promise<FacebookLoginResponse>(
-				(resolve, reject) => {
-					window.FB.login(
-						(response: FacebookLoginResponse) => {
-							if (response.authResponse) {
-								resolve(response);
-							} else {
-								reject(
-									new Error(
-										"Facebook login cancelled or failed"
-									)
-								);
-							}
-						},
-						{
-							scope: "pages_manage_posts,pages_read_engagement,pages_show_list,pages_messaging,pages_manage_metadata,pages_read_user_content,pages_manage_ads",
-							return_scopes: true,
+			await new Promise<FacebookLoginResponse>((resolve, reject) => {
+				window.FB.login(
+					(response: FacebookLoginResponse) => {
+						if (response.authResponse) {
+							resolve(response);
+						} else {
+							reject(
+								new Error("Facebook login cancelled or failed")
+							);
 						}
-					);
-				}
-			);
+					},
+					{
+						scope: "pages_manage_posts,pages_read_engagement,pages_show_list,pages_messaging,pages_manage_metadata,pages_read_user_content,pages_manage_ads",
+						return_scopes: true,
+					}
+				);
+			});
 
 			// Get user's Facebook pages
 			const pagesResponse = await new Promise<FacebookPagesResponse>(
