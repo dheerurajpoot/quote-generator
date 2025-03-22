@@ -76,72 +76,85 @@ export function SocialShareDialog({
 				return;
 			}
 
-			const response = await fetch("/api/social", {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json",
-				},
-				body: JSON.stringify({
-					userId: user._id,
-					platforms: selectedPlatforms,
-					imageUrl,
-					caption,
-				}),
+			// Post to each selected platform
+			const results: Record<
+				string,
+				{ success: boolean; url?: string; error?: string }
+			> = {};
+
+			for (const platform of selectedPlatforms) {
+				try {
+					const response = await fetch("/api/social", {
+						method: "POST",
+						headers: {
+							"Content-Type": "application/json",
+						},
+						body: JSON.stringify({
+							userId: user._id,
+							platform,
+							imageUrl,
+							caption,
+						}),
+					});
+
+					if (!response.ok) {
+						const errorData = await response.json();
+						throw new Error(
+							errorData.error || "Failed to post to social media"
+						);
+					}
+
+					const result = await response.json();
+					results[platform] = {
+						success: true,
+						url: result.platforms[platform].url,
+					};
+				} catch (err) {
+					results[platform] = {
+						success: false,
+						error:
+							err instanceof Error
+								? err.message
+								: "Failed to post",
+					};
+				}
+			}
+
+			setPostResult({
+				success: Object.values(results).some((r) => r.success),
+				platforms: results,
 			});
 
-			if (!response.ok) {
-				const errorData = await response.json();
-				throw new Error(
-					errorData.error || "Failed to post to social media"
+			// Show success message for successful posts
+			const successfulPlatforms = Object.entries(results)
+				.filter(([, data]) => data.success)
+				.map(([platform]) => platform);
+
+			if (successfulPlatforms.length > 0) {
+				setSuccess(
+					`Successfully posted to ${successfulPlatforms.join(
+						" and "
+					)}!`
 				);
 			}
 
-			const result = await response.json();
-			setPostResult(result);
+			// Show error message for failed posts
+			const failedPlatforms = Object.entries(results)
+				.filter(([, data]) => !data.success)
+				.map(([platform]) => platform);
 
-			if (result.success) {
-				setSuccess(
-					`Successfully posted to ${
-						selectedPlatforms.length > 1
-							? "social media"
-							: selectedPlatforms[0]
-					}!`
+			if (failedPlatforms.length > 0) {
+				setError(
+					`Failed to post to ${failedPlatforms.join(
+						" and "
+					)}. Please try again.`
 				);
-			} else {
-				// Some platforms may have succeeded while others failed
-				const successfulPlatforms = Object.entries(
-					result.platforms as Record<string, { success: boolean }>
-				)
-					.filter(([, data]) => data.success)
-					.map(([platform]) => platform);
-
-				if (successfulPlatforms.length > 0) {
-					setSuccess(
-						`Successfully posted to ${successfulPlatforms.join(
-							" and "
-						)}!`
-					);
-				}
-
-				const failedPlatforms = Object.entries(
-					result.platforms as Record<string, { success: boolean }>
-				)
-					.filter(([, data]) => !data.success)
-					.map(([platform]) => platform);
-
-				if (failedPlatforms.length > 0) {
-					setError(
-						`Failed to post to ${failedPlatforms.join(
-							" and "
-						)}. Please try again.`
-					);
-				}
 			}
 		} catch (err: unknown) {
 			if (err instanceof Error) {
-				setError(err.message || "An error occured please try again");
+				setError(err.message || "An error occurred please try again");
 			} else {
-				setError("An error occured please try again");
+				setError("An error occurred please try again");
 			}
 		} finally {
 			setIsPosting(false);

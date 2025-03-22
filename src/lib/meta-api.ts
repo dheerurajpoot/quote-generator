@@ -104,51 +104,73 @@ export class MetaApi {
 		imageUrl: string,
 		caption: string
 	) {
-		// First, create a container
-		const containerResponse = await fetch(
-			`${
-				this.baseUrl
-			}/${instagramAccountId}/media?image_url=${encodeURIComponent(
-				imageUrl
-			)}&caption=${encodeURIComponent(
-				caption
-			)}&access_token=${pageAccessToken}`,
-			{
-				method: "POST",
-			}
-		);
-
-		if (!containerResponse.ok) {
-			const error = await containerResponse.json();
-			throw new Error(
-				`Failed to create Instagram container: ${error.error.message}`
+		try {
+			// First, create a container
+			const containerResponse = await fetch(
+				`${
+					this.baseUrl
+				}/${instagramAccountId}/media?image_url=${encodeURIComponent(
+					imageUrl
+				)}&caption=${encodeURIComponent(
+					caption
+				)}&access_token=${pageAccessToken}`,
+				{
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json",
+					},
+				}
 			);
-		}
 
-		const containerResult = await containerResponse.json();
-		const containerId = containerResult.id;
-
-		// Then publish the container
-		const publishResponse = await fetch(
-			`${this.baseUrl}/${instagramAccountId}/media_publish?creation_id=${containerId}&access_token=${pageAccessToken}`,
-			{
-				method: "POST",
+			if (!containerResponse.ok) {
+				const error = await containerResponse.json();
+				throw new Error(
+					`Failed to create Instagram container: ${
+						error.error?.message || "Unknown error"
+					}`
+				);
 			}
-		);
 
-		if (!publishResponse.ok) {
-			const error = await publishResponse.json();
-			throw new Error(
-				`Failed to publish to Instagram: ${error.error.message}`
+			const containerResult = await containerResponse.json();
+			if (!containerResult.id) {
+				throw new Error("No container ID received from Instagram");
+			}
+
+			const containerId = containerResult.id;
+
+			// Then publish the container
+			const publishResponse = await fetch(
+				`${this.baseUrl}/${instagramAccountId}/media_publish?creation_id=${containerId}&access_token=${pageAccessToken}`,
+				{
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json",
+					},
+				}
 			);
+
+			if (!publishResponse.ok) {
+				const error = await publishResponse.json();
+				throw new Error(
+					`Failed to publish to Instagram: ${
+						error.error?.message || "Unknown error"
+					}`
+				);
+			}
+
+			const publishResult = await publishResponse.json();
+			if (!publishResult.id) {
+				throw new Error("No post ID received from Instagram");
+			}
+
+			return {
+				success: true,
+				postId: publishResult.id,
+				url: `https://instagram.com/p/${publishResult.id}`,
+			};
+		} catch (error) {
+			console.error("Instagram posting error:", error);
+			throw error;
 		}
-
-		const publishResult = await publishResponse.json();
-
-		return {
-			success: true,
-			postId: publishResult.id,
-			url: `https://instagram.com/p/${publishResult.id}`,
-		};
 	}
 }
