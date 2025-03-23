@@ -4,8 +4,32 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/context/auth-context";
 import { useRouter } from "next/navigation";
 import { toast } from "react-hot-toast";
+import {
+	Card,
+	CardContent,
+	CardDescription,
+	CardHeader,
+	CardTitle,
+} from "@/components/ui/card";
+import {
+	Table,
+	TableBody,
+	TableCell,
+	TableHead,
+	TableHeader,
+	TableRow,
+} from "@/components/ui/table";
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuLabel,
+	DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { MoreHorizontal, Search, Edit, Ban, RefreshCw } from "lucide-react";
 import {
 	Dialog,
 	DialogContent,
@@ -27,10 +51,9 @@ interface User {
 	_id: string;
 	name: string;
 	email: string;
-	role: string;
-	createdAt: string;
-	isVerified: boolean;
+	role: "user" | "admin";
 	isBlocked: boolean;
+	createdAt: string;
 }
 
 export default function UsersPage() {
@@ -39,7 +62,7 @@ export default function UsersPage() {
 	const [users, setUsers] = useState<User[]>([]);
 	const [isLoading, setIsLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
-	const [searchQuery] = useState("");
+	const [searchQuery, setSearchQuery] = useState("");
 	const [isEditUserOpen, setIsEditUserOpen] = useState(false);
 	const [currentUser, setCurrentUser] = useState<User | null>(null);
 
@@ -123,28 +146,12 @@ export default function UsersPage() {
 		}
 	};
 
-	const handleEditUser = (user: User) => {
-		setCurrentUser(user);
-		setIsEditUserOpen(true);
-	};
-
-	const handleBlockUser = async (userId: string, isBlocked: boolean) => {
-		try {
-			await handleUpdateUser(userId, { isBlocked });
-			toast.success(
-				`User ${isBlocked ? "blocked" : "unblocked"} successfully`
-			);
-		} catch (err) {
-			console.log(err);
-			toast.error("Failed to update user status");
-		}
-	};
-
 	// Filter users based on search query
 	const filteredUsers = users.filter(
 		(user) =>
 			user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-			user.email.toLowerCase().includes(searchQuery.toLowerCase())
+			user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+			user.role.toLowerCase().includes(searchQuery.toLowerCase())
 	);
 
 	if (isLoading) {
@@ -164,63 +171,69 @@ export default function UsersPage() {
 	}
 
 	return (
-		<div className='container mx-auto px-4 py-8'>
-			<h1 className='text-3xl font-bold mb-8'>Users</h1>
+		<div className='space-y-6'>
+			<div className='flex justify-between items-center'>
+				<h1 className='text-3xl font-bold tracking-tight'>
+					User Management
+				</h1>
+				<Button onClick={fetchUsers} variant='outline' size='icon'>
+					<RefreshCw className='h-4 w-4' />
+				</Button>
+			</div>
 
-			<div className='bg-white rounded-lg shadow overflow-hidden'>
-				<table className='min-w-full divide-y divide-gray-200'>
-					<thead className='bg-gray-50'>
-						<tr>
-							<th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
-								Name
-							</th>
-							<th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
-								Email
-							</th>
-							<th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
-								Role
-							</th>
-							<th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
-								Status
-							</th>
-							<th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
-								Joined
-							</th>
-							<th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
-								Actions
-							</th>
-						</tr>
-					</thead>
-					<tbody className='bg-white divide-y divide-gray-200'>
-						{filteredUsers.map((user) => (
-							<tr key={user._id}>
-								<td className='px-6 py-4 whitespace-nowrap'>
-									<div className='text-sm font-medium text-gray-900'>
-										{user.name}
-									</div>
-								</td>
-								<td className='px-6 py-4 whitespace-nowrap'>
-									<div className='text-sm text-gray-500'>
-										{user.email}
-									</div>
-								</td>
-								<td className='px-6 py-4 whitespace-nowrap'>
-									<span className='px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800'>
-										{user.role}
-									</span>
-								</td>
-								<td className='px-6 py-4 whitespace-nowrap'>
-									<div className='flex space-x-2'>
-										<span
-											className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-												user.isVerified
-													? "bg-green-100 text-green-800"
-													: "bg-yellow-100 text-yellow-800"
-											}`}>
-											{user.isVerified
-												? "Verified"
-												: "Pending"}
-										</span>
+			<div className='flex w-full max-w-sm items-center space-x-2'>
+				<Input
+					placeholder='Search users...'
+					value={searchQuery}
+					onChange={(e) => setSearchQuery(e.target.value)}
+					className='w-full'
+				/>
+				<Button type='submit' size='icon' variant='ghost'>
+					<Search className='h-4 w-4' />
+				</Button>
+			</div>
+
+			<Card>
+				<CardHeader>
+					<CardTitle>All Users</CardTitle>
+					<CardDescription>
+						Manage user accounts, roles, and permissions
+					</CardDescription>
+				</CardHeader>
+				<CardContent>
+					<Table>
+						<TableHeader>
+							<TableRow>
+								<TableHead>Name</TableHead>
+								<TableHead>Email</TableHead>
+								<TableHead>Role</TableHead>
+								<TableHead>Status</TableHead>
+								<TableHead>Created</TableHead>
+								<TableHead className='text-right'>
+									Actions
+								</TableHead>
+							</TableRow>
+						</TableHeader>
+						<TableBody>
+							{filteredUsers.map((user) => (
+								<TableRow key={user._id}>
+									<TableCell>
+										<div className='font-medium'>
+											{user.name}
+										</div>
+									</TableCell>
+									<TableCell>{user.email}</TableCell>
+									<TableCell>
+										<Badge
+											variant={
+												user.role === "admin"
+													? "secondary"
+													: "outline"
+											}>
+											{user.role}
+										</Badge>
+									</TableCell>
+									<TableCell>
 										<span
 											className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
 												user.isBlocked
@@ -231,62 +244,69 @@ export default function UsersPage() {
 												? "Blocked"
 												: "Active"}
 										</span>
-									</div>
-								</td>
-								<td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
-									{new Date(
-										user.createdAt
-									).toLocaleDateString()}
-								</td>
-								<td className='px-6 py-4 whitespace-nowrap text-sm font-medium'>
-									<div className='flex space-x-2'>
-										<button
-											onClick={() => handleEditUser(user)}
-											className='text-indigo-600 hover:text-indigo-900'>
-											Edit
-										</button>
-										<button
-											onClick={() =>
-												handleUpdateUser(user._id, {
-													isVerified:
-														!user.isVerified,
-												})
-											}
-											className='text-indigo-600 hover:text-indigo-900'>
-											{user.isVerified
-												? "Unverify"
-												: "Verify"}
-										</button>
-										<button
-											onClick={() =>
-												handleBlockUser(
-													user._id,
-													!user.isBlocked
-												)
-											}
-											className={`${
-												user.isBlocked
-													? "text-green-600 hover:text-green-900"
-													: "text-red-600 hover:text-red-900"
-											}`}>
-											{user.isBlocked
-												? "Unblock"
-												: "Block"}
-										</button>
-										<button
-											onClick={() =>
-												handleDeleteUser(user._id)
-											}
-											className='text-red-600 hover:text-red-900'>
-											Delete
-										</button>
-									</div>
-								</td>
-							</tr>
-						))}
-					</tbody>
-				</table>
-			</div>
+									</TableCell>
+									<TableCell>
+										{new Date(
+											user.createdAt
+										).toLocaleDateString()}
+									</TableCell>
+									<TableCell className='text-right'>
+										<DropdownMenu>
+											<DropdownMenuTrigger asChild>
+												<Button
+													variant='ghost'
+													className='h-8 w-8 p-0'>
+													<span className='sr-only'>
+														Open menu
+													</span>
+													<MoreHorizontal className='h-4 w-4' />
+												</Button>
+											</DropdownMenuTrigger>
+											<DropdownMenuContent align='end'>
+												<DropdownMenuLabel>
+													Actions
+												</DropdownMenuLabel>
+												<DropdownMenuItem
+													onClick={() => {
+														setCurrentUser(user);
+														setIsEditUserOpen(true);
+													}}>
+													<Edit className='mr-2 h-4 w-4' />
+													Edit
+												</DropdownMenuItem>
+												<DropdownMenuItem
+													onClick={() =>
+														handleUpdateUser(
+															user._id,
+															{
+																isBlocked:
+																	!user.isBlocked,
+															}
+														)
+													}>
+													<Ban className='mr-2 h-4 w-4' />
+													{user.isBlocked
+														? "Unblock"
+														: "Block"}
+												</DropdownMenuItem>
+												<DropdownMenuItem
+													onClick={() =>
+														handleDeleteUser(
+															user._id
+														)
+													}>
+													<Ban className='mr-2 h-4 w-4' />
+													Delete
+												</DropdownMenuItem>
+											</DropdownMenuContent>
+										</DropdownMenu>
+									</TableCell>
+								</TableRow>
+							))}
+						</TableBody>
+					</Table>
+				</CardContent>
+			</Card>
 
 			{/* Edit User Dialog */}
 			<Dialog open={isEditUserOpen} onOpenChange={setIsEditUserOpen}>
@@ -294,18 +314,20 @@ export default function UsersPage() {
 					<DialogHeader>
 						<DialogTitle>Edit User</DialogTitle>
 						<DialogDescription>
-							Make changes to the user. Click save when
-							you&apos;re done.
+							Make changes to the user. Click save when you're
+							done.
 						</DialogDescription>
 					</DialogHeader>
 					{currentUser && (
 						<div className='grid gap-4 py-4'>
 							<div className='grid grid-cols-4 items-center gap-4'>
-								<Label htmlFor='name' className='text-right'>
+								<Label
+									htmlFor='edit-name'
+									className='text-right'>
 									Name
 								</Label>
 								<Input
-									id='name'
+									id='edit-name'
 									value={currentUser.name}
 									onChange={(e) =>
 										setCurrentUser({
@@ -317,11 +339,13 @@ export default function UsersPage() {
 								/>
 							</div>
 							<div className='grid grid-cols-4 items-center gap-4'>
-								<Label htmlFor='email' className='text-right'>
+								<Label
+									htmlFor='edit-email'
+									className='text-right'>
 									Email
 								</Label>
 								<Input
-									id='email'
+									id='edit-email'
 									value={currentUser.email}
 									onChange={(e) =>
 										setCurrentUser({
@@ -333,12 +357,14 @@ export default function UsersPage() {
 								/>
 							</div>
 							<div className='grid grid-cols-4 items-center gap-4'>
-								<Label htmlFor='role' className='text-right'>
+								<Label
+									htmlFor='edit-role'
+									className='text-right'>
 									Role
 								</Label>
 								<Select
 									value={currentUser.role}
-									onValueChange={(value) =>
+									onValueChange={(value: "user" | "admin") =>
 										setCurrentUser({
 											...currentUser,
 											role: value,
@@ -357,6 +383,37 @@ export default function UsersPage() {
 									</SelectContent>
 								</Select>
 							</div>
+							<div className='grid grid-cols-4 items-center gap-4'>
+								<Label
+									htmlFor='edit-status'
+									className='text-right'>
+									Status
+								</Label>
+								<Select
+									value={
+										currentUser.isBlocked
+											? "blocked"
+											: "active"
+									}
+									onValueChange={(value: string) =>
+										setCurrentUser({
+											...currentUser,
+											isBlocked: value === "blocked",
+										})
+									}>
+									<SelectTrigger className='col-span-3'>
+										<SelectValue placeholder='Select status' />
+									</SelectTrigger>
+									<SelectContent>
+										<SelectItem value='active'>
+											Active
+										</SelectItem>
+										<SelectItem value='blocked'>
+											Blocked
+										</SelectItem>
+									</SelectContent>
+								</Select>
+							</div>
 						</div>
 					)}
 					<DialogFooter>
@@ -364,11 +421,10 @@ export default function UsersPage() {
 							type='submit'
 							onClick={() => {
 								if (currentUser) {
-									handleUpdateUser(currentUser._id, {
-										name: currentUser.name,
-										email: currentUser.email,
-										role: currentUser.role,
-									});
+									handleUpdateUser(
+										currentUser._id,
+										currentUser
+									);
 								}
 								setIsEditUserOpen(false);
 							}}>

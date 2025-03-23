@@ -46,7 +46,6 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface Subscription {
 	_id: string;
@@ -73,7 +72,6 @@ export default function SubscriptionsPage() {
 	const [isEditSubOpen, setIsEditSubOpen] = useState(false);
 	const [currentSubscription, setCurrentSubscription] =
 		useState<Subscription | null>(null);
-	const [activeTab, setActiveTab] = useState("subscriptions");
 
 	useEffect(() => {
 		if (!user || user.role !== "admin") {
@@ -230,163 +228,137 @@ export default function SubscriptionsPage() {
 				</Button>
 			</div>
 
-			<Tabs value={activeTab} onValueChange={setActiveTab}>
-				<TabsList>
-					<TabsTrigger value='subscriptions'>
-						Subscriptions
-					</TabsTrigger>
-				</TabsList>
-
-				<TabsContent value='subscriptions' className='space-y-4'>
-					<Card>
-						<CardHeader>
-							<CardTitle>Active Subscriptions</CardTitle>
-							<CardDescription>
-								Manage user subscriptions, extend or cancel
-								plans
-							</CardDescription>
-						</CardHeader>
-						<CardContent>
-							<Table>
-								<TableHeader>
-									<TableRow>
-										<TableHead>User</TableHead>
-										<TableHead>Plan</TableHead>
-										<TableHead>Status</TableHead>
-										<TableHead>
-											Current Period End
-										</TableHead>
-										<TableHead>Created</TableHead>
-										<TableHead className='text-right'>
-											Actions
-										</TableHead>
-									</TableRow>
-								</TableHeader>
-								<TableBody>
-									{filteredSubscriptions.map(
-										(subscription) => (
-											<TableRow key={subscription._id}>
-												<TableCell>
-													<div>
-														<div className='font-medium'>
-															{
-																subscription
-																	.userId.name
-															}
-														</div>
-														<div className='text-sm text-muted-foreground'>
-															{
-																subscription
-																	.userId
-																	.email
-															}
-														</div>
-													</div>
-												</TableCell>
-												<TableCell>
-													<Badge
-														variant={
-															subscription.planId ===
-															"premium"
-																? "secondary"
-																: "outline"
-														}>
-														{subscription.tier}
-													</Badge>
-												</TableCell>
-												<TableCell>
-													<span
-														className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-															subscription.status ===
-															"active"
-																? "bg-green-100 text-green-800"
-																: subscription.status ===
-																  "canceled"
-																? "bg-yellow-100 text-yellow-800"
-																: "bg-red-100 text-red-800"
-														}`}>
-														{subscription.status}
+			<Card>
+				<CardHeader>
+					<CardTitle>Active Subscriptions</CardTitle>
+					<CardDescription>
+						Manage user subscriptions, extend or cancel plans
+					</CardDescription>
+				</CardHeader>
+				<CardContent>
+					<Table>
+						<TableHeader>
+							<TableRow>
+								<TableHead>User</TableHead>
+								<TableHead>Plan</TableHead>
+								<TableHead>Status</TableHead>
+								<TableHead>Current Period End</TableHead>
+								<TableHead>Created</TableHead>
+								<TableHead className='text-right'>
+									Actions
+								</TableHead>
+							</TableRow>
+						</TableHeader>
+						<TableBody>
+							{filteredSubscriptions.map((subscription) => (
+								<TableRow key={subscription._id}>
+									<TableCell>
+										<div>
+											<div className='font-medium'>
+												{subscription.userId.name}
+											</div>
+											<div className='text-sm text-muted-foreground'>
+												{subscription.userId.email}
+											</div>
+										</div>
+									</TableCell>
+									<TableCell>
+										<Badge
+											variant={
+												subscription.planId ===
+												"premium"
+													? "secondary"
+													: "outline"
+											}>
+											{subscription.tier}
+										</Badge>
+									</TableCell>
+									<TableCell>
+										<span
+											className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+												subscription.status === "active"
+													? "bg-green-100 text-green-800"
+													: subscription.status ===
+													  "canceled"
+													? "bg-yellow-100 text-yellow-800"
+													: "bg-red-100 text-red-800"
+											}`}>
+											{subscription.status}
+										</span>
+									</TableCell>
+									<TableCell>
+										{new Date(
+											subscription.currentPeriodEnd
+										).toLocaleDateString()}
+									</TableCell>
+									<TableCell>
+										{new Date(
+											subscription.createdAt
+										).toLocaleDateString()}
+									</TableCell>
+									<TableCell className='text-right'>
+										<DropdownMenu>
+											<DropdownMenuTrigger asChild>
+												<Button
+													variant='ghost'
+													className='h-8 w-8 p-0'>
+													<span className='sr-only'>
+														Open menu
 													</span>
-												</TableCell>
-												<TableCell>
-													{new Date(
-														subscription.currentPeriodEnd
-													).toLocaleDateString()}
-												</TableCell>
-												<TableCell>
-													{new Date(
-														subscription.createdAt
-													).toLocaleDateString()}
-												</TableCell>
-												<TableCell className='text-right'>
-													<DropdownMenu>
-														<DropdownMenuTrigger
-															asChild>
-															<Button
-																variant='ghost'
-																className='h-8 w-8 p-0'>
-																<span className='sr-only'>
-																	Open menu
-																</span>
-																<MoreHorizontal className='h-4 w-4' />
-															</Button>
-														</DropdownMenuTrigger>
-														<DropdownMenuContent align='end'>
-															<DropdownMenuLabel>
-																Actions
-															</DropdownMenuLabel>
-															<DropdownMenuItem
-																onClick={() => {
-																	setCurrentSubscription(
-																		subscription
-																	);
-																	setIsEditSubOpen(
-																		true
-																	);
-																}}>
-																<Edit className='mr-2 h-4 w-4' />
-																Edit
-															</DropdownMenuItem>
-															<DropdownMenuItem
-																onClick={() =>
-																	handleUpdateSubscription(
-																		subscription._id,
-																		{
-																			status:
-																				subscription.status ===
-																				"active"
-																					? "canceled"
-																					: "active",
-																		}
-																	)
-																}>
-																<Calendar className='mr-2 h-4 w-4' />
-																{subscription.status ===
-																"active"
-																	? "Cancel"
-																	: "Activate"}
-															</DropdownMenuItem>
-															<DropdownMenuItem
-																onClick={() =>
-																	handleDeleteSubscription(
-																		subscription._id
-																	)
-																}>
-																<Ban className='mr-2 h-4 w-4' />
-																Delete
-															</DropdownMenuItem>
-														</DropdownMenuContent>
-													</DropdownMenu>
-												</TableCell>
-											</TableRow>
-										)
-									)}
-								</TableBody>
-							</Table>
-						</CardContent>
-					</Card>
-				</TabsContent>
-			</Tabs>
+													<MoreHorizontal className='h-4 w-4' />
+												</Button>
+											</DropdownMenuTrigger>
+											<DropdownMenuContent align='end'>
+												<DropdownMenuLabel>
+													Actions
+												</DropdownMenuLabel>
+												<DropdownMenuItem
+													onClick={() => {
+														setCurrentSubscription(
+															subscription
+														);
+														setIsEditSubOpen(true);
+													}}>
+													<Edit className='mr-2 h-4 w-4' />
+													Edit
+												</DropdownMenuItem>
+												<DropdownMenuItem
+													onClick={() =>
+														handleUpdateSubscription(
+															subscription._id,
+															{
+																status:
+																	subscription.status ===
+																	"active"
+																		? "canceled"
+																		: "active",
+															}
+														)
+													}>
+													<Calendar className='mr-2 h-4 w-4' />
+													{subscription.status ===
+													"active"
+														? "Cancel"
+														: "Activate"}
+												</DropdownMenuItem>
+												<DropdownMenuItem
+													onClick={() =>
+														handleDeleteSubscription(
+															subscription._id
+														)
+													}>
+													<Ban className='mr-2 h-4 w-4' />
+													Delete
+												</DropdownMenuItem>
+											</DropdownMenuContent>
+										</DropdownMenu>
+									</TableCell>
+								</TableRow>
+							))}
+						</TableBody>
+					</Table>
+				</CardContent>
+			</Card>
 
 			{/* Edit Subscription Dialog */}
 			<Dialog open={isEditSubOpen} onOpenChange={setIsEditSubOpen}>
