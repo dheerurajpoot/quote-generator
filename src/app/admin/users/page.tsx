@@ -314,8 +314,8 @@ export default function UsersPage() {
 					<DialogHeader>
 						<DialogTitle>Edit User</DialogTitle>
 						<DialogDescription>
-							Make changes to the user. Click save when you're
-							done.
+							Make changes to the user. Click save when
+							you&apos;re done.
 						</DialogDescription>
 					</DialogHeader>
 					{currentUser && (

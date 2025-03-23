@@ -5,20 +5,24 @@ export async function middleware(request: NextRequest) {
 
 	// Get token and userRole from cookies
 	const token = request.cookies.get("token")?.value || "";
-	const isAdmin = request.cookies.get("user_role")?.value === "admin";
+	const userRole = request.cookies.get("user_role")?.value || "";
+	const isAdmin = userRole === "admin";
 	const isBlocked = request.cookies.get("is_blocked")?.value === "true";
 
 	// Public paths (accessible without login)
 	const isPublicPath =
 		path === "/" ||
 		path === "/login" ||
-		path === "/register" ||
+		path === "/signup" ||
 		path === "/verifyemail" ||
-		path === "/blocked";
+		path === "/blocked" ||
+		path === "/about";
 
 	// Protected paths (require login)
 	const isProtectedPath =
-		path.startsWith("/admin") || path.startsWith("/dashboard");
+		path.startsWith("/dashboard") ||
+		path.startsWith("/api/subscriptions") ||
+		path.startsWith("/api/settings");
 
 	// Admin-only paths (require login and admin role)
 	const isAdminPath = path.startsWith("/admin");
@@ -29,7 +33,7 @@ export async function middleware(request: NextRequest) {
 	}
 
 	// Redirect logged-in users away from login/register pages
-	if (isPublicPath && token && path === "/login") {
+	if (isPublicPath && token && (path === "/login" || path === "/signup")) {
 		return NextResponse.redirect(new URL("/", request.url));
 	}
 
@@ -67,5 +71,7 @@ export const config = {
 		"/verifyemail",
 		"/api/settings/:path*",
 		"/dashboard/:path*",
+		"/api/subscriptions/:path*",
+		"/about",
 	],
 };
