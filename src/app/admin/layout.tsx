@@ -62,7 +62,7 @@ export default function AdminLayout({
 						<h1 className='text-xl font-bold'>QuoteArt Admin</h1>
 					</div>
 				</SidebarHeader>
-				<SidebarContent>
+				<SidebarContent className='ml-5 mt-2'>
 					<SidebarMenu>
 						<SidebarMenuItem>
 							<SidebarMenuButton asChild>

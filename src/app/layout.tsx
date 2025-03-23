@@ -5,6 +5,7 @@ import { Footer } from "@/components/footer";
 import { Header } from "@/components/header";
 import { AuthProvider } from "@/context/auth-context";
 import { SubscriptionProvider } from "@/context/subscription-context";
+import { Toaster } from "react-hot-toast";
 
 // Load Inter for Latin text
 const inter = Inter({
@@ -39,6 +40,7 @@ export default function RootLayout({
 						<Header />
 						<main className='flex-1'>{children}</main>
 						<Footer />
+						<Toaster position='top-right' />
 					</SubscriptionProvider>
 				</AuthProvider>
 			</body>

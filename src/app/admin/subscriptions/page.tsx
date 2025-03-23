@@ -1,6 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useAuth } from "@/context/auth-context";
+import { useRouter } from "next/navigation";
+import { toast } from "react-hot-toast";
 import {
 	Card,
 	CardContent,
@@ -26,14 +29,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import {
-	MoreHorizontal,
-	Search,
-	Edit,
-	RefreshCw,
-	Ban,
-	Calendar,
-} from "lucide-react";
+import { MoreHorizontal, Search, Edit, Ban, Calendar } from "lucide-react";
 import {
 	Dialog,
 	DialogContent,
@@ -52,224 +48,167 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-// Type for subscription status
-type SubscriptionStatus = "active" | "canceled" | "expired";
-type PaymentStatus = "successful" | "failed";
-
 interface Subscription {
-	id: string;
-	userId: string;
-	userName: string;
-	userEmail: string;
+	_id: string;
+	userId: {
+		_id: string;
+		name: string;
+		email: string;
+	};
 	planId: string;
-	status: SubscriptionStatus;
+	tier: string;
+	status: string;
 	currentPeriodEnd: string;
 	createdAt: string;
-	paymentMethod: string;
-	amount: number;
-	razorpayOrderId: string | null;
-	razorpayPaymentId: string | null;
+	razorpaySubscriptionId?: string;
 }
 
-interface Payment {
-	id: string;
-	subscriptionId: string;
-	userId: string;
-	userName: string;
-	amount: number;
-	status: PaymentStatus;
-	paymentMethod: string;
-	date: string;
-}
-
-// Sample subscription data
-const sampleSubscriptions: Subscription[] = [
-	{
-		id: "sub_1",
-		userId: "1",
-		userName: "John Doe",
-		userEmail: "john@example.com",
-		planId: "premium",
-		status: "active" as SubscriptionStatus,
-		currentPeriodEnd: "2023-12-15",
-		createdAt: "2023-01-15",
-		paymentMethod: "Credit Card",
-		amount: 499,
-		razorpayOrderId: "order_123456",
-		razorpayPaymentId: "pay_123456",
-	},
-	{
-		id: "sub_2",
-		userId: "2",
-		userName: "Jane Smith",
-		userEmail: "jane@example.com",
-		planId: "free",
-		status: "active" as SubscriptionStatus,
-		currentPeriodEnd: "2024-02-20",
-		createdAt: "2023-02-20",
-		paymentMethod: "N/A",
-		amount: 0,
-		razorpayOrderId: null,
-		razorpayPaymentId: null,
-	},
-	{
-		id: "sub_3",
-		userId: "3",
-		userName: "Admin User",
-		userEmail: "admin@example.com",
-		planId: "premium",
-		status: "active" as SubscriptionStatus,
-		currentPeriodEnd: "2023-12-10",
-		createdAt: "2022-12-10",
-		paymentMethod: "UPI",
-		amount: 499,
-		razorpayOrderId: "order_789012",
-		razorpayPaymentId: "pay_789012",
-	},
-	{
-		id: "sub_4",
-		userId: "4",
-		userName: "Blocked User",
-		userEmail: "blocked@example.com",
-		planId: "free",
-		status: "canceled" as SubscriptionStatus,
-		currentPeriodEnd: "2023-04-05",
-		createdAt: "2023-03-05",
-		paymentMethod: "N/A",
-		amount: 0,
-		razorpayOrderId: null,
-		razorpayPaymentId: null,
-	},
-	{
-		id: "sub_5",
-		userId: "5",
-		userName: "Sarah Johnson",
-		userEmail: "sarah@example.com",
-		planId: "premium",
-		status: "expired" as SubscriptionStatus,
-		currentPeriodEnd: "2023-05-12",
-		createdAt: "2023-04-12",
-		paymentMethod: "Net Banking",
-		amount: 499,
-		razorpayOrderId: "order_345678",
-		razorpayPaymentId: "pay_345678",
-	},
-];
-
-// Sample payment history
-const samplePayments: Payment[] = [
-	{
-		id: "pay_123456",
-		subscriptionId: "sub_1",
-		userId: "1",
-		userName: "John Doe",
-		amount: 499,
-		status: "successful",
-		paymentMethod: "Credit Card",
-		date: "2023-01-15",
-	},
-	{
-		id: "pay_789012",
-		subscriptionId: "sub_3",
-		userId: "3",
-		userName: "Admin User",
-		amount: 499,
-		status: "successful",
-		paymentMethod: "UPI",
-		date: "2022-12-10",
-	},
-	{
-		id: "pay_345678",
-		subscriptionId: "sub_5",
-		userId: "5",
-		userName: "Sarah Johnson",
-		amount: 499,
-		status: "successful",
-		paymentMethod: "Net Banking",
-		date: "2023-04-12",
-	},
-	{
-		id: "pay_901234",
-		subscriptionId: "sub_5",
-		userId: "5",
-		userName: "Sarah Johnson",
-		amount: 499,
-		status: "failed",
-		paymentMethod: "Credit Card",
-		date: "2023-05-12",
-	},
-];
-
-export default function AdminSubscriptionsPage() {
-	const [subscriptions, setSubscriptions] =
-		useState<Subscription[]>(sampleSubscriptions);
-	const [payments] = useState<Payment[]>(samplePayments);
+export default function SubscriptionsPage() {
+	const { user } = useAuth();
+	const router = useRouter();
+	const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
+	const [isLoading, setIsLoading] = useState(true);
+	const [error, setError] = useState<string | null>(null);
 	const [searchQuery, setSearchQuery] = useState("");
 	const [isEditSubOpen, setIsEditSubOpen] = useState(false);
 	const [currentSubscription, setCurrentSubscription] =
 		useState<Subscription | null>(null);
 	const [activeTab, setActiveTab] = useState("subscriptions");
 
+	useEffect(() => {
+		if (!user || user.role !== "admin") {
+			router.push("/unauthorized");
+			return;
+		}
+
+		fetchSubscriptions();
+	}, [user, router]);
+
+	const fetchSubscriptions = async () => {
+		try {
+			setIsLoading(true);
+			setError(null);
+
+			// If user is admin, fetch all subscriptions
+			if (user?.role === "admin") {
+				const response = await fetch("/api/subscriptions?userId=all");
+				if (!response.ok) {
+					const data = await response.json();
+					throw new Error(
+						data.error || "Failed to fetch subscriptions"
+					);
+				}
+				const data = await response.json();
+				setSubscriptions(data);
+			} else {
+				// If user is not admin, fetch only their subscriptions
+				const response = await fetch(
+					`/api/subscriptions?userId=${user?._id}`
+				);
+				if (!response.ok) {
+					const data = await response.json();
+					throw new Error(
+						data.error || "Failed to fetch subscriptions"
+					);
+				}
+				const data = await response.json();
+				setSubscriptions(data);
+			}
+		} catch (err) {
+			setError(
+				err instanceof Error
+					? err.message
+					: "Failed to fetch subscriptions"
+			);
+			toast.error("Failed to fetch subscriptions");
+		} finally {
+			setIsLoading(false);
+		}
+	};
+
+	const handleUpdateSubscription = async (
+		subscriptionId: string,
+		updates: Partial<Subscription>
+	) => {
+		try {
+			const response = await fetch("/api/subscriptions", {
+				method: "PUT",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify({ subscriptionId, updates }),
+			});
+
+			if (!response.ok) {
+				const data = await response.json();
+				throw new Error(data.error || "Failed to update subscription");
+			}
+
+			await fetchSubscriptions();
+			toast.success("Subscription updated successfully");
+		} catch (err) {
+			toast.error(
+				err instanceof Error
+					? err.message
+					: "Failed to update subscription"
+			);
+		}
+	};
+
+	const handleDeleteSubscription = async (subscriptionId: string) => {
+		if (!confirm("Are you sure you want to delete this subscription?")) {
+			return;
+		}
+
+		try {
+			const response = await fetch(
+				`/api/subscriptions?subscriptionId=${subscriptionId}`,
+				{
+					method: "DELETE",
+				}
+			);
+
+			if (!response.ok) {
+				const data = await response.json();
+				throw new Error(data.error || "Failed to delete subscription");
+			}
+
+			await fetchSubscriptions();
+			toast.success("Subscription deleted successfully");
+		} catch (err) {
+			toast.error(
+				err instanceof Error
+					? err.message
+					: "Failed to delete subscription"
+			);
+		}
+	};
+
 	// Filter subscriptions based on search query
 	const filteredSubscriptions = subscriptions.filter(
 		(sub) =>
-			sub.userName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-			sub.userEmail.toLowerCase().includes(searchQuery.toLowerCase()) ||
+			sub.userId.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+			sub.userId.email
+				.toLowerCase()
+				.includes(searchQuery.toLowerCase()) ||
 			sub.planId.toLowerCase().includes(searchQuery.toLowerCase())
 	);
 
-	// Filter payments based on search query
-	const filteredPayments = payments.filter(
-		(payment) =>
-			payment.userName
-				.toLowerCase()
-				.includes(searchQuery.toLowerCase()) ||
-			payment.paymentMethod
-				.toLowerCase()
-				.includes(searchQuery.toLowerCase())
-	);
-
-	// Handle editing a subscription
-	const handleEditSubscription = () => {
-		if (!currentSubscription) return;
-
-		const updatedSubscriptions = subscriptions.map((sub) =>
-			sub.id === currentSubscription.id ? currentSubscription : sub
+	if (isLoading) {
+		return (
+			<div className='flex items-center justify-center min-h-screen'>
+				<div className='animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500'></div>
+			</div>
 		);
-		setSubscriptions(updatedSubscriptions);
-		setIsEditSubOpen(false);
-		setCurrentSubscription(null);
-	};
+	}
 
-	// Handle canceling a subscription
-	const handleCancelSubscription = (subscription: Subscription) => {
-		const updatedSubscriptions = subscriptions.map((sub) =>
-			sub.id === subscription.id
-				? { ...sub, status: "canceled" as SubscriptionStatus }
-				: sub
+	if (error) {
+		return (
+			<div className='flex items-center justify-center min-h-screen'>
+				<div className='text-red-500'>{error}</div>
+			</div>
 		);
-		setSubscriptions(updatedSubscriptions);
-	};
-
-	// Handle extending a subscription
-	const handleExtendSubscription = (subscription: Subscription) => {
-		const currentDate = new Date(subscription.currentPeriodEnd);
-		const newDate = new Date(
-			currentDate.setDate(currentDate.getDate() + 30)
-		);
-		const formattedDate = newDate.toISOString().split("T")[0];
-
-		const updatedSubscriptions = subscriptions.map((sub) =>
-			sub.id === subscription.id
-				? {
-						...sub,
-						currentPeriodEnd: formattedDate,
-						status: "active" as SubscriptionStatus,
-				  }
-				: sub
-		);
-		setSubscriptions(updatedSubscriptions);
-	};
+	}
 
 	return (
 		<div className='space-y-6'>
@@ -296,7 +235,6 @@ export default function AdminSubscriptionsPage() {
 					<TabsTrigger value='subscriptions'>
 						Subscriptions
 					</TabsTrigger>
-					<TabsTrigger value='payments'>Payment History</TabsTrigger>
 				</TabsList>
 
 				<TabsContent value='subscriptions' className='space-y-4'>
@@ -319,7 +257,6 @@ export default function AdminSubscriptionsPage() {
 											Current Period End
 										</TableHead>
 										<TableHead>Created</TableHead>
-										<TableHead>Payment Method</TableHead>
 										<TableHead className='text-right'>
 											Actions
 										</TableHead>
@@ -328,17 +265,20 @@ export default function AdminSubscriptionsPage() {
 								<TableBody>
 									{filteredSubscriptions.map(
 										(subscription) => (
-											<TableRow key={subscription.id}>
+											<TableRow key={subscription._id}>
 												<TableCell>
 													<div>
 														<div className='font-medium'>
 															{
-																subscription.userName
+																subscription
+																	.userId.name
 															}
 														</div>
 														<div className='text-sm text-muted-foreground'>
 															{
-																subscription.userEmail
+																subscription
+																	.userId
+																	.email
 															}
 														</div>
 													</div>
@@ -351,42 +291,32 @@ export default function AdminSubscriptionsPage() {
 																? "secondary"
 																: "outline"
 														}>
-														{subscription.planId}
+														{subscription.tier}
 													</Badge>
 												</TableCell>
 												<TableCell>
-													{subscription.status ===
-													"active" ? (
-														<Badge
-															variant='outline'
-															className='bg-green-100 text-green-800 border-green-200'>
-															Active
-														</Badge>
-													) : subscription.status ===
-													  "canceled" ? (
-														<Badge
-															variant='outline'
-															className='bg-yellow-100 text-yellow-800 border-yellow-200'>
-															Canceled
-														</Badge>
-													) : (
-														<Badge
-															variant='outline'
-															className='bg-red-100 text-red-800 border-red-200'>
-															Expired
-														</Badge>
-													)}
+													<span
+														className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+															subscription.status ===
+															"active"
+																? "bg-green-100 text-green-800"
+																: subscription.status ===
+																  "canceled"
+																? "bg-yellow-100 text-yellow-800"
+																: "bg-red-100 text-red-800"
+														}`}>
+														{subscription.status}
+													</span>
 												</TableCell>
 												<TableCell>
-													{
+													{new Date(
 														subscription.currentPeriodEnd
-													}
+													).toLocaleDateString()}
 												</TableCell>
 												<TableCell>
-													{subscription.createdAt}
-												</TableCell>
-												<TableCell>
-													{subscription.paymentMethod}
+													{new Date(
+														subscription.createdAt
+													).toLocaleDateString()}
 												</TableCell>
 												<TableCell className='text-right'>
 													<DropdownMenu>
@@ -419,127 +349,38 @@ export default function AdminSubscriptionsPage() {
 															</DropdownMenuItem>
 															<DropdownMenuItem
 																onClick={() =>
-																	handleExtendSubscription(
-																		subscription
+																	handleUpdateSubscription(
+																		subscription._id,
+																		{
+																			status:
+																				subscription.status ===
+																				"active"
+																					? "canceled"
+																					: "active",
+																		}
 																	)
 																}>
 																<Calendar className='mr-2 h-4 w-4' />
-																Extend 30 Days
+																{subscription.status ===
+																"active"
+																	? "Cancel"
+																	: "Activate"}
 															</DropdownMenuItem>
-															{subscription.status ===
-																"active" && (
-																<DropdownMenuItem
-																	onClick={() =>
-																		handleCancelSubscription(
-																			subscription
-																		)
-																	}>
-																	<Ban className='mr-2 h-4 w-4' />
-																	Cancel
-																	Subscription
-																</DropdownMenuItem>
-															)}
-															{subscription.status !==
-																"active" && (
-																<DropdownMenuItem
-																	onClick={() => {
-																		const updatedSubscriptions =
-																			subscriptions.map(
-																				(
-																					sub
-																				) =>
-																					sub.id ===
-																					subscription.id
-																						? {
-																								...sub,
-																								status: "active" as SubscriptionStatus,
-																						  }
-																						: sub
-																			);
-																		setSubscriptions(
-																			updatedSubscriptions
-																		);
-																	}}>
-																	<RefreshCw className='mr-2 h-4 w-4' />
-																	Reactivate
-																</DropdownMenuItem>
-															)}
+															<DropdownMenuItem
+																onClick={() =>
+																	handleDeleteSubscription(
+																		subscription._id
+																	)
+																}>
+																<Ban className='mr-2 h-4 w-4' />
+																Delete
+															</DropdownMenuItem>
 														</DropdownMenuContent>
 													</DropdownMenu>
 												</TableCell>
 											</TableRow>
 										)
 									)}
-								</TableBody>
-							</Table>
-						</CardContent>
-					</Card>
-				</TabsContent>
-
-				<TabsContent value='payments' className='space-y-4'>
-					<Card>
-						<CardHeader>
-							<CardTitle>Payment History</CardTitle>
-							<CardDescription>
-								View all payment transactions
-							</CardDescription>
-						</CardHeader>
-						<CardContent>
-							<Table>
-								<TableHeader>
-									<TableRow>
-										<TableHead>Payment ID</TableHead>
-										<TableHead>User</TableHead>
-										<TableHead>Amount</TableHead>
-										<TableHead>Status</TableHead>
-										<TableHead>Payment Method</TableHead>
-										<TableHead>Date</TableHead>
-									</TableRow>
-								</TableHeader>
-								<TableBody>
-									{filteredPayments.map((payment) => (
-										<TableRow key={payment.id}>
-											<TableCell className='font-medium'>
-												{payment.id}
-											</TableCell>
-											<TableCell>
-												<div>
-													<div>
-														{payment.userName}
-													</div>
-													<div className='text-sm text-muted-foreground'>
-														Subscription:{" "}
-														{payment.subscriptionId}
-													</div>
-												</div>
-											</TableCell>
-											<TableCell>
-												₹{payment.amount}
-											</TableCell>
-											<TableCell>
-												{payment.status ===
-												"successful" ? (
-													<Badge
-														variant='outline'
-														className='bg-green-100 text-green-800 border-green-200'>
-														Successful
-													</Badge>
-												) : (
-													<Badge
-														variant='outline'
-														className='bg-red-100 text-red-800 border-red-200'>
-														Failed
-													</Badge>
-												)}
-											</TableCell>
-											<TableCell>
-												{payment.paymentMethod}
-											</TableCell>
-											<TableCell>
-												{payment.date}
-											</TableCell>
-										</TableRow>
-									))}
 								</TableBody>
 							</Table>
 						</CardContent>
@@ -594,9 +435,7 @@ export default function AdminSubscriptionsPage() {
 								</Label>
 								<Select
 									value={currentSubscription.status}
-									onValueChange={(
-										value: SubscriptionStatus
-									) =>
+									onValueChange={(value: string) =>
 										setCurrentSubscription({
 											...currentSubscription,
 											status: value,
@@ -640,7 +479,17 @@ export default function AdminSubscriptionsPage() {
 						</div>
 					)}
 					<DialogFooter>
-						<Button type='submit' onClick={handleEditSubscription}>
+						<Button
+							type='submit'
+							onClick={() => {
+								if (currentSubscription) {
+									handleUpdateSubscription(
+										currentSubscription._id,
+										currentSubscription
+									);
+								}
+								setIsEditSubOpen(false);
+							}}>
 							Save changes
 						</Button>
 					</DialogFooter>

@@ -97,36 +97,39 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
 			try {
 				setLoading(true);
 
-				// In a real app, fetch subscription from API
 				const response = await fetch(
 					`/api/subscriptions?userId=${user._id}`
 				);
 
 				if (!response.ok) {
-					throw new Error("Failed to fetch subscription");
+					const errorData = await response.json();
+					console.error("Subscription check failed:", errorData);
+					throw new Error(
+						errorData.error || "Failed to fetch subscription"
+					);
 				}
 
 				const data = await response.json();
+
+				// Handle empty subscription array
+				if (!data || data.length === 0) {
+					setSubscription(null);
+					setLoading(false);
+					return;
+				}
+
+				// Get the most recent subscription
+				const latestSubscription = data[0];
 				setSubscription({
-					...data,
-					currentPeriodEnd: new Date(data.currentPeriodEnd),
-					createdAt: new Date(data.createdAt),
+					...latestSubscription,
+					currentPeriodEnd: new Date(
+						latestSubscription.currentPeriodEnd
+					),
+					createdAt: new Date(latestSubscription.createdAt),
 				});
 			} catch (error) {
 				console.error("Subscription check failed:", error);
-
-				// Fallback to free subscription
-				setSubscription({
-					id: `sub_${Math.random().toString(36).substr(2, 9)}`,
-					userId: user._id,
-					planId: "free",
-					tier: "free",
-					status: "active",
-					currentPeriodEnd: new Date(
-						Date.now() + 365 * 24 * 60 * 60 * 1000
-					), // 1 year from now
-					createdAt: new Date(),
-				});
+				setSubscription(null);
 			} finally {
 				setLoading(false);
 			}
