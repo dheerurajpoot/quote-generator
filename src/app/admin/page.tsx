@@ -34,6 +34,16 @@ interface ChartData {
 	total: number;
 }
 
+interface Subscription {
+	_id: string;
+	userId: string;
+	tier: "free" | "premium";
+	status: "active" | "inactive" | "pending" | "cancelled";
+	currentPeriodEnd: string;
+	createdAt: string;
+	updatedAt: string;
+}
+
 export default function AdminDashboardPage() {
 	const [stats, setStats] = useState<DashboardStats>({
 		totalUsers: 0,
@@ -63,12 +73,14 @@ export default function AdminDashboardPage() {
 			}
 
 			const users = await usersResponse.json();
-			const subscriptions = await subscriptionsResponse.json();
+			const subscriptions: Subscription[] =
+				await subscriptionsResponse.json();
 
 			// Calculate total users and premium users
 			const totalUsers = users.length;
 			const premiumUsers = subscriptions.filter(
-				(sub: any) => sub.tier === "premium" && sub.status === "active"
+				(sub: Subscription) =>
+					sub.tier === "premium" && sub.status === "active"
 			).length;
 
 			// Calculate total revenue (assuming ₹69 per premium subscription)
