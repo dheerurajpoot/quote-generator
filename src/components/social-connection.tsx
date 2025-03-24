@@ -22,8 +22,6 @@ import type {
 	FacebookPageResponse,
 } from "@/types/facebook";
 import { initializeFacebookSDK } from "@/lib/facebook-sdk";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
 
 interface SocialConnection {
 	id: string;
