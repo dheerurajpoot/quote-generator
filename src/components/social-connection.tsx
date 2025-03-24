@@ -131,7 +131,6 @@ export function SocialConnections() {
 					window.FB.api<FacebookPagesResponse>(
 						"/me/accounts",
 						(response) => {
-							console.log("Facebook pages response:", response); // Debug log
 							if (response.error) {
 								reject(
 									new Error(
@@ -167,7 +166,6 @@ export function SocialConnections() {
 
 			// Get the first page (you might want to let users choose which page to connect)
 			const page = pagesResponse.data[0];
-			console.log("Selected Facebook page:", page); // Debug log
 
 			// Send the connection data to your backend
 			const apiResponse = await fetch("/api/social", {
@@ -192,7 +190,6 @@ export function SocialConnections() {
 			}
 
 			const data = await apiResponse.json();
-			console.log("Backend response:", data); // Debug log
 
 			// Add Facebook connection to state
 			const newConnection: SocialConnection = {
@@ -376,14 +373,36 @@ export function SocialConnections() {
 			setError("");
 			setSuccess("");
 
-			// Simulate API call
-			await new Promise((resolve) => setTimeout(resolve, 1000));
+			// Make API call to remove the connection
+			const response = await fetch(
+				`/api/social?userId=${user?._id}&platform=${platform}`,
+				{
+					method: "DELETE",
+					headers: {
+						"Content-Type": "application/json",
+					},
+				}
+			);
 
-			// Remove connection
+			const data = await response.json();
+
+			if (!response.ok) {
+				throw new Error(
+					data.error || `Failed to disconnect from ${platform}`
+				);
+			}
+
+			// Remove connection from state
 			setConnections((prev) =>
 				prev.filter((c) => c.platform !== platform)
 			);
-			setSuccess(`Successfully disconnected from ${platform}!`);
+
+			// Refresh connections to ensure UI is in sync with backend
+			await fetchConnections();
+
+			setSuccess(
+				data.message || `Successfully disconnected from ${platform}!`
+			);
 		} catch (err: unknown) {
 			if (err instanceof Error) {
 				setError(

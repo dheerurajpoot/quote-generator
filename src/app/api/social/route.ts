@@ -87,6 +87,23 @@ export async function POST(request: Request) {
 
 		// If this is a social media post request
 		if (platform && imageUrl && caption) {
+			console.log("Attempting to post to social media:", {
+				platform,
+				imageUrl,
+				caption,
+			});
+
+			// Validate image URL
+			try {
+				new URL(imageUrl);
+			} catch (e) {
+				console.error("Invalid image URL provided:", imageUrl);
+				return NextResponse.json(
+					{ error: "Invalid image URL provided" },
+					{ status: 400 }
+				);
+			}
+
 			// Get the user's social connection for the platform
 			const connection = await SocialConnection.findOne({
 				userId: new mongoose.Types.ObjectId(userId),
@@ -94,11 +111,20 @@ export async function POST(request: Request) {
 			});
 
 			if (!connection) {
+				console.log(
+					`No ${platform} connection found for user ${userId}`
+				);
 				return NextResponse.json(
 					{ error: `No ${platform} connection found` },
 					{ status: 400 }
 				);
 			}
+
+			console.log("Found social connection:", {
+				platform,
+				profileId: connection.profileId,
+				profileName: connection.profileName,
+			});
 
 			// Initialize Meta API with the connection's access token
 			const metaApi = new MetaApi({
@@ -107,36 +133,52 @@ export async function POST(request: Request) {
 
 			// Post to the appropriate platform
 			let result;
-			if (platform === "facebook") {
-				result = await metaApi.postToFacebook(
-					connection.profileId,
-					connection.accessToken,
-					imageUrl,
-					caption
-				);
-			} else if (platform === "instagram") {
-				result = await metaApi.postToInstagram(
-					connection.profileId,
-					connection.accessToken,
-					imageUrl,
-					caption
-				);
-			} else {
+			try {
+				if (platform === "facebook") {
+					result = await metaApi.postToFacebook(
+						connection.profileId,
+						connection.accessToken,
+						imageUrl,
+						caption
+					);
+				} else if (platform === "instagram") {
+					result = await metaApi.postToInstagram(
+						connection.profileId,
+						connection.accessToken,
+						imageUrl,
+						caption
+					);
+				} else {
+					return NextResponse.json(
+						{ error: "Unsupported platform" },
+						{ status: 400 }
+					);
+				}
+
+				console.log("Post successful:", result);
+
+				return NextResponse.json({
+					success: true,
+					platforms: {
+						[platform]: {
+							success: true,
+							url: result.url,
+						},
+					},
+				});
+			} catch (error) {
+				console.error(`Error posting to ${platform}:`, error);
 				return NextResponse.json(
-					{ error: "Unsupported platform" },
-					{ status: 400 }
+					{
+						error:
+							error instanceof Error
+								? error.message
+								: `Failed to post to ${platform}`,
+						details: error,
+					},
+					{ status: 500 }
 				);
 			}
-
-			return NextResponse.json({
-				success: true,
-				platforms: {
-					[platform]: {
-						success: true,
-						url: result.url,
-					},
-				},
-			});
 		}
 
 		return NextResponse.json({ error: "Invalid request" }, { status: 400 });
@@ -164,13 +206,43 @@ export async function DELETE(request: Request) {
 			);
 		}
 
-		// Delete connection
-		await SocialConnection.deleteOne({
+		console.log(
+			`Attempting to delete connection for userId: ${userId}, platform: ${platform}`
+		);
+
+		// Find the connection first to verify it exists
+		const connection = await SocialConnection.findOne({
 			userId: new mongoose.Types.ObjectId(userId),
 			platform,
 		});
 
-		return NextResponse.json({ success: true });
+		if (!connection) {
+			console.log("No connection found to delete");
+			return NextResponse.json(
+				{ error: "No connection found to delete" },
+				{ status: 404 }
+			);
+		}
+
+		// Delete connection
+		const result = await SocialConnection.deleteOne({
+			userId: new mongoose.Types.ObjectId(userId),
+			platform,
+		});
+
+		console.log("Delete result:", result);
+
+		if (result.deletedCount === 0) {
+			return NextResponse.json(
+				{ error: "Failed to delete connection" },
+				{ status: 500 }
+			);
+		}
+
+		return NextResponse.json({
+			success: true,
+			message: `Successfully disconnected ${platform} account`,
+		});
 	} catch (error) {
 		console.error("Error disconnecting social account:", error);
 		return NextResponse.json(

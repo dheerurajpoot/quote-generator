@@ -67,34 +67,68 @@ export class MetaApi {
 		imageUrl: string,
 		caption: string
 	) {
-		const formData = new FormData();
-		formData.append("url", imageUrl);
-		formData.append("caption", caption);
+		try {
+			console.log("Attempting to post to Facebook:", {
+				pageId,
+				imageUrl,
+				caption,
+			});
 
-		const response = await fetch(
-			`${this.baseUrl}/${pageId}/photos?access_token=${pageAccessToken}`,
-			{
-				method: "POST",
-				body: formData,
+			// Validate and encode the image URL
+			try {
+				new URL(imageUrl);
+			} catch (e) {
+				throw new Error("Invalid image URL provided");
 			}
-		);
 
-		if (!response.ok) {
-			const error = await response.json();
-			throw new Error(
-				`Failed to post to Facebook: ${error.error.message}`
+			const encodedImageUrl = encodeURIComponent(imageUrl);
+			const encodedCaption = encodeURIComponent(caption);
+
+			// First, try to upload the image
+			const formData = new URLSearchParams();
+			formData.append("url", encodedImageUrl);
+			formData.append("caption", encodedCaption);
+			formData.append("access_token", pageAccessToken);
+
+			console.log(
+				"Making request to Facebook API with URL:",
+				encodedImageUrl
 			);
+
+			const response = await fetch(`${this.baseUrl}/${pageId}/photos`, {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/x-www-form-urlencoded",
+				},
+				body: formData.toString(),
+			});
+
+			const responseData = await response.json();
+			console.log("Facebook API Response:", responseData);
+
+			if (!response.ok) {
+				throw new Error(
+					`Failed to post to Facebook: ${
+						responseData.error?.message || "Unknown error"
+					}`
+				);
+			}
+
+			// Get the post ID from the response
+			const postId = responseData.post_id || responseData.id;
+			if (!postId) {
+				throw new Error("No post ID received from Facebook");
+			}
+
+			return {
+				success: true,
+				postId: postId,
+				url: `https://facebook.com/${pageId}/posts/${postId}`,
+			};
+		} catch (error) {
+			console.error("Error posting to Facebook:", error);
+			throw error;
 		}
-
-		const result = await response.json();
-
-		return {
-			success: true,
-			postId: result.id,
-			url: `https://facebook.com/${pageId}/posts/${
-				result.post_id || result.id
-			}`,
-		};
 	}
 
 	// Post to Instagram business account
