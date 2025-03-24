@@ -4,12 +4,6 @@ import { User } from "@/models/user.model";
 import { connectDb } from "@/lib/dbconfig";
 import jwt from "jsonwebtoken";
 
-// Type for the token payload
-interface TokenData {
-	id: string;
-	name: string;
-}
-
 export async function POST(request: NextRequest) {
 	try {
 		await connectDb();
