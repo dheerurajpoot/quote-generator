@@ -13,88 +13,74 @@ interface TokenData {
 export async function POST(request: NextRequest) {
 	try {
 		await connectDb();
-		const reqBody = await request.json();
-		const { email, password }: { email: string; password: string } =
-			reqBody;
+		const { email, password } = await request.json();
+
+		if (!email || !password) {
+			return NextResponse.json(
+				{ message: "Email and password are required" },
+				{ status: 400 }
+			);
+		}
 
 		const user = await User.findOne({ email });
+
 		if (!user) {
 			return NextResponse.json(
-				{ message: "User does not exist with this email" },
+				{ message: "Invalid email or password" },
 				{ status: 400 }
 			);
 		}
 
-		// Optional email verification check
-		// if (!user.isVerified) {
-		//   return NextResponse.json(
-		//     { message: "Please verify your email first!" },
-		//     { status: 400 }
-		//   );
-		// }
-
-		const isValid = await bcryptjs.compare(password, user.password);
-		if (!isValid) {
+		// Check if email is verified
+		if (!user.isVerified) {
 			return NextResponse.json(
-				{ message: "Email or Password is incorrect" },
+				{
+					message: "Please verify your email before logging in",
+					success: false,
+				},
 				{ status: 400 }
 			);
 		}
 
-		const tokenData: TokenData = {
-			id: user._id.toString(),
-			name: user.email,
-		};
+		const validPassword = await bcryptjs.compare(password, user.password);
 
-		if (!process.env.TOKEN_SECRET) {
-			throw new Error(
-				"TOKEN_SECRET is not defined in environment variables"
+		if (!validPassword) {
+			return NextResponse.json(
+				{ message: "Invalid email or password" },
+				{ status: 400 }
 			);
 		}
 
-		const token = jwt.sign(tokenData, process.env.TOKEN_SECRET, {
-			expiresIn: "30d",
-		});
+		const token = jwt.sign(
+			{ userId: user._id },
+			process.env.TOKEN_SECRET!,
+			{
+				expiresIn: "1d",
+			}
+		);
 
-		// Response with cookie
 		const response = NextResponse.json({
-			message: "Login Successfully",
+			message: "Login successful",
 			success: true,
 			user: {
-				_id: user._id,
+				id: user._id,
 				name: user.name,
 				email: user.email,
-				role: user?.role,
-				token: token,
-				createdAt: user?.createdAt,
 			},
 		});
 
 		response.cookies.set("token", token, {
 			httpOnly: true,
-			sameSite: "strict",
 			secure: process.env.NODE_ENV === "production",
-			maxAge: 30 * 24 * 60 * 60, // 30 days
-		});
-
-		response.cookies.set("userRole", user.role, {
-			httpOnly: true,
 			sameSite: "strict",
-			secure: process.env.NODE_ENV === "production",
-			maxAge: 30 * 24 * 60 * 60,
+			maxAge: 86400, // 1 day
 		});
 
 		return response;
 	} catch (error: unknown) {
-		if (error instanceof Error) {
-			console.log(error);
-			return NextResponse.json(
-				{ message: error.message },
-				{ status: 500 }
-			);
-		}
+		console.error("Login error:", error);
 		return NextResponse.json(
-			{ message: "Internal Server Error" },
+			{ message: "An error occurred while logging in" },
 			{ status: 500 }
 		);
 	}
