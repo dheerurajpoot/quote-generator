@@ -8,6 +8,7 @@ import {
 	type ReactNode,
 } from "react";
 import axios from "axios";
+import toast from "react-hot-toast";
 
 export interface User {
 	_id: string;
@@ -81,18 +82,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 					}`; // 7 days
 				}
 
+				toast.success("Login successful!");
 				return true;
 			}
 			return false;
 		} catch (error: unknown) {
 			if (axios.isAxiosError(error)) {
-				console.error(
-					"SignIn Error:",
-					error.response?.data?.message || error.message
-				);
+				const errorMessage =
+					error.response?.data?.message || "Login failed";
+				toast.error(errorMessage);
+				console.error("SignIn Error:", errorMessage);
 			} else if (error instanceof Error) {
+				toast.error(error.message);
 				console.error("SignIn Error:", error.message);
 			} else {
+				toast.error("An unknown error occurred");
 				console.error("SignIn Error: Unknown error occurred");
 			}
 			return false;
@@ -111,18 +115,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 			});
 
 			if (res.data.success) {
+				toast.success(
+					res.data.message || "Account created successfully!"
+				);
 				return true;
 			}
 			return false;
 		} catch (error: unknown) {
 			if (axios.isAxiosError(error)) {
-				console.error(
-					"SignUp Error:",
-					error.response?.data?.message || error.message
-				);
+				const errorMessage =
+					error.response?.data?.message || "Signup failed";
+				toast.error(errorMessage);
+				console.error("SignUp Error:", errorMessage);
 			} else if (error instanceof Error) {
+				toast.error(error.message);
 				console.error("SignUp Error:", error.message);
 			} else {
+				toast.error("An unknown error occurred");
 				console.error("SignUp Error: Unknown error occurred");
 			}
 			return false;
@@ -140,15 +149,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 			document.cookie = "session=; path=/; max-age=0";
 			document.cookie = "user_role=; path=/; max-age=0";
 			setUser(null);
+			toast.success("Logged out successfully!");
 		} catch (error: unknown) {
 			if (axios.isAxiosError(error)) {
-				console.error(
-					"Sign out failed:",
-					error.response?.data?.message || error.message
-				);
+				const errorMessage =
+					error.response?.data?.message || "Logout failed";
+				toast.error(errorMessage);
+				console.error("Sign out failed:", errorMessage);
 			} else if (error instanceof Error) {
+				toast.error(error.message);
 				console.error("Sign out failed:", error.message);
 			} else {
+				toast.error("An unknown error occurred");
 				console.error("Sign out failed: Unknown error");
 			}
 		} finally {

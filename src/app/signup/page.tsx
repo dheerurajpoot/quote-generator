@@ -45,7 +45,9 @@ export default function SignupPage() {
 
 		const success = await signUp(name, email, password);
 		if (success) {
-			router.push("/login");
+			setTimeout(() => {
+				router.push("/login");
+			}, 3000);
 		} else {
 			setError("Failed to create account");
 		}
