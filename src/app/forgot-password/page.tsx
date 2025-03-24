@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 
 interface ApiResponse {
@@ -10,7 +9,6 @@ interface ApiResponse {
 }
 
 export default function ForgotPassword() {
-	const router = useRouter();
 	const [email, setEmail] = useState("");
 	const [message, setMessage] = useState("");
 	const [error, setError] = useState("");
