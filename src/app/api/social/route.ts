@@ -95,100 +95,110 @@ export async function POST(request: Request) {
 
 			// Validate image URL
 			try {
-				new URL(imageUrl);
-			} catch (e) {
-				console.log(e);
-				console.error("Invalid image URL provided:", imageUrl);
-				return NextResponse.json(
-					{ error: "Invalid image URL provided" },
-					{ status: 400 }
-				);
-			}
+				const url = new URL(imageUrl);
+				// Ensure the URL is using HTTPS
+				const cleanImageUrl = url
+					.toString()
+					.replace("http://", "https://");
 
-			// Get the user's social connection for the platform
-			const connection = await SocialConnection.findOne({
-				userId: new mongoose.Types.ObjectId(userId),
-				platform,
-			});
+				// Log the cleaned URL for debugging
+				console.log("Cleaned image URL:", cleanImageUrl);
 
-			if (!connection) {
-				console.log(
-					`No ${platform} connection found for user ${userId}`
-				);
-				return NextResponse.json(
-					{ error: `No ${platform} connection found` },
-					{ status: 400 }
-				);
-			}
+				// Get the user's social connection for the platform
+				const connection = await SocialConnection.findOne({
+					userId: new mongoose.Types.ObjectId(userId),
+					platform,
+				});
 
-			console.log("Found social connection:", {
-				platform,
-				profileId: connection.profileId,
-				profileName: connection.profileName,
-			});
-
-			// Initialize Meta API with the connection's access token
-			const metaApi = new MetaApi({
-				accessToken: connection.accessToken,
-			});
-
-			// Post to the appropriate platform
-			let result;
-			try {
-				if (platform === "facebook") {
-					console.log("Using Facebook connection:", {
-						profileId: connection.profileId,
-						accessToken: connection.accessToken
-							? "present"
-							: "missing",
-					});
-
-					if (!connection.accessToken) {
-						throw new Error("Facebook access token is missing");
-					}
-
-					result = await metaApi.postToFacebook(
-						connection.profileId,
-						connection.accessToken,
-						imageUrl,
-						caption
+				if (!connection) {
+					console.log(
+						`No ${platform} connection found for user ${userId}`
 					);
-				} else if (platform === "instagram") {
-					result = await metaApi.postToInstagram(
-						connection.profileId,
-						connection.accessToken,
-						imageUrl,
-						caption
-					);
-				} else {
 					return NextResponse.json(
-						{ error: "Unsupported platform" },
+						{ error: `No ${platform} connection found` },
 						{ status: 400 }
 					);
 				}
 
-				console.log("Post successful:", result);
-
-				return NextResponse.json({
-					success: true,
-					platforms: {
-						[platform]: {
-							success: true,
-							url: result.url,
-						},
-					},
+				console.log("Found social connection:", {
+					platform,
+					profileId: connection.profileId,
+					profileName: connection.profileName,
 				});
-			} catch (error) {
-				console.error(`Error posting to ${platform}:`, error);
+
+				// Initialize Meta API with the connection's access token
+				const metaApi = new MetaApi({
+					accessToken: connection.accessToken,
+				});
+
+				// Post to the appropriate platform
+				let result;
+				try {
+					if (platform === "facebook") {
+						console.log("Using Facebook connection:", {
+							profileId: connection.profileId,
+							accessToken: connection.accessToken
+								? "present"
+								: "missing",
+						});
+
+						if (!connection.accessToken) {
+							throw new Error("Facebook access token is missing");
+						}
+
+						result = await metaApi.postToFacebook(
+							connection.profileId,
+							connection.accessToken,
+							cleanImageUrl,
+							caption
+						);
+					} else if (platform === "instagram") {
+						result = await metaApi.postToInstagram(
+							connection.profileId,
+							connection.accessToken,
+							cleanImageUrl,
+							caption
+						);
+					} else {
+						return NextResponse.json(
+							{ error: "Unsupported platform" },
+							{ status: 400 }
+						);
+					}
+
+					console.log("Post successful:", result);
+
+					return NextResponse.json({
+						success: true,
+						platforms: {
+							[platform]: {
+								success: true,
+								url: result.url,
+							},
+						},
+					});
+				} catch (error) {
+					console.error(`Error posting to ${platform}:`, error);
+					return NextResponse.json(
+						{
+							error:
+								error instanceof Error
+									? error.message
+									: `Failed to post to ${platform}`,
+							details: error,
+						},
+						{ status: 500 }
+					);
+				}
+			} catch (e) {
+				console.error("Invalid image URL:", e);
 				return NextResponse.json(
 					{
-						error:
-							error instanceof Error
-								? error.message
-								: `Failed to post to ${platform}`,
-						details: error,
+						error: "Invalid image URL provided",
+						details:
+							e instanceof Error ? e.message : "Unknown error",
 					},
-					{ status: 500 }
+					{ status: 400 }
 				);
 			}
 		}

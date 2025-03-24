@@ -1,3 +1,5 @@
+import { downloadImage, cleanupImage, getAbsoluteUrl } from "./image-utils";
+
 export interface MetaApiConfig {
 	accessToken: string;
 	apiVersion?: string;
@@ -67,6 +69,8 @@ export class MetaApi {
 		imageUrl: string,
 		caption: string
 	) {
+		let localImageUrl: string | null = null;
+
 		try {
 			console.log("Attempting to post to Facebook:", {
 				pageId,
@@ -74,46 +78,17 @@ export class MetaApi {
 				caption,
 			});
 
-			// Validate and clean the image URL
-			let cleanImageUrl = imageUrl;
-			try {
-				const url = new URL(imageUrl);
-				// Ensure the URL is using HTTPS
-				cleanImageUrl = url.toString().replace("http://", "https://");
+			// Download the image to a local temp directory
+			localImageUrl = await downloadImage(imageUrl);
+			const absoluteImageUrl = getAbsoluteUrl(localImageUrl);
 
-				// Check if the URL is a direct image URL
-				const imageExtensions = [
-					".jpg",
-					".jpeg",
-					".png",
-					".gif",
-					".webp",
-				];
-				const hasImageExtension = imageExtensions.some((ext) =>
-					cleanImageUrl.toLowerCase().endsWith(ext)
-				);
-
-				if (!hasImageExtension) {
-					throw new Error("URL must point to a direct image file");
-				}
-			} catch (e) {
-				console.log(e);
-
-				throw new Error(
-					"Invalid image URL provided. URL must be a direct link to an image file."
-				);
-			}
+			console.log("Using local image URL:", absoluteImageUrl);
 
 			// First, try to upload the image
 			const formData = new URLSearchParams();
-			formData.append("url", cleanImageUrl);
+			formData.append("url", absoluteImageUrl);
 			formData.append("caption", caption);
 			formData.append("access_token", pageAccessToken);
-
-			console.log(
-				"Making request to Facebook API with cleaned URL:",
-				cleanImageUrl
-			);
 
 			// Use the correct endpoint for page photos
 			const response = await fetch(
@@ -131,11 +106,10 @@ export class MetaApi {
 			console.log("Facebook API Response:", responseData);
 
 			if (!response.ok) {
-				throw new Error(
-					`Failed to post to Facebook: ${
-						responseData.error?.message || "Unknown error"
-					}`
-				);
+				const errorMessage =
+					responseData.error?.message || "Unknown error";
+				console.error("Facebook API Error:", errorMessage);
+				throw new Error(`Failed to post to Facebook: ${errorMessage}`);
 			}
 
 			// Get the post ID from the response
@@ -152,6 +126,11 @@ export class MetaApi {
 		} catch (error) {
 			console.error("Error posting to Facebook:", error);
 			throw error;
+		} finally {
+			// Clean up the temporary image file
+			if (localImageUrl) {
+				cleanupImage(localImageUrl);
+			}
 		}
 	}
 
