@@ -42,7 +42,13 @@ interface SocialConnectionResponse {
 	profileImage?: string;
 }
 
-export function SocialConnections() {
+interface SocialConnectionsProps {
+	onPlatformsUpdate?: (platforms: string[]) => void;
+}
+
+export function SocialConnections({
+	onPlatformsUpdate,
+}: SocialConnectionsProps) {
 	const { user } = useAuth();
 	const [connections, setConnections] = useState<SocialConnection[]>([]);
 	const [loading, setLoading] = useState(true);
@@ -51,13 +57,22 @@ export function SocialConnections() {
 	const [isConnecting, setIsConnecting] = useState<Record<string, boolean>>(
 		{}
 	);
-	const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([]);
 
 	useEffect(() => {
 		if (user) {
 			fetchConnections();
 		}
 	}, [user]);
+
+	useEffect(() => {
+		// Notify parent component about connected platforms
+		if (onPlatformsUpdate) {
+			const connectedPlatforms = connections
+				.filter((conn) => conn.connected)
+				.map((conn) => conn.platform);
+			onPlatformsUpdate(connectedPlatforms);
+		}
+	}, [connections, onPlatformsUpdate]);
 
 	const fetchConnections = async () => {
 		try {
@@ -416,16 +431,6 @@ export function SocialConnections() {
 		}
 	};
 
-	const handlePlatformToggle = (platform: string) => {
-		if (selectedPlatforms.includes(platform)) {
-			setSelectedPlatforms(
-				selectedPlatforms.filter((p) => p !== platform)
-			);
-		} else {
-			setSelectedPlatforms([...selectedPlatforms, platform]);
-		}
-	};
-
 	if (loading) {
 		return (
 			<div className='flex justify-center py-8'>
@@ -622,43 +627,6 @@ export function SocialConnections() {
 						)}
 					</CardFooter>
 				</Card>
-			</div>
-
-			<div className='flex flex-col space-y-2'>
-				{connections.some((c) => c.platform === "facebook") && (
-					<div className='flex items-center space-x-2'>
-						<Checkbox
-							id='facebook'
-							checked={selectedPlatforms.includes("facebook")}
-							onCheckedChange={() =>
-								handlePlatformToggle("facebook")
-							}
-						/>
-						<Label
-							htmlFor='facebook'
-							className='flex items-center cursor-pointer'>
-							<Facebook className='h-4 w-4 text-blue-600 mr-2' />
-							Facebook
-						</Label>
-					</div>
-				)}
-				{connections.some((c) => c.platform === "instagram") && (
-					<div className='flex items-center space-x-2'>
-						<Checkbox
-							id='instagram'
-							checked={selectedPlatforms.includes("instagram")}
-							onCheckedChange={() =>
-								handlePlatformToggle("instagram")
-							}
-						/>
-						<Label
-							htmlFor='instagram'
-							className='flex items-center cursor-pointer'>
-							<Instagram className='h-4 w-4 text-pink-600 mr-2' />
-							Instagram
-						</Label>
-					</div>
-				)}
 			</div>
 		</div>
 	);

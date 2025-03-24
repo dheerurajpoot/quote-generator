@@ -55,9 +55,9 @@ export default function DashboardPage() {
 	return (
 		<div className='container mx-auto py-12'>
 			<div className='max-w-5xl mx-auto'>
-				<h1 className='text-3xl font-bold tracking-tight mb-6'>
-					Dashboard
-				</h1>
+				<div className='flex justify-between items-center mb-8'>
+					<h1 className='text-3xl font-bold'>Dashboard</h1>
+				</div>
 
 				{error && (
 					<Alert variant='destructive' className='mb-6'>

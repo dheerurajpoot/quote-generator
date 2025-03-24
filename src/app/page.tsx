@@ -7,7 +7,7 @@ import { ImageIcon, Type, Download } from "lucide-react";
 export default function Home() {
 	return (
 		<div className='flex flex-col min-h-[calc(100vh-8rem)]'>
-			<section className='w-full py-8 md:py-12 lg:py-24 bg-gradient-to-b from-background to-muted'>
+			{/* <section className='w-full py-8 md:py-12 lg:py-24 bg-gradient-to-b from-background to-muted'>
 				<div className='container mx-auto px-4 md:px-6'>
 					<div className='flex flex-col items-center space-y-4 text-center'>
 						<div className='space-y-2'>
@@ -22,7 +22,7 @@ export default function Home() {
 						</div>
 					</div>
 				</div>
-			</section>
+			</section> */}
 
 			<section
 				id='generator'

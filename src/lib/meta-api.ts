@@ -1,4 +1,4 @@
-import { downloadImage, cleanupImage, getAbsoluteUrl } from "./image-utils";
+import { uploadImage } from "./image-utils";
 
 export interface MetaApiConfig {
 	accessToken: string;
@@ -69,8 +69,6 @@ export class MetaApi {
 		imageUrl: string,
 		caption: string
 	) {
-		let localImageUrl: string | null = null;
-
 		try {
 			console.log("Attempting to post to Facebook:", {
 				pageId,
@@ -78,15 +76,13 @@ export class MetaApi {
 				caption,
 			});
 
-			// Download the image to a local temp directory
-			localImageUrl = await downloadImage(imageUrl);
-			const absoluteImageUrl = getAbsoluteUrl(localImageUrl);
-
-			console.log("Using local image URL:", absoluteImageUrl);
+			// Upload image to Cloudinary first
+			const cloudinaryUrl = await uploadImage(imageUrl);
+			console.log("Using Cloudinary URL:", cloudinaryUrl);
 
 			// First, try to upload the image
 			const formData = new URLSearchParams();
-			formData.append("url", absoluteImageUrl);
+			formData.append("url", cloudinaryUrl);
 			formData.append("caption", caption);
 			formData.append("access_token", pageAccessToken);
 
@@ -126,11 +122,6 @@ export class MetaApi {
 		} catch (error) {
 			console.error("Error posting to Facebook:", error);
 			throw error;
-		} finally {
-			// Clean up the temporary image file
-			if (localImageUrl) {
-				cleanupImage(localImageUrl);
-			}
 		}
 	}
 

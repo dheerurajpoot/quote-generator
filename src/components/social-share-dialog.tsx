@@ -37,17 +37,13 @@ export function SocialShareDialog({
 	open,
 	onOpenChange,
 	imageUrl,
-	quoteText,
-	author,
 }: SocialShareDialogProps) {
 	const { user } = useAuth();
 	const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([
 		"facebook",
 		"instagram",
 	]);
-	const [caption, setCaption] = useState(
-		`${quoteText}${author ? ` — ${author}` : ""}`
-	);
+	const [caption, setCaption] = useState("");
 	const [isPosting, setIsPosting] = useState(false);
 	const [error, setError] = useState("");
 	const [success, setSuccess] = useState("");

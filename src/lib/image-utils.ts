@@ -1,79 +1,47 @@
-import fs from "fs";
-import path from "path";
-import https from "https";
-import { v4 as uuidv4 } from "uuid";
+import { v2 as cloudinary } from "cloudinary";
 
-const TEMP_DIR = path.join(process.cwd(), "public", "temp");
+// Configure Cloudinary
+cloudinary.config({
+	cloud_name: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,
+	api_key: process.env.CLOUDINARY_API_KEY,
+	api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
-// Ensure temp directory exists
-if (!fs.existsSync(TEMP_DIR)) {
-	fs.mkdirSync(TEMP_DIR, { recursive: true });
-}
-
-export async function downloadImage(imageUrl: string): Promise<string> {
-	return new Promise((resolve, reject) => {
-		const fileName = `${uuidv4()}.jpg`;
-		const filePath = path.join(TEMP_DIR, fileName);
-		const file = fs.createWriteStream(filePath);
-
-		// Handle data URLs
-		if (imageUrl.startsWith("data:")) {
-			// Extract the base64 data from the data URL
-			const base64Data = imageUrl.split(",")[1];
-			const buffer = Buffer.from(base64Data, "base64");
-
-			file.write(buffer);
-			file.end();
-
-			file.on("finish", () => {
-				file.close();
-				resolve(`/temp/${fileName}`);
-			});
-
-			file.on("error", (err) => {
-				fs.unlink(filePath, () => {}); // Clean up file on error
-				reject(err);
-			});
-			return;
-		}
-
-		// Handle HTTPS URLs
-		const url = new URL(imageUrl);
-		if (url.protocol === "https:") {
-			https
-				.get(imageUrl, (response) => {
-					response.pipe(file);
-
-					file.on("finish", () => {
-						file.close();
-						resolve(`/temp/${fileName}`);
-					});
-				})
-				.on("error", (err) => {
-					fs.unlink(filePath, () => {}); // Clean up file on error
-					reject(err);
-				});
-		} else {
-			reject(
-				new Error(
-					`Unsupported protocol: ${url.protocol}. Only HTTPS and data URLs are supported.`
-				)
-			);
-		}
-	});
-}
-
-export function cleanupImage(publicUrl: string): void {
+export async function uploadImage(imageUrl: string): Promise<string> {
 	try {
-		const fileName = path.basename(publicUrl);
-		const filePath = path.join(TEMP_DIR, fileName);
+		console.log("Starting image upload to Cloudinary:", {
+			imageUrl: imageUrl.substring(0, 50) + "...", // Log truncated URL for security
+		});
 
-		if (fs.existsSync(filePath)) {
-			fs.unlinkSync(filePath);
+		// If it's a data URL, upload it directly
+		if (imageUrl.startsWith("data:")) {
+			const result = await cloudinary.uploader.upload(imageUrl, {
+				folder: "quote-generator",
+				resource_type: "auto",
+			});
+			console.log("Successfully uploaded data URL to Cloudinary");
+			return result.secure_url;
 		}
+
+		// If it's an HTTPS URL, upload it using the URL
+		const result = await cloudinary.uploader.upload(imageUrl, {
+			folder: "quote-generator",
+			resource_type: "auto",
+		});
+		console.log("Successfully uploaded URL to Cloudinary");
+		return result.secure_url;
 	} catch (error) {
-		console.error("Error cleaning up image:", error);
+		console.error("Error uploading image to Cloudinary:", error);
+		if (error instanceof Error) {
+			throw new Error(`Failed to upload image: ${error.message}`);
+		}
+		throw new Error("Failed to upload image");
 	}
+}
+
+// We don't need cleanup anymore as Cloudinary handles that
+export function cleanupImage(): void {
+	// No-op as Cloudinary handles cleanup
 }
 
 export function getAbsoluteUrl(publicUrl: string): string {

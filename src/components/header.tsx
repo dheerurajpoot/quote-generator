@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { QuoteIcon, ShieldAlert } from "lucide-react";
+import { QuoteIcon } from "lucide-react";
 import { useAuth } from "@/context/auth-context";
 import { useSubscription } from "@/context/subscription-context";
 import {
@@ -49,14 +49,6 @@ export function Header() {
 						className='text-sm font-medium flex items-center gap-1 transition-colors hover:text-primary'>
 						<span className='hidden md:inline'>Pricing</span>
 					</Link>
-					{isAdmin() && (
-						<Link
-							href='/admin'
-							className='text-sm font-medium flex items-center gap-1 transition-colors hover:text-primary'>
-							<ShieldAlert className='h-4 w-4' />
-							<span className='hidden md:inline'>Admin</span>
-						</Link>
-					)}
 				</nav>
 				<div className='flex items-center gap-2'>
 					{user ? (
