@@ -37,13 +37,22 @@ export function SocialShareDialog({
 	open,
 	onOpenChange,
 	imageUrl,
+	quoteText,
+	author,
 }: SocialShareDialogProps) {
 	const { user } = useAuth();
 	const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([
 		"facebook",
 		"instagram",
 	]);
-	const [caption, setCaption] = useState("");
+	const [caption, setCaption] = useState(() => {
+		// Initialize caption with quote text and author if available
+		let initialCaption = quoteText || "";
+		if (author) {
+			initialCaption += `\n\n- ${author}`;
+		}
+		return initialCaption;
+	});
 	const [isPosting, setIsPosting] = useState(false);
 	const [error, setError] = useState("");
 	const [success, setSuccess] = useState("");
@@ -159,7 +168,7 @@ export function SocialShareDialog({
 
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
-			<DialogContent className='sm:max-w-[500px]'>
+			<DialogContent className='sm:max-w-[600px]'>
 				<DialogHeader>
 					<DialogTitle>Share to Social Media</DialogTitle>
 					<DialogDescription>
@@ -184,11 +193,12 @@ export function SocialShareDialog({
 				{postResult ? (
 					<div className='space-y-4 py-4'>
 						<div className='flex items-center justify-center'>
-							<div className='w-32 h-32 bg-muted rounded-md overflow-hidden'>
+							<div className='w-full max-w-md aspect-square bg-muted rounded-md overflow-hidden'>
 								<img
 									src={imageUrl || "/placeholder.svg"}
 									alt='Quote'
-									className='w-full h-full object-cover'
+									className='w-full h-full object-contain'
+									style={{ imageRendering: "crisp-edges" }}
 								/>
 							</div>
 						</div>
@@ -288,11 +298,14 @@ export function SocialShareDialog({
 							</div>
 
 							<div className='flex items-center justify-center'>
-								<div className='w-32 h-32 bg-muted rounded-md overflow-hidden'>
+								<div className='w-full max-w-md aspect-square bg-muted rounded-md overflow-hidden'>
 									<img
 										src={imageUrl || "/placeholder.svg"}
 										alt='Quote'
-										className='w-full h-full object-cover'
+										className='w-full h-full object-contain'
+										style={{
+											imageRendering: "crisp-edges",
+										}}
 									/>
 								</div>
 							</div>

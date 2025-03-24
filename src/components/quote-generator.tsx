@@ -213,8 +213,19 @@ export default function QuoteGenerator() {
 			allowTaint: true,
 			useCORS: true,
 			scale: 2,
+			logging: false,
+			removeContainer: true,
+			backgroundColor: null,
+			onclone: (clonedDoc) => {
+				const clonedElement = clonedDoc.querySelector(
+					"[data-html2canvas-ignore]"
+				);
+				if (clonedElement) {
+					clonedElement.remove();
+				}
+			},
 		});
-		const dataUrl = canvas.toDataURL("image/png");
+		const dataUrl = canvas.toDataURL("image/png", 1.0);
 		setImageDataUrl(dataUrl);
 		return dataUrl;
 	};
@@ -257,7 +268,7 @@ export default function QuoteGenerator() {
 									<div className='relative z-10 flex flex-col items-center justify-center h-full w-full'>
 										<p
 											className={cn(
-												"mb-4 px-4 whitespace-pre-line",
+												"mb-4 px-4 whitespace-pre-line text-center",
 												fontFamily,
 												fontWeight
 											)}
@@ -267,6 +278,14 @@ export default function QuoteGenerator() {
 												maxWidth: "100%",
 												wordWrap: "break-word",
 												lineHeight: 1.4,
+												letterSpacing: "0.025em",
+												wordSpacing: "0.05em",
+												textRendering:
+													"optimizeLegibility",
+												WebkitFontSmoothing:
+													"antialiased",
+												MozOsxFontSmoothing:
+													"grayscale",
 											}}>
 											{quote}
 										</p>
@@ -274,7 +293,7 @@ export default function QuoteGenerator() {
 										{author && (
 											<p
 												className={cn(
-													"mt-2",
+													"mt-2 text-center",
 													fontFamily
 												)}
 												style={{
@@ -282,6 +301,14 @@ export default function QuoteGenerator() {
 													fontSize: `${
 														fontSize * 0.5
 													}px`,
+													letterSpacing: "0.025em",
+													wordSpacing: "0.05em",
+													textRendering:
+														"optimizeLegibility",
+													WebkitFontSmoothing:
+														"antialiased",
+													MozOsxFontSmoothing:
+														"grayscale",
 												}}>
 												— {author}
 											</p>
@@ -292,6 +319,13 @@ export default function QuoteGenerator() {
 												className='absolute bottom-4 right-4 text-sm opacity-70'
 												style={{
 													color: watermarkColor,
+													letterSpacing: "0.025em",
+													textRendering:
+														"optimizeLegibility",
+													WebkitFontSmoothing:
+														"antialiased",
+													MozOsxFontSmoothing:
+														"grayscale",
 												}}>
 												{watermark}
 											</p>
