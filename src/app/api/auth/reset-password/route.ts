@@ -4,6 +4,10 @@ import { connectDb } from "@/lib/dbconfig";
 import bcryptjs from "bcryptjs";
 import jwt from "jsonwebtoken";
 
+interface JwtError extends Error {
+	name: string;
+}
+
 export async function POST(request: NextRequest) {
 	try {
 		await connectDb();
@@ -23,9 +27,10 @@ export async function POST(request: NextRequest) {
 				userId: string;
 			};
 			console.log("Decoded token:", decoded);
-		} catch (error: any) {
+		} catch (error: unknown) {
 			console.error("Token verification error:", error);
-			if (error.name === "TokenExpiredError") {
+			const jwtError = error as JwtError;
+			if (jwtError.name === "TokenExpiredError") {
 				return NextResponse.json(
 					{ message: "Reset token has expired" },
 					{ status: 400 }
@@ -93,7 +98,7 @@ export async function POST(request: NextRequest) {
 			message: "Password reset successfully",
 			success: true,
 		});
-	} catch (error: any) {
+	} catch (error: unknown) {
 		console.error("Reset password error:", error);
 		return NextResponse.json(
 			{ message: "An error occurred while resetting your password" },

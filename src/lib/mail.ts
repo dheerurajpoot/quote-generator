@@ -3,7 +3,21 @@ import nodemailer from "nodemailer";
 import { User } from "@/models/user.model";
 import { forgotMailTemplate, verifyMailTemplate } from "./mail-templates";
 
-export const sendMail = async ({ email, emailType, userId }: any) => {
+interface MailOptions {
+	email: string;
+	emailType: "VERIFY" | "RESET";
+	userId: string;
+}
+
+interface ContactFormData {
+	name?: string;
+	email?: string;
+	phone?: string;
+	subject?: string;
+	message?: string;
+}
+
+export const sendMail = async ({ email, emailType, userId }: MailOptions) => {
 	try {
 		const token = jwt.sign({ userId: userId }, process.env.TOKEN_SECRET!, {
 			expiresIn: "1h",
@@ -53,8 +67,11 @@ export const sendMail = async ({ email, emailType, userId }: any) => {
 
 		const mailResponse = await transporter.sendMail(mailOptions);
 		return mailResponse;
-	} catch (error: any) {
+	} catch (error: unknown) {
 		console.error("Mail sending error:", error);
-		throw new Error(`Error sending email: ${error.message}`);
+		if (error instanceof Error) {
+			throw new Error(`Error sending email: ${error.message}`);
+		}
+		throw new Error("Error sending email: Unknown error");
 	}
 };

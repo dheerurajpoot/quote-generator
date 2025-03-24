@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
 				"If an account exists with this email, a password reset link will be sent.",
 			success: true,
 		});
-	} catch (error: any) {
+	} catch (error: unknown) {
 		console.error("Forgot password error:", error);
 		return NextResponse.json(
 			{ message: "An error occurred while processing your request" },

@@ -1,5 +1,13 @@
+interface ContactFormData {
+	name?: string;
+	email?: string;
+	phone?: string;
+	subject?: string;
+	message?: string;
+}
+
 // forget password mail template
-export const forgotMailTemplate = (token: string) => {
+export const forgotMailTemplate = (token: string): string => {
 	return `
 <!DOCTYPE html>
 <html lang="en">
@@ -76,7 +84,7 @@ export const forgotMailTemplate = (token: string) => {
 };
 
 // verify mail template
-export const verifyMailTemplate = (token: string) => {
+export const verifyMailTemplate = (token: string): string => {
 	return `
 <!DOCTYPE html>
 <html lang="en">
@@ -142,7 +150,7 @@ export const verifyMailTemplate = (token: string) => {
 };
 
 // new contact mail template
-export const contactMail = (contact: any) => {
+export const contactMail = (contact: ContactFormData): string => {
 	return `
 <!DOCTYPE html>
 <html lang="en">
