@@ -6,6 +6,7 @@ import { Header } from "@/components/header";
 import { AuthProvider } from "@/context/auth-context";
 import { SubscriptionProvider } from "@/context/subscription-context";
 import { Toaster } from "react-hot-toast";
+import { defaultMetadata } from "@/lib/metadata";
 
 // Load Inter for Latin text
 const inter = Inter({
@@ -20,11 +21,7 @@ const poppins = Poppins({
 	variable: "--font-poppins",
 });
 
-export const metadata = {
-	title: "QuoteArt - Create Beautiful Quote Images",
-	description:
-		"Create and customize beautiful quote images with custom backgrounds, fonts, and styles",
-};
+export const metadata = defaultMetadata;
 
 export default function RootLayout({
 	children,
