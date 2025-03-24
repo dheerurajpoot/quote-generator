@@ -1,17 +1,43 @@
 import { connectDb } from "@/lib/dbconfig";
 import { Subscription } from "@/models/subscription.model";
 import { NextResponse } from "next/server";
+import crypto from "crypto";
+import { createRazorpaySubscription } from "@/lib/razorpay";
+
+// Verify Razorpay webhook signature
+function verifyWebhookSignature(
+	body: string,
+	signature: string,
+	secret: string
+): boolean {
+	const hmac = crypto.createHmac("sha256", secret);
+	hmac.update(body);
+	const calculatedSignature = hmac.digest("hex");
+	return calculatedSignature === signature;
+}
 
 export async function POST(req: Request) {
 	try {
-		const body = await req.json();
-		const { payload, event } = body;
+		const body = await req.text();
+		const signature = req.headers.get("x-razorpay-signature");
 
-		// Verify webhook signature (in a production environment)
-		// const signature = req.headers.get('x-razorpay-signature');
-		// if (!verifyWebhookSignature(JSON.stringify(body), signature)) {
-		//   return new NextResponse('Invalid signature', { status: 400 });
-		// }
+		if (!signature) {
+			return new NextResponse("Missing signature", { status: 400 });
+		}
+
+		// Verify webhook signature
+		if (
+			!verifyWebhookSignature(
+				body,
+				signature,
+				process.env.RAZORPAY_WEBHOOK_SECRET!
+			)
+		) {
+			return new NextResponse("Invalid signature", { status: 400 });
+		}
+
+		const payload = JSON.parse(body);
+		const { event } = payload;
 
 		await connectDb();
 
@@ -32,6 +58,26 @@ export async function POST(req: Request) {
 					subscription.status = "active";
 					subscription.updatedAt = new Date();
 					await subscription.save();
+
+					// Create Razorpay subscription for recurring payments
+					if (subscription.planId === "premium") {
+						try {
+							const razorpaySubscription =
+								await createRazorpaySubscription(
+									"premium_plan",
+									subscription.userId.toString(),
+									12 // 12 months
+								);
+							subscription.razorpaySubscriptionId =
+								razorpaySubscription.id;
+							await subscription.save();
+						} catch (error) {
+							console.error(
+								"Error creating Razorpay subscription:",
+								error
+							);
+						}
+					}
 				}
 				break;
 
@@ -105,6 +151,27 @@ export async function POST(req: Request) {
 					completedSubscription.status = "expired";
 					completedSubscription.updatedAt = new Date();
 					await completedSubscription.save();
+				}
+				break;
+
+			case "subscription.updated":
+				// Subscription has been updated
+				const updatedSubscriptionId = payload.subscription.entity.id;
+
+				// Find subscription by Razorpay subscription ID
+				const updatedSubscription = await Subscription.findOne({
+					razorpaySubscriptionId: updatedSubscriptionId,
+				});
+
+				if (updatedSubscription) {
+					// Update subscription details
+					updatedSubscription.status =
+						payload.subscription.entity.status;
+					updatedSubscription.currentPeriodEnd = new Date(
+						payload.subscription.entity.current_end * 1000
+					);
+					updatedSubscription.updatedAt = new Date();
+					await updatedSubscription.save();
 				}
 				break;
 		}

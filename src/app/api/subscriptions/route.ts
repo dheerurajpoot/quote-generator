@@ -27,9 +27,10 @@ export async function GET(request: Request) {
 
 		// Verify token and get user data
 		const decoded = jwt.verify(token, process.env.TOKEN_SECRET!) as {
-			id: string;
+			userId: string;
 		};
-		const userId = decoded.id;
+
+		const userId = decoded.userId;
 
 		await connectDb();
 		const { searchParams } = new URL(request.url);
@@ -124,12 +125,13 @@ export async function POST(request: Request) {
 			);
 		}
 
-		// For free plan, just create a subscription record
-		if (planId === "free") {
-			const existingSubscription = await Subscription.findOne({
-				userId: new mongoose.Types.ObjectId(userId),
-			});
+		// Find existing subscription
+		const existingSubscription = await Subscription.findOne({
+			userId: new mongoose.Types.ObjectId(userId),
+		});
 
+		// For free plan
+		if (planId === "free") {
 			if (existingSubscription) {
 				// If they have a Razorpay subscription, cancel it
 				if (existingSubscription.razorpaySubscriptionId) {
@@ -191,7 +193,7 @@ export async function POST(request: Request) {
 			});
 		}
 
-		// For premium plan, create a Razorpay order
+		// For premium plan
 		if (planId === "premium") {
 			// Check if user already has a Razorpay customer ID
 			if (!user.razorpayCustomerId) {
@@ -213,10 +215,6 @@ export async function POST(request: Request) {
 			);
 
 			// Create or update subscription record
-			const existingSubscription = await Subscription.findOne({
-				userId: new mongoose.Types.ObjectId(userId),
-			});
-
 			if (existingSubscription) {
 				existingSubscription.planId = "premium";
 				existingSubscription.tier = "premium";

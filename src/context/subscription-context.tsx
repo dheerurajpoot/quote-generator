@@ -104,16 +104,70 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
 				if (!response.ok) {
 					const errorData = await response.json();
 					console.error("Subscription check failed:", errorData);
+
+					// If user not found, create a free subscription
+					if (response.status === 404) {
+						const createResponse = await fetch(
+							"/api/subscriptions",
+							{
+								method: "POST",
+								headers: {
+									"Content-Type": "application/json",
+								},
+								body: JSON.stringify({
+									userId: user._id,
+									planId: "free",
+								}),
+							}
+						);
+
+						if (createResponse.ok) {
+							const newSubscription = await createResponse.json();
+							setSubscription({
+								...newSubscription,
+								currentPeriodEnd: new Date(
+									newSubscription.currentPeriodEnd
+								),
+								createdAt: new Date(newSubscription.createdAt),
+							});
+							setLoading(false);
+							return;
+						}
+					}
 					throw new Error(
 						errorData.error || "Failed to fetch subscription"
 					);
 				}
 
 				const data = await response.json();
+				console.log("Subscription data:", data);
 
 				// Handle empty subscription array
 				if (!data || data.length === 0) {
-					setSubscription(null);
+					// Create a free subscription for new users
+					const createResponse = await fetch("/api/subscriptions", {
+						method: "POST",
+						headers: {
+							"Content-Type": "application/json",
+						},
+						body: JSON.stringify({
+							userId: user._id,
+							planId: "free",
+						}),
+					});
+
+					if (createResponse.ok) {
+						const newSubscription = await createResponse.json();
+						setSubscription({
+							...newSubscription,
+							currentPeriodEnd: new Date(
+								newSubscription.currentPeriodEnd
+							),
+							createdAt: new Date(newSubscription.createdAt),
+						});
+					} else {
+						setSubscription(null);
+					}
 					setLoading(false);
 					return;
 				}
