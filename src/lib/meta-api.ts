@@ -74,34 +74,58 @@ export class MetaApi {
 				caption,
 			});
 
-			// Validate and encode the image URL
+			// Validate and clean the image URL
+			let cleanImageUrl = imageUrl;
 			try {
-				new URL(imageUrl);
-			} catch (e) {
-				throw new Error("Invalid image URL provided");
-			}
+				const url = new URL(imageUrl);
+				// Ensure the URL is using HTTPS
+				cleanImageUrl = url.toString().replace("http://", "https://");
 
-			const encodedImageUrl = encodeURIComponent(imageUrl);
-			const encodedCaption = encodeURIComponent(caption);
+				// Check if the URL is a direct image URL
+				const imageExtensions = [
+					".jpg",
+					".jpeg",
+					".png",
+					".gif",
+					".webp",
+				];
+				const hasImageExtension = imageExtensions.some((ext) =>
+					cleanImageUrl.toLowerCase().endsWith(ext)
+				);
+
+				if (!hasImageExtension) {
+					throw new Error("URL must point to a direct image file");
+				}
+			} catch (e) {
+				console.log(e);
+
+				throw new Error(
+					"Invalid image URL provided. URL must be a direct link to an image file."
+				);
+			}
 
 			// First, try to upload the image
 			const formData = new URLSearchParams();
-			formData.append("url", encodedImageUrl);
-			formData.append("caption", encodedCaption);
+			formData.append("url", cleanImageUrl);
+			formData.append("caption", caption);
 			formData.append("access_token", pageAccessToken);
 
 			console.log(
-				"Making request to Facebook API with URL:",
-				encodedImageUrl
+				"Making request to Facebook API with cleaned URL:",
+				cleanImageUrl
 			);
 
-			const response = await fetch(`${this.baseUrl}/${pageId}/photos`, {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/x-www-form-urlencoded",
-				},
-				body: formData.toString(),
-			});
+			// Use the correct endpoint for page photos
+			const response = await fetch(
+				`${this.baseUrl}/${pageId}/photos?access_token=${pageAccessToken}`,
+				{
+					method: "POST",
+					headers: {
+						"Content-Type": "application/x-www-form-urlencoded",
+					},
+					body: formData.toString(),
+				}
+			);
 
 			const responseData = await response.json();
 			console.log("Facebook API Response:", responseData);

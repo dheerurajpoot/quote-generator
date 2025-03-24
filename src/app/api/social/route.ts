@@ -97,6 +97,7 @@ export async function POST(request: Request) {
 			try {
 				new URL(imageUrl);
 			} catch (e) {
+				console.log(e);
 				console.error("Invalid image URL provided:", imageUrl);
 				return NextResponse.json(
 					{ error: "Invalid image URL provided" },
@@ -135,6 +136,17 @@ export async function POST(request: Request) {
 			let result;
 			try {
 				if (platform === "facebook") {
+					console.log("Using Facebook connection:", {
+						profileId: connection.profileId,
+						accessToken: connection.accessToken
+							? "present"
+							: "missing",
+					});
+
+					if (!connection.accessToken) {
+						throw new Error("Facebook access token is missing");
+					}
+
 					result = await metaApi.postToFacebook(
 						connection.profileId,
 						connection.accessToken,
