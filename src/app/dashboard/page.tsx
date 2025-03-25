@@ -185,6 +185,20 @@ export default function DashboardPage() {
 												</p>
 											</div>
 										</div>
+										{subscription?.tier === "premium" &&
+											subscription?.status ===
+												"active" && (
+												<div className='pt-4'>
+													<Button
+														variant='destructive'
+														onClick={
+															handleCancelSubscription
+														}
+														className='w-full md:w-auto'>
+														Cancel Subscription
+													</Button>
+												</div>
+											)}
 									</div>
 								) : (
 									<div className='text-center py-8'>
