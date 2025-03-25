@@ -250,7 +250,7 @@ export async function POST(request: Request) {
 			}
 
 			// Create new premium subscription
-			const newSubscription = await Subscription.create({
+			await Subscription.create({
 				userId: new mongoose.Types.ObjectId(userId),
 				planId: "premium",
 				tier: "premium",
