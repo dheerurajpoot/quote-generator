@@ -144,8 +144,8 @@ export default function AdminSettingsPage() {
 						</Label>
 					</div>
 					<p className='text-sm text-muted-foreground'>
-						When disabled, users won't be able to share quotes to
-						social media platforms.
+						When disabled, users won&apos;t be able to share quotes
+						to social media platforms.
 					</p>
 				</CardContent>
 			</Card>

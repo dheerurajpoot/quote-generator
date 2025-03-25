@@ -85,10 +85,7 @@ export default function QuoteGenerator() {
 	const router = useRouter();
 	const { user } = useAuth();
 	const { canPost, canSearchImages } = useSubscription();
-	const {
-		isEnabled: isSocialSharingEnabled,
-		isLoading: isSocialConfigLoading,
-	} = useSocialSharing();
+	const { isEnabled: isSocialSharingEnabled } = useSocialSharing();
 	const [quote, setQuote] = useState("Enter your quote text here...");
 	const [author, setAuthor] = useState("");
 	const [watermark, setWatermark] = useState("@quote_art");

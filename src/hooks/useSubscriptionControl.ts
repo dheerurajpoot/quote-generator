@@ -1,5 +1,11 @@
 import { useState, useEffect } from "react";
 
+interface Config {
+	key: string;
+	value: boolean;
+	description?: string;
+}
+
 export function useSubscriptionControl() {
 	const [isEnabled, setIsEnabled] = useState(true);
 	const [isLoading, setIsLoading] = useState(true);
@@ -16,7 +22,7 @@ export function useSubscriptionControl() {
 			}
 			const configs = await response.json();
 			const subscriptionConfig = configs.find(
-				(config: any) => config.key === "subscriptionEnabled"
+				(config: Config) => config.key === "subscriptionEnabled"
 			);
 			setIsEnabled(subscriptionConfig?.value ?? true);
 		} catch (error) {

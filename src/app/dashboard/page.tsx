@@ -1,27 +1,24 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { useSubscription } from "@/context/subscription-context";
 import { Button } from "@/components/ui/button";
 import {
 	Card,
 	CardContent,
 	CardDescription,
-	CardFooter,
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Check, AlertCircle, Loader2, ImageIcon, Lock } from "lucide-react";
+import { Check, AlertCircle, ImageIcon, Lock } from "lucide-react";
 import { SocialConnections } from "@/components/social-connection";
 import Link from "next/link";
 import { useSocialSharing } from "@/hooks/useSocialSharing";
 
 export default function DashboardPage() {
-	const router = useRouter();
 	const {
 		subscription,
 		plans,
@@ -30,7 +27,6 @@ export default function DashboardPage() {
 		canSearchImages,
 	} = useSubscription();
 	const { isEnabled: isSocialSharingEnabled } = useSocialSharing();
-	const [isProcessing, setIsProcessing] = useState(false);
 	const [error, setError] = useState("");
 	const [success, setSuccess] = useState("");
 
@@ -41,7 +37,6 @@ export default function DashboardPage() {
 
 		setError("");
 		setSuccess("");
-		setIsProcessing(true);
 
 		try {
 			const result = await cancelSubscription();
@@ -55,8 +50,6 @@ export default function DashboardPage() {
 		} catch (err) {
 			console.log(err);
 			setError("An error occurred. Please try again.");
-		} finally {
-			setIsProcessing(false);
 		}
 	};
 

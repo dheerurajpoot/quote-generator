@@ -1,10 +1,14 @@
 import { useState, useEffect } from "react";
-import { useAuth } from "@/context/auth-context";
+
+interface Config {
+	key: string;
+	value: boolean;
+	description?: string;
+}
 
 export function useSocialSharing() {
 	const [isEnabled, setIsEnabled] = useState(true);
 	const [isLoading, setIsLoading] = useState(true);
-	const { user } = useAuth();
 
 	useEffect(() => {
 		const fetchConfig = async () => {
@@ -14,7 +18,7 @@ export function useSocialSharing() {
 
 				const configs = await response.json();
 				const socialSharingConfig = configs.find(
-					(config: any) => config.key === "socialSharingEnabled"
+					(config: Config) => config.key === "socialSharingEnabled"
 				);
 				setIsEnabled(socialSharingConfig?.value ?? true);
 			} catch (error) {

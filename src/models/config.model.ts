@@ -1,8 +1,10 @@
 import mongoose, { Schema } from "mongoose";
 
+type ConfigValue = string | number | boolean | null | object;
+
 export interface IConfig extends Document {
 	key: string;
-	value: any;
+	value: ConfigValue;
 	description?: string;
 	updatedAt: Date;
 }
