@@ -41,6 +41,7 @@ import { useAuth } from "@/context/auth-context";
 import { useSubscription } from "@/context/subscription-context";
 import { useRouter } from "next/navigation";
 import { SocialShareDialog } from "./social-share-dialog";
+import { useSocialSharing } from "@/hooks/useSocialSharing";
 
 const DEFAULT_BACKGROUNDS = [
 	"/img1.jpg?height=600&width=600",
@@ -84,6 +85,10 @@ export default function QuoteGenerator() {
 	const router = useRouter();
 	const { user } = useAuth();
 	const { canPost, canSearchImages } = useSubscription();
+	const {
+		isEnabled: isSocialSharingEnabled,
+		isLoading: isSocialConfigLoading,
+	} = useSocialSharing();
 	const [quote, setQuote] = useState("Enter your quote text here...");
 	const [author, setAuthor] = useState("");
 	const [watermark, setWatermark] = useState("@quote_art");
@@ -192,6 +197,10 @@ export default function QuoteGenerator() {
 		if (!canPost()) {
 			router.push("/pricing");
 			return;
+		}
+
+		if (!isSocialSharingEnabled) {
+			return; // Don't show social sharing dialog if disabled
 		}
 
 		if (!imageDataUrl && canvasRef.current) {
@@ -341,22 +350,24 @@ export default function QuoteGenerator() {
 								<Download className='mr-2 h-4 w-4' />
 								Download Quote Image
 							</Button>
-							<Button
-								onClick={handleSocialShare}
-								variant='outline'
-								className='w-full sm:w-auto'>
-								{canPost() ? (
-									<>
-										<Share2 className='mr-2 h-4 w-4' />
-										Share to Social Media
-									</>
-								) : (
-									<>
-										<Lock className='mr-2 h-4 w-4' />
-										Upgrade to Share
-									</>
-								)}
-							</Button>
+							{isSocialSharingEnabled && (
+								<Button
+									onClick={handleSocialShare}
+									variant='outline'
+									className='w-full sm:w-auto'>
+									{canPost() ? (
+										<>
+											<Share2 className='mr-2 h-4 w-4' />
+											Share to Social Media
+										</>
+									) : (
+										<>
+											<Lock className='mr-2 h-4 w-4' />
+											Upgrade to Share
+										</>
+									)}
+								</Button>
+							)}
 						</CardFooter>
 					</Card>
 				</div>
