@@ -14,7 +14,12 @@ export interface ISubscription extends Document {
 }
 
 const SubscriptionSchema = new Schema<ISubscription>({
-	userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
+	userId: {
+		type: Schema.Types.ObjectId,
+		ref: "User",
+		required: true,
+		index: true,
+	},
 	planId: { type: String, required: true },
 	tier: { type: String, enum: ["free", "premium"], required: true },
 	status: {
@@ -29,6 +34,12 @@ const SubscriptionSchema = new Schema<ISubscription>({
 	createdAt: { type: Date, default: Date.now },
 	updatedAt: { type: Date, default: Date.now },
 });
+
+// Add a compound index to ensure one active subscription per user
+SubscriptionSchema.index(
+	{ userId: 1, status: 1 },
+	{ unique: true, partialFilterExpression: { status: "active" } }
+);
 
 export const Subscription =
 	mongoose.models.Subscription ||

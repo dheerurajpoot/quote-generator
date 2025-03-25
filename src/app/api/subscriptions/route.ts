@@ -125,13 +125,28 @@ export async function POST(request: Request) {
 			);
 		}
 
-		// Find existing subscription
+		// Find existing active subscription
 		const existingSubscription = await Subscription.findOne({
 			userId: new mongoose.Types.ObjectId(userId),
+			status: "active",
 		});
 
 		// For free plan
 		if (planId === "free") {
+			// If user has an active premium subscription, prevent conversion
+			if (
+				existingSubscription &&
+				existingSubscription.tier === "premium"
+			) {
+				return NextResponse.json(
+					{
+						error: "Cannot convert premium subscription to free while it's active",
+					},
+					{ status: 400 }
+				);
+			}
+
+			// If user has an expired or canceled premium subscription, convert to free
 			if (existingSubscription) {
 				// If they have a Razorpay subscription, cancel it
 				if (existingSubscription.razorpaySubscriptionId) {
@@ -195,6 +210,19 @@ export async function POST(request: Request) {
 
 		// For premium plan
 		if (planId === "premium") {
+			// If user already has an active premium subscription
+			if (
+				existingSubscription &&
+				existingSubscription.tier === "premium"
+			) {
+				return NextResponse.json(
+					{
+						error: "You already have an active premium subscription",
+					},
+					{ status: 400 }
+				);
+			}
+
 			// Check if user already has a Razorpay customer ID
 			if (!user.razorpayCustomerId) {
 				// Create a Razorpay customer
@@ -214,26 +242,24 @@ export async function POST(request: Request) {
 				`subscription_${user._id.toString()}`
 			);
 
-			// Create or update subscription record
-			if (existingSubscription) {
-				existingSubscription.planId = "premium";
-				existingSubscription.tier = "premium";
-				existingSubscription.status = "pending";
-				existingSubscription.razorpayOrderId = order.id;
+			// If user has an active free subscription, mark it as expired
+			if (existingSubscription && existingSubscription.tier === "free") {
+				existingSubscription.status = "expired";
 				existingSubscription.updatedAt = new Date();
 				await existingSubscription.save();
-			} else {
-				await Subscription.create({
-					userId: new mongoose.Types.ObjectId(userId),
-					planId: "premium",
-					tier: "premium",
-					status: "pending",
-					razorpayOrderId: order.id,
-					currentPeriodEnd: new Date(
-						Date.now() + 30 * 24 * 60 * 60 * 1000
-					), // Will be updated after payment
-				});
 			}
+
+			// Create new premium subscription
+			const newSubscription = await Subscription.create({
+				userId: new mongoose.Types.ObjectId(userId),
+				planId: "premium",
+				tier: "premium",
+				status: "pending",
+				razorpayOrderId: order.id,
+				currentPeriodEnd: new Date(
+					Date.now() + 30 * 24 * 60 * 60 * 1000
+				), // Will be updated after payment
+			});
 
 			// Return order details for client-side payment
 			return NextResponse.json({
