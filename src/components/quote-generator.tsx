@@ -35,7 +35,6 @@ import {
 import { cn } from "@/lib/utils";
 import { searchImages, type ImageSearchResult } from "@/lib/image-service";
 import { downloadQuoteImage } from "@/lib/download-utils";
-import { useAuth } from "@/context/auth-context";
 import { useSubscription } from "@/context/subscription-context";
 import { useRouter } from "next/navigation";
 
@@ -160,19 +159,7 @@ export default function QuoteGenerator() {
 	// Handle download
 	const handleDownload = async () => {
 		if (!canvasRef.current) return;
-		const success = await downloadQuoteImage(
-			canvasRef.current,
-			"quote-image.png"
-		);
-		if (success) {
-			// Generate data URL for social sharing
-			const html2canvas = (await import("html2canvas")).default;
-			const canvas = await html2canvas(canvasRef.current, {
-				allowTaint: true,
-				useCORS: true,
-				scale: 2,
-			});
-		}
+		await downloadQuoteImage(canvasRef.current, "quote-art.png");
 	};
 
 	return (
