@@ -14,18 +14,12 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Check, AlertCircle, Loader2 } from "lucide-react";
-import { useSocialSharing } from "@/hooks/useSocialSharing";
 import { useSubscriptionControl } from "@/hooks/useSubscriptionControl";
 
 export default function AdminSettingsPage() {
 	const [isLoading, setIsLoading] = useState(false);
 	const [success, setSuccess] = useState("");
 	const [error, setError] = useState("");
-	const {
-		isEnabled: isSocialSharingEnabled,
-		isLoading: isSocialConfigLoading,
-		toggleSocialSharing,
-	} = useSocialSharing();
 	const {
 		isEnabled: isSubscriptionEnabled,
 		isLoading: isSubscriptionConfigLoading,
@@ -70,113 +64,84 @@ export default function AdminSettingsPage() {
 	};
 
 	return (
-		<div className='space-y-6'>
-			<h1 className='text-3xl font-bold tracking-tight'>
-				Admin Settings
-			</h1>
+		<div className='container mx-auto py-8'>
+			<h1 className='text-3xl font-bold mb-8'>Admin Settings</h1>
 
-			{success && (
-				<Alert className='bg-primary/10 border-primary/20'>
-					<Check className='h-4 w-4 text-primary' />
-					<AlertDescription>{success}</AlertDescription>
-				</Alert>
-			)}
+			<div className='space-y-8'>
+				{/* General Settings */}
+				<Card>
+					<CardHeader>
+						<CardTitle>General Settings</CardTitle>
+						<CardDescription>
+							Configure general site settings
+						</CardDescription>
+					</CardHeader>
+					<CardContent className='space-y-4'>
+						<div className='flex items-center justify-between'>
+							<div className='space-y-0.5'>
+								<Label>Maintenance Mode</Label>
+								<p className='text-sm text-muted-foreground'>
+									Enable maintenance mode to temporarily
+									disable access to the site
+								</p>
+							</div>
+							<Switch
+								checked={maintenanceMode}
+								onCheckedChange={setMaintenanceMode}
+							/>
+						</div>
+					</CardContent>
+					<CardFooter>
+						<Button
+							onClick={() => handleSaveSettings("General")}
+							disabled={isLoading}>
+							{isLoading ? (
+								<Loader2 className='mr-2 h-4 w-4 animate-spin' />
+							) : null}
+							Save Changes
+						</Button>
+					</CardFooter>
+				</Card>
+
+				{/* Subscription Settings */}
+				<Card>
+					<CardHeader>
+						<CardTitle>Subscription Settings</CardTitle>
+						<CardDescription>
+							Configure subscription-related settings
+						</CardDescription>
+					</CardHeader>
+					<CardContent className='space-y-4'>
+						<div className='flex items-center justify-between'>
+							<div className='space-y-0.5'>
+								<Label>Enable Subscriptions</Label>
+								<p className='text-sm text-muted-foreground'>
+									Enable or disable subscription features
+								</p>
+							</div>
+							<Switch
+								checked={isSubscriptionEnabled}
+								onCheckedChange={toggleSubscription}
+								disabled={isSubscriptionConfigLoading}
+							/>
+						</div>
+					</CardContent>
+				</Card>
+			</div>
 
 			{error && (
-				<Alert variant='destructive'>
+				<Alert variant='destructive' className='mt-4'>
 					<AlertCircle className='h-4 w-4' />
 					<AlertDescription>{error}</AlertDescription>
 				</Alert>
 			)}
 
-			<Card>
-				<CardHeader>
-					<CardTitle>General Settings</CardTitle>
-					<CardDescription>
-						Configure basic site settings
-					</CardDescription>
-				</CardHeader>
-				<CardContent className='space-y-4'>
-					<div className='flex items-center space-x-2'>
-						<Switch
-							id='maintenance-mode'
-							checked={maintenanceMode}
-							onCheckedChange={setMaintenanceMode}
-						/>
-						<Label htmlFor='maintenance-mode'>
-							Maintenance Mode
-						</Label>
-					</div>
-				</CardContent>
-				<CardFooter>
-					<Button
-						onClick={() => handleSaveSettings("General")}
-						disabled={isLoading}>
-						{isLoading ? (
-							<>
-								<Loader2 className='mr-2 h-4 w-4 animate-spin' />
-								Saving...
-							</>
-						) : (
-							"Save Settings"
-						)}
-					</Button>
-				</CardFooter>
-			</Card>
-
-			<Card>
-				<CardHeader>
-					<CardTitle>Social Sharing</CardTitle>
-					<CardDescription>
-						Control social media sharing features
-					</CardDescription>
-				</CardHeader>
-				<CardContent className='space-y-4'>
-					<div className='flex items-center space-x-2'>
-						<Switch
-							id='social-sharing'
-							checked={isSocialSharingEnabled}
-							onCheckedChange={toggleSocialSharing}
-							disabled={isSocialConfigLoading}
-						/>
-						<Label htmlFor='social-sharing'>
-							Enable Social Sharing
-						</Label>
-					</div>
-					<p className='text-sm text-muted-foreground'>
-						When disabled, users won&apos;t be able to share quotes
-						to social media platforms.
-					</p>
-				</CardContent>
-			</Card>
-
-			<Card>
-				<CardHeader>
-					<CardTitle>Subscription Control</CardTitle>
-					<CardDescription>
-						Control subscription and authentication features
-					</CardDescription>
-				</CardHeader>
-				<CardContent className='space-y-4'>
-					<div className='flex items-center space-x-2'>
-						<Switch
-							id='subscription-mode'
-							checked={isSubscriptionEnabled}
-							onCheckedChange={toggleSubscription}
-							disabled={isSubscriptionConfigLoading}
-						/>
-						<Label htmlFor='subscription-mode'>
-							Enable Subscription System
-						</Label>
-					</div>
-					<p className='text-sm text-muted-foreground'>
-						When disabled, all features will be free and
-						authentication will be disabled. When enabled, the
-						normal subscription and authentication system will be
-						active.
-					</p>
-				</CardContent>
-			</Card>
+			{success && (
+				<Alert className='mt-4'>
+					<Check className='h-4 w-4' />
+					<AlertDescription>{success}</AlertDescription>
+				</Alert>
+			)}
 		</div>
 	);
 }

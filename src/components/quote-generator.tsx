@@ -1,7 +1,6 @@
 "use client";
 
 import type React from "react";
-
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,7 +30,6 @@ import {
 	Search,
 	Loader2,
 	Palette,
-	Share2,
 	Lock,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -40,8 +38,6 @@ import { downloadQuoteImage } from "@/lib/download-utils";
 import { useAuth } from "@/context/auth-context";
 import { useSubscription } from "@/context/subscription-context";
 import { useRouter } from "next/navigation";
-import { SocialShareDialog } from "./social-share-dialog";
-import { useSocialSharing } from "@/hooks/useSocialSharing";
 
 const DEFAULT_BACKGROUNDS = [
 	"/img1.jpg?height=600&width=600",
@@ -83,9 +79,7 @@ const FONT_WEIGHTS = [
 
 export default function QuoteGenerator() {
 	const router = useRouter();
-	const { user } = useAuth();
-	const { canPost, canSearchImages } = useSubscription();
-	const { isEnabled: isSocialSharingEnabled } = useSocialSharing();
+	const { canSearchImages } = useSubscription();
 	const [quote, setQuote] = useState("Enter your quote text here...");
 	const [author, setAuthor] = useState("");
 	const [watermark, setWatermark] = useState("@quote_art");
@@ -107,8 +101,6 @@ export default function QuoteGenerator() {
 	const [useSolidBackground, setUseSolidBackground] = useState(false);
 	const [solidBackgroundColor, setSolidBackgroundColor] = useState("#3b82f6");
 	const [hasSearched, setHasSearched] = useState(false);
-	const [showSocialDialog, setShowSocialDialog] = useState(false);
-	const [imageDataUrl, setImageDataUrl] = useState<string | null>(null);
 
 	const canvasRef = useRef<HTMLDivElement>(null);
 
@@ -180,60 +172,7 @@ export default function QuoteGenerator() {
 				useCORS: true,
 				scale: 2,
 			});
-			setImageDataUrl(canvas.toDataURL("image/png"));
 		}
-	};
-
-	// Handle social share
-	const handleSocialShare = () => {
-		if (!user) {
-			router.push("/login?redirect=/#generator");
-			return;
-		}
-
-		if (!canPost()) {
-			router.push("/pricing");
-			return;
-		}
-
-		if (!isSocialSharingEnabled) {
-			return; // Don't show social sharing dialog if disabled
-		}
-
-		if (!imageDataUrl && canvasRef.current) {
-			// Generate image data URL first
-			generateImageDataUrl().then(() => {
-				setShowSocialDialog(true);
-			});
-		} else {
-			setShowSocialDialog(true);
-		}
-	};
-
-	// Generate image data URL for social sharing
-	const generateImageDataUrl = async () => {
-		if (!canvasRef.current) return;
-
-		const html2canvas = (await import("html2canvas")).default;
-		const canvas = await html2canvas(canvasRef.current, {
-			allowTaint: true,
-			useCORS: true,
-			scale: 2,
-			logging: false,
-			removeContainer: true,
-			backgroundColor: null,
-			onclone: (clonedDoc) => {
-				const clonedElement = clonedDoc.querySelector(
-					"[data-html2canvas-ignore]"
-				);
-				if (clonedElement) {
-					clonedElement.remove();
-				}
-			},
-		});
-		const dataUrl = canvas.toDataURL("image/png", 1.0);
-		setImageDataUrl(dataUrl);
-		return dataUrl;
 	};
 
 	return (
@@ -347,24 +286,6 @@ export default function QuoteGenerator() {
 								<Download className='mr-2 h-4 w-4' />
 								Download Quote Image
 							</Button>
-							{isSocialSharingEnabled && (
-								<Button
-									onClick={handleSocialShare}
-									variant='outline'
-									className='w-full sm:w-auto'>
-									{canPost() ? (
-										<>
-											<Share2 className='mr-2 h-4 w-4' />
-											Share to Social Media
-										</>
-									) : (
-										<>
-											<Lock className='mr-2 h-4 w-4' />
-											Upgrade to Share
-										</>
-									)}
-								</Button>
-							)}
 						</CardFooter>
 					</Card>
 				</div>
@@ -915,15 +836,6 @@ export default function QuoteGenerator() {
 					</Tabs>
 				</div>
 			</div>
-
-			{/* Social Share Dialog */}
-			<SocialShareDialog
-				open={showSocialDialog}
-				onOpenChange={setShowSocialDialog}
-				imageUrl={imageDataUrl || ""}
-				quoteText={quote}
-				author={author}
-			/>
 		</>
 	);
 }

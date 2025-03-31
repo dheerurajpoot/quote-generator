@@ -71,7 +71,6 @@ export const subscriptionPlans: SubscriptionPlan[] = [
 			"Image search functionality",
 			"Advanced text styling",
 			"No watermark",
-			"Post to Facebook & Instagram",
 			"Priority support",
 		],
 	},

@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Check, AlertCircle, Loader2, ImageIcon, Share2 } from "lucide-react";
+import { Check, AlertCircle, Loader2 } from "lucide-react";
 import Script from "next/script";
 
 declare global {
@@ -389,38 +389,6 @@ export default function PricingPage() {
 							</CardFooter>
 						</Card>
 					))}
-				</div>
-
-				<div className='mt-16 max-w-3xl mx-auto'>
-					<h2 className='text-2xl font-bold tracking-tight mb-6 text-center'>
-						Premium Features
-					</h2>
-					<div className='grid grid-cols-1 md:grid-cols-2 gap-8'>
-						<div className='flex flex-col items-center text-center p-6 border rounded-lg'>
-							<div className='bg-primary/10 p-3 rounded-full mb-4'>
-								<ImageIcon className='h-6 w-6 text-primary' />
-							</div>
-							<h3 className='text-xl font-bold mb-2'>
-								Image Search
-							</h3>
-							<p className='text-muted-foreground'>
-								Search for the perfect background image from our
-								extensive library of high-quality photos.
-							</p>
-						</div>
-						<div className='flex flex-col items-center text-center p-6 border rounded-lg'>
-							<div className='bg-primary/10 p-3 rounded-full mb-4'>
-								<Share2 className='h-6 w-6 text-primary' />
-							</div>
-							<h3 className='text-xl font-bold mb-2'>
-								Social Media Posting
-							</h3>
-							<p className='text-muted-foreground'>
-								Share your quotes directly to Facebook and
-								Instagram with just a few clicks.
-							</p>
-						</div>
-					</div>
 				</div>
 			</div>
 		</div>
