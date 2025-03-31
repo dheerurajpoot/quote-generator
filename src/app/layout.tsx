@@ -30,6 +30,12 @@ export default function RootLayout({
 }) {
 	return (
 		<html lang='en' suppressHydrationWarning>
+			<head>
+				<meta
+					name='google-site-verification'
+					content='3dFjjtklPvrI81RGWHubCGvKPwP0xFOD1FcHb3tZBng'
+				/>
+			</head>
 			<body
 				className={`${inter.variable} ${poppins.variable} font-sans min-h-screen flex flex-col`}>
 				<AuthProvider>
