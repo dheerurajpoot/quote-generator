@@ -301,7 +301,7 @@ export default function PricingPage() {
 									{subscription.status === "active"
 										? "end"
 										: "renew"}{" "}
-									on //need to change cancelled
+									on
 									{new Date(
 										subscription.currentPeriodEnd
 									).toLocaleDateString()}

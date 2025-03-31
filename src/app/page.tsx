@@ -7,23 +7,6 @@ import { ImageIcon, Type, Download } from "lucide-react";
 export default function Home() {
 	return (
 		<div className='flex flex-col min-h-[calc(100vh-8rem)]'>
-			{/* <section className='w-full py-8 md:py-12 lg:py-24 bg-gradient-to-b from-background to-muted'>
-				<div className='container mx-auto px-4 md:px-6'>
-					<div className='flex flex-col items-center space-y-4 text-center'>
-						<div className='space-y-2'>
-							<h1 className='text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl lg:text-6xl'>
-								Create Beautiful Quote Images in Seconds
-							</h1>
-							<p className='mx-auto max-w-[700px] text-muted-foreground md:text-xl'>
-								Design stunning quote images with custom
-								backgrounds, fonts, and styles. Perfect for
-								social media, blogs, and more.
-							</p>
-						</div>
-					</div>
-				</div>
-			</section> */}
-
 			<section
 				id='generator'
 				className='w-full py-12 md:py-24 bg-muted/50'>
