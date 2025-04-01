@@ -35,6 +35,21 @@ export default function RootLayout({
 					name='google-site-verification'
 					content='3dFjjtklPvrI81RGWHubCGvKPwP0xFOD1FcHb3tZBng'
 				/>
+				{/* Google Analytics Script */}
+				<script
+					async
+					src='https://www.googletagmanager.com/gtag/js?id=G-3TRBTMGL5N'
+				/>
+				<script
+					dangerouslySetInnerHTML={{
+						__html: `
+							window.dataLayer = window.dataLayer || [];
+							function gtag(){dataLayer.push(arguments);}
+							gtag('js', new Date());
+							gtag('config', 'G-3TRBTMGL5N');
+						`,
+					}}
+				/>
 			</head>
 			<body
 				className={`${inter.variable} ${poppins.variable} font-sans min-h-screen flex flex-col`}>
