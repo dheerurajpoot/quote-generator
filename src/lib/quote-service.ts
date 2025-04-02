@@ -11,6 +11,12 @@ interface Quote {
 	watermark?: string;
 }
 
+interface SocialMediaResponse {
+	success: boolean;
+	message: string;
+	postId?: string;
+}
+
 const PEXELS_API_KEY = process.env.NEXT_PUBLIC_PEXELS_API_KEY;
 
 export async function getRandomPexelsImage(): Promise<string> {
@@ -123,7 +129,7 @@ export async function postToSocialMedia(
 	userId: string | undefined,
 	platform: string,
 	caption: string
-): Promise<any> {
+): Promise<SocialMediaResponse | any> {
 	try {
 		const response = await axios.post("/api/social", {
 			userId,
