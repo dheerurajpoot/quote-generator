@@ -119,45 +119,20 @@ export async function generateQuoteImage(
 }
 
 export async function postToSocialMedia(
-	imageUrl: string,
-	quote: Quote
-): Promise<void> {
+	imageUrl: string | undefined,
+	userId: string | undefined,
+	platform: string,
+	caption: string
+): Promise<any> {
 	try {
-		// Facebook Graph API
-		if (process.env.NEXT_PUBLIC_FACEBOOK_ACCESS_TOKEN) {
-			await axios.post(
-				`https://graph.facebook.com/v18.0/${process.env.NEXT_PUBLIC_FACEBOOK_PAGE_ID}/photos`,
-				{
-					url: imageUrl,
-					caption: `${quote.text}\n\n— ${quote.author}\n\n${quote.watermark}`,
-					access_token: process.env.NEXT_PUBLIC_FACEBOOK_ACCESS_TOKEN,
-				}
-			);
-		}
-
-		// Instagram Graph API
-		if (process.env.NEXT_PUBLIC_INSTAGRAM_ACCESS_TOKEN) {
-			// First create a container
-			const containerResponse = await axios.post(
-				`https://graph.facebook.com/v18.0/${process.env.NEXT_PUBLIC_INSTAGRAM_BUSINESS_ACCOUNT_ID}/media`,
-				{
-					image_url: imageUrl,
-					caption: `${quote.text}\n\n— ${quote.author}\n\n${quote.watermark}`,
-					access_token:
-						process.env.NEXT_PUBLIC_INSTAGRAM_ACCESS_TOKEN,
-				}
-			);
-
-			// Then publish the container
-			await axios.post(
-				`https://graph.facebook.com/v18.0/${process.env.NEXT_PUBLIC_INSTAGRAM_BUSINESS_ACCOUNT_ID}/media_publish`,
-				{
-					creation_id: containerResponse.data.id,
-					access_token:
-						process.env.NEXT_PUBLIC_INSTAGRAM_ACCESS_TOKEN,
-				}
-			);
-		}
+		const response = await axios.post("/api/social", {
+			userId,
+			imageUrl,
+			platform,
+			caption,
+		});
+		console.log("response:", response);
+		return response;
 	} catch (error) {
 		console.error("Error posting to social media:", error);
 		throw error;

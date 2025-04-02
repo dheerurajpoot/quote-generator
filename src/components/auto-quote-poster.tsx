@@ -11,14 +11,12 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-	getRandomHindiQuote,
-	generateQuoteImage,
-	postToSocialMedia,
-} from "@/lib/quote-service";
+import { getRandomHindiQuote, postToSocialMedia } from "@/lib/quote-service";
 import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { downloadQuoteImage } from "@/lib/download-utils";
+import { useAuth } from "@/context/auth-context";
+import toast from "react-hot-toast";
 
 interface Quote {
 	text: string;
@@ -37,6 +35,7 @@ export default function AutoQuotePoster() {
 	const [postingInterval, setPostingInterval] = useState("1");
 	const [isAutoPosting, setIsAutoPosting] = useState(false);
 	const canvasRef = useRef<HTMLDivElement>(null);
+	const { user } = useAuth();
 
 	const fetchNewQuote = async () => {
 		setIsLoading(true);
@@ -85,15 +84,50 @@ export default function AutoQuotePoster() {
 		}
 	};
 
+	// Generate image data URL for social sharing
+	const generateImageDataUrl = async () => {
+		if (!canvasRef.current) return;
+
+		const html2canvas = (await import("html2canvas")).default;
+		const canvas = await html2canvas(canvasRef.current, {
+			allowTaint: true,
+			useCORS: true,
+			scale: 2,
+			logging: false,
+			removeContainer: true,
+			backgroundColor: null,
+			onclone: (clonedDoc) => {
+				const clonedElement = clonedDoc.querySelector(
+					"[data-html2canvas-ignore]"
+				);
+				if (clonedElement) {
+					clonedElement.remove();
+				}
+			},
+		});
+		const dataUrl = canvas.toDataURL("image/png", 1.0);
+		return dataUrl;
+	};
+
 	const handlePostToSocialMedia = async () => {
 		if (!quote || !canvasRef.current) return;
 
 		try {
 			// Generate image from quote
-			const imageUrl = await generateQuoteImage(canvasRef.current);
-
+			const imageUrl = await generateImageDataUrl();
+			const userId = user?._id;
+			const platform = "facebook";
+			const caption = `${quote.text}\n\n— ${quote.author}`;
 			// Post to social media
-			await postToSocialMedia(imageUrl, quote);
+			const res = await postToSocialMedia(
+				imageUrl,
+				userId,
+				platform,
+				caption
+			);
+			if (res.data.success) {
+				toast.success("Post Published!");
+			}
 
 			// Fetch a new quote for the next post
 			await fetchNewQuote();

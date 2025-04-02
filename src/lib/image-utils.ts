@@ -9,17 +9,12 @@ cloudinary.config({
 
 export async function uploadImage(imageUrl: string): Promise<string> {
 	try {
-		console.log("Starting image upload to Cloudinary:", {
-			imageUrl: imageUrl.substring(0, 50) + "...", // Log truncated URL for security
-		});
-
 		// If it's a data URL, upload it directly
 		if (imageUrl.startsWith("data:")) {
 			const result = await cloudinary.uploader.upload(imageUrl, {
 				folder: "quote-generator",
 				resource_type: "auto",
 			});
-			console.log("Successfully uploaded data URL to Cloudinary");
 			return result.secure_url;
 		}
 
@@ -28,7 +23,6 @@ export async function uploadImage(imageUrl: string): Promise<string> {
 			folder: "quote-generator",
 			resource_type: "auto",
 		});
-		console.log("Successfully uploaded URL to Cloudinary");
 		return result.secure_url;
 	} catch (error) {
 		console.error("Error uploading image to Cloudinary:", error);

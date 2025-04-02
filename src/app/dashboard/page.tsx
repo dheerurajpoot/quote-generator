@@ -14,11 +14,17 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Check, AlertCircle, ImageIcon, Lock } from "lucide-react";
+import { SocialConnections } from "@/components/social-connection";
 import Link from "next/link";
 
 export default function DashboardPage() {
-	const { subscription, plans, cancelSubscription, canSearchImages } =
-		useSubscription();
+	const {
+		subscription,
+		plans,
+		cancelSubscription,
+		isSubscribed,
+		canSearchImages,
+	} = useSubscription();
 	const [error, setError] = useState("");
 	const [success, setSuccess] = useState("");
 
@@ -80,6 +86,18 @@ export default function DashboardPage() {
 					<Card>
 						<CardHeader className='pb-2'>
 							<CardTitle className='text-sm font-medium'>
+								Social Media Posts
+							</CardTitle>
+						</CardHeader>
+						<CardContent>
+							<div className='text-2xl font-bold'>
+								{isSubscribed() ? "5" : "0"}
+							</div>
+						</CardContent>
+					</Card>
+					<Card>
+						<CardHeader className='pb-2'>
+							<CardTitle className='text-sm font-medium'>
 								Subscription Status
 							</CardTitle>
 						</CardHeader>
@@ -117,6 +135,7 @@ export default function DashboardPage() {
 						<TabsTrigger value='subscription'>
 							Subscription
 						</TabsTrigger>
+						<TabsTrigger value='social'>Social Media</TabsTrigger>
 						<TabsTrigger value='images'>Image Search</TabsTrigger>
 					</TabsList>
 
@@ -192,6 +211,40 @@ export default function DashboardPage() {
 							</CardContent>
 						</Card>
 					</TabsContent>
+
+					<TabsContent value='social'>
+						<Card>
+							<CardHeader>
+								<CardTitle>Social Media Integration</CardTitle>
+								<CardDescription>
+									Connect and manage your social media
+									accounts
+								</CardDescription>
+							</CardHeader>
+							<CardContent>
+								{!isSubscribed() ? (
+									<div className='text-center py-6'>
+										<h3 className='text-lg font-semibold mb-2'>
+											Upgrade to Post to Social Media
+										</h3>
+										<p className='text-muted-foreground mb-4'>
+											Subscribe to our Premium plan to
+											unlock social media posting
+											features.
+										</p>
+										<Button asChild>
+											<Link href='/pricing'>
+												View Plans
+											</Link>
+										</Button>
+									</div>
+								) : (
+									<SocialConnections />
+								)}
+							</CardContent>
+						</Card>
+					</TabsContent>
+
 					<TabsContent value='images'>
 						<Card>
 							<CardHeader>
