@@ -12,9 +12,9 @@ interface Quote {
 }
 
 interface SocialMediaResponse {
-	success: boolean;
-	message: string;
-	postId?: string;
+	data: {
+		success: boolean;
+	};
 }
 
 const PEXELS_API_KEY = process.env.NEXT_PUBLIC_PEXELS_API_KEY;
@@ -129,7 +129,7 @@ export async function postToSocialMedia(
 	userId: string | undefined,
 	platform: string,
 	caption: string
-): Promise<SocialMediaResponse | any> {
+): Promise<SocialMediaResponse> {
 	try {
 		const response = await axios.post("/api/social", {
 			userId,
