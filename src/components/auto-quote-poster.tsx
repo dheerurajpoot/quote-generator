@@ -18,6 +18,7 @@ import {
 } from "@/lib/quote-service";
 import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { downloadQuoteImage } from "@/lib/download-utils";
 
 interface Quote {
 	text: string;
@@ -99,6 +100,12 @@ export default function AutoQuotePoster() {
 		} catch (error) {
 			console.error("Error posting to social media:", error);
 		}
+	};
+
+	// Handle download
+	const handleDownload = async () => {
+		if (!canvasRef.current) return;
+		await downloadQuoteImage(canvasRef.current, "quote-art.png");
 	};
 
 	return (
@@ -224,6 +231,9 @@ export default function AutoQuotePoster() {
 						{isAutoPosting
 							? "Stop Auto Posting"
 							: "Start Auto Posting"}
+					</Button>
+					<Button onClick={handleDownload} className='flex-1'>
+						Download
 					</Button>
 				</div>
 			</CardContent>
