@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import {
 	Card,
@@ -19,6 +19,8 @@ import { useAuth } from "@/context/auth-context";
 import toast from "react-hot-toast";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Facebook, Instagram } from "lucide-react";
+import { AlertCircle } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface Quote {
 	text: string;
@@ -40,22 +42,10 @@ export default function AutoQuotePoster() {
 	);
 	const [isAutoPosting, setIsAutoPosting] = useState(false);
 	const canvasRef = useRef<HTMLDivElement>(null);
+	const intervalRef = useRef<NodeJS.Timeout | null>(null);
 	const { user } = useAuth();
 
-	// Load auto-posting state from localStorage on component mount
-	useEffect(() => {
-		const savedState = localStorage.getItem("autoPostingState");
-		if (savedState) {
-			const { platforms, interval } = JSON.parse(savedState);
-			setAutoPostingPlatforms(platforms || []);
-			setPostingInterval(interval || "1");
-			if (platforms && platforms.length > 0) {
-				setIsAutoPosting(true);
-			}
-		}
-	}, []);
-
-	const fetchNewQuote = async () => {
+	const fetchNewQuote = useCallback(async () => {
 		setIsLoading(true);
 		try {
 			const newQuote = await getRandomHindiQuote();
@@ -65,89 +55,272 @@ export default function AutoQuotePoster() {
 		} finally {
 			setIsLoading(false);
 		}
-	};
-
-	useEffect(() => {
-		fetchNewQuote();
 	}, []);
 
-	const handleAutoPostingToggle = async () => {
-		if (!isAutoPosting) {
-			// Check if any platforms are selected
-			if (autoPostingPlatforms.length === 0) {
+	const handlePostToSocialMedia = useCallback(async () => {
+		if (!quote || !canvasRef.current || !user?._id) return;
+
+		try {
+			// Generate image from quote
+			const imageUrl = await generateImageDataUrl();
+
+			const caption = `${quote.text}\n\n— ${quote.author}`;
+
+			// Post to selected platforms
+			const results = await Promise.all(
+				autoPostingPlatforms.map((platform) =>
+					postToSocialMedia(imageUrl, user._id, platform, caption)
+				)
+			);
+
+			// Check if any post was successful
+			const hasSuccess = results.some((res) => res.data.success);
+			if (hasSuccess) {
+				// Update last post time in backend
+				await fetch("/api/auto-posting", {
+					method: "PUT",
+					headers: {
+						"Content-Type": "application/json",
+					},
+					body: JSON.stringify({
+						userId: user._id,
+					}),
+				});
+
+				toast.success("Posts Published!");
+				// Fetch a new quote for the next post
+				await fetchNewQuote();
+			} else {
+				// If no posts were successful, stop auto-posting
+				setIsAutoPosting(false);
+				if (intervalRef.current) {
+					clearInterval(intervalRef.current);
+				}
+
+				// Update backend settings
+				await fetch("/api/auto-posting", {
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json",
+					},
+					body: JSON.stringify({
+						userId: user._id,
+						isEnabled: false,
+						interval: parseInt(postingInterval),
+						platforms: autoPostingPlatforms,
+					}),
+				});
+
 				toast.error(
-					"Please select at least one platform for auto-posting"
+					"Failed to post to any platform. Auto-posting has been stopped."
 				);
-				return;
+			}
+		} catch (error) {
+			console.error("Error posting to social media:", error);
+			// Stop auto-posting on error
+			setIsAutoPosting(false);
+			if (intervalRef.current) {
+				clearInterval(intervalRef.current);
 			}
 
-			// Start auto posting
-			setIsAutoPosting(true);
-			const interval = parseInt(postingInterval) * 60 * 60 * 1000; // Convert hours to milliseconds
+			// Update backend settings
+			if (user?._id) {
+				await fetch("/api/auto-posting", {
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json",
+					},
+					body: JSON.stringify({
+						userId: user._id,
+						isEnabled: false,
+						interval: parseInt(postingInterval),
+						platforms: autoPostingPlatforms,
+					}),
+				});
+			}
+
+			let errorMessage = "Failed to post to social media";
+			if (error instanceof Error) {
+				errorMessage = error.message;
+			}
+			toast.error(errorMessage);
+		}
+	}, [
+		quote,
+		user?._id,
+		autoPostingPlatforms,
+		postingInterval,
+		fetchNewQuote,
+	]);
+
+	const startAutoPosting = useCallback(
+		async (interval: number, platforms: string[]) => {
+			// Clear any existing interval
+			if (intervalRef.current) {
+				clearInterval(intervalRef.current);
+			}
+
+			// Initial post
+			await handlePostToSocialMedia();
+
+			// Set up interval for subsequent posts
+			const intervalTime = interval * 60 * 60 * 1000; // Convert hours to milliseconds
+			intervalRef.current = setInterval(async () => {
+				await handlePostToSocialMedia();
+			}, intervalTime);
+		},
+		[handlePostToSocialMedia]
+	);
+
+	// Load initial quote
+	useEffect(() => {
+		fetchNewQuote();
+	}, [fetchNewQuote]);
+
+	// Load auto-posting settings from backend
+	useEffect(() => {
+		let mounted = true;
+
+		const loadSettings = async () => {
+			if (!user?._id) return;
 
 			try {
-				// Initial post
-				await handlePostToSocialMedia();
+				const response = await fetch(
+					`/api/auto-posting?userId=${user._id}`
+				);
+				if (!response.ok) {
+					throw new Error("Failed to load auto-posting settings");
+				}
 
-				// Only set up interval if the initial post was successful
-				if (isAutoPosting) {
-					// Set up interval for subsequent posts
-					const intervalId = setInterval(async () => {
-						await handlePostToSocialMedia();
-					}, interval);
+				if (!mounted) return;
 
-					// Store interval ID and state in localStorage
-					localStorage.setItem(
-						"autoPostingState",
-						JSON.stringify({
-							platforms: autoPostingPlatforms,
-							interval: postingInterval,
-							intervalId: intervalId.toString(),
-						})
-					);
+				const settings = await response.json();
+				setAutoPostingPlatforms(settings.platforms || []);
+				setPostingInterval(settings.interval?.toString() || "1");
+				setIsAutoPosting(settings.isEnabled || false);
+
+				// If auto-posting is enabled, start the interval
+				if (settings.isEnabled && mounted) {
+					startAutoPosting(settings.interval, settings.platforms);
 				}
 			} catch (error) {
-				setIsAutoPosting(false);
-				localStorage.removeItem("autoPostingState");
-				console.error("Error starting auto-posting:", error);
-				toast.error("Failed to start auto-posting");
-			}
-		} else {
-			// Stop auto posting
-			setIsAutoPosting(false);
-			const savedState = localStorage.getItem("autoPostingState");
-			if (savedState) {
-				const { intervalId } = JSON.parse(savedState);
-				if (intervalId) {
-					clearInterval(parseInt(intervalId));
+				console.error("Error loading auto-posting settings:", error);
+				if (mounted) {
+					toast.error("Failed to load auto-posting settings");
 				}
-				localStorage.removeItem("autoPostingState");
 			}
-			toast.success("Auto-posting has been stopped");
+		};
+
+		loadSettings();
+
+		return () => {
+			mounted = false;
+			if (intervalRef.current) {
+				clearInterval(intervalRef.current);
+				intervalRef.current = null;
+			}
+		};
+	}, [user?._id]);
+
+	const handleAutoPostingToggle = async () => {
+		if (!user?._id) {
+			toast.error("Please sign in to use auto-posting");
+			return;
+		}
+
+		try {
+			if (!isAutoPosting) {
+				// Check if any platforms are selected
+				if (autoPostingPlatforms.length === 0) {
+					toast.error(
+						"Please select at least one platform for auto-posting"
+					);
+					return;
+				}
+
+				// Save settings to backend
+				const response = await fetch("/api/auto-posting", {
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json",
+					},
+					body: JSON.stringify({
+						userId: user._id,
+						isEnabled: true,
+						interval: parseInt(postingInterval),
+						platforms: autoPostingPlatforms,
+					}),
+				});
+
+				if (!response.ok) {
+					throw new Error("Failed to save auto-posting settings");
+				}
+
+				// Start auto posting
+				setIsAutoPosting(true);
+				startAutoPosting(
+					parseInt(postingInterval),
+					autoPostingPlatforms
+				);
+				toast.success("Auto-posting has been started");
+			} else {
+				// Save disabled state to backend
+				const response = await fetch("/api/auto-posting", {
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json",
+					},
+					body: JSON.stringify({
+						userId: user._id,
+						isEnabled: false,
+						interval: parseInt(postingInterval),
+						platforms: autoPostingPlatforms,
+					}),
+				});
+
+				if (!response.ok) {
+					throw new Error("Failed to save auto-posting settings");
+				}
+
+				// Stop auto posting
+				setIsAutoPosting(false);
+				if (intervalRef.current) {
+					clearInterval(intervalRef.current);
+				}
+				toast.success("Auto-posting has been stopped");
+			}
+		} catch (error) {
+			console.error("Error toggling auto-posting:", error);
+			toast.error("Failed to toggle auto-posting");
 		}
 	};
 
-	const handlePlatformToggle = (platform: string) => {
-		setAutoPostingPlatforms((prev) => {
-			const newPlatforms = prev.includes(platform)
-				? prev.filter((p) => p !== platform)
-				: [...prev, platform];
+	const handlePlatformToggle = async (platform: string) => {
+		const newPlatforms = autoPostingPlatforms.includes(platform)
+			? autoPostingPlatforms.filter((p) => p !== platform)
+			: [...autoPostingPlatforms, platform];
 
-			// Update localStorage
-			const savedState = localStorage.getItem("autoPostingState");
-			if (savedState) {
-				const state = JSON.parse(savedState);
-				localStorage.setItem(
-					"autoPostingState",
-					JSON.stringify({
-						...state,
+		setAutoPostingPlatforms(newPlatforms);
+
+		// Save settings to backend if user is signed in
+		if (user?._id) {
+			try {
+				await fetch("/api/auto-posting", {
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json",
+					},
+					body: JSON.stringify({
+						userId: user._id,
+						isEnabled: isAutoPosting,
+						interval: parseInt(postingInterval),
 						platforms: newPlatforms,
-					})
-				);
+					}),
+				});
+			} catch (error) {
+				console.error("Error saving platform settings:", error);
 			}
-
-			return newPlatforms;
-		});
+		}
 	};
 
 	// Generate image data URL for social sharing
@@ -175,67 +348,6 @@ export default function AutoQuotePoster() {
 		return dataUrl;
 	};
 
-	const handlePostToSocialMedia = async () => {
-		if (!quote || !canvasRef.current) return;
-
-		try {
-			// Generate image from quote
-			const imageUrl = await generateImageDataUrl();
-			const userId = user?._id;
-
-			if (!userId) {
-				toast.error("Please sign in to post to social media");
-				return;
-			}
-
-			const caption = `${quote.text}\n\n— ${quote.author}`;
-
-			// Post to selected platforms
-			const results = await Promise.all(
-				autoPostingPlatforms.map((platform) =>
-					postToSocialMedia(imageUrl, userId, platform, caption)
-				)
-			);
-
-			// Check if any post was successful
-			const hasSuccess = results.some((res) => res.data.success);
-			if (hasSuccess) {
-				toast.success("Posts Published!");
-				// Fetch a new quote for the next post
-				await fetchNewQuote();
-			} else {
-				// If no posts were successful, stop auto-posting
-				setIsAutoPosting(false);
-				localStorage.removeItem("autoPostingState");
-				toast.error(
-					"Failed to post to any platform. Auto-posting has been stopped."
-				);
-			}
-		} catch (error) {
-			console.error("Error posting to social media:", error);
-			// Stop auto-posting on error
-			setIsAutoPosting(false);
-			localStorage.removeItem("autoPostingState");
-
-			// Handle the error message
-			let errorMessage = "Failed to post to social media";
-			if (
-				error &&
-				typeof error === "object" &&
-				"response" in error &&
-				error.response &&
-				typeof error.response === "object" &&
-				"data" in error.response &&
-				error.response.data &&
-				typeof error.response.data === "object" &&
-				"error" in error.response.data
-			) {
-				errorMessage = error.response.data.error as string;
-			}
-			toast.error(errorMessage);
-		}
-	};
-
 	// Handle download
 	const handleDownload = async () => {
 		if (!canvasRef.current) return;
@@ -250,83 +362,111 @@ export default function AutoQuotePoster() {
 					Automatically generate and post Hindi quotes to your social
 					media accounts
 				</CardDescription>
+				{isAutoPosting && (
+					<Alert className='mt-2 bg-green-50 border-green-200'>
+						<AlertCircle className='h-4 w-4 text-green-600' />
+						<AlertDescription className='text-green-600'>
+							Auto-posting is active for:{" "}
+							{autoPostingPlatforms
+								.map(
+									(p) =>
+										p.charAt(0).toUpperCase() + p.slice(1)
+								)
+								.join(", ")}
+							<br />
+							Next post in: {postingInterval} hour(s)
+						</AlertDescription>
+					</Alert>
+				)}
 			</CardHeader>
 			<CardContent className='space-y-4'>
 				<div className='space-y-2'>
 					<Label>Current Quote</Label>
-					<div
-						ref={canvasRef}
-						className='relative w-full aspect-square max-w-2xl mx-auto overflow-hidden rounded-lg p-8 text-center'
-						style={{
-							backgroundImage: `url(${quote?.backgroundImage})`,
-							backgroundSize: "cover",
-							backgroundPosition: "center",
-						}}>
-						{quote?.backgroundColor && (
-							<div
-								className='absolute inset-0'
-								style={{
-									backgroundColor: quote.backgroundColor,
-								}}></div>
-						)}
-
-						<div className='relative z-10 flex flex-col items-center justify-center h-full w-full'>
-							<p
-								className={cn(
-									"mb-4 px-4 font-semibold whitespace-pre-line text-center",
-									quote?.fontFamily
-								)}
-								style={{
-									color: quote?.textColor,
-									fontSize: `18px`,
-									maxWidth: "70%",
-									wordWrap: "break-word",
-									lineHeight: 1.4,
-									letterSpacing: "0.025em",
-									wordSpacing: "0.05em",
-									textRendering: "optimizeLegibility",
-									WebkitFontSmoothing: "antialiased",
-									MozOsxFontSmoothing: "grayscale",
-								}}>
-								{quote?.text}
+					{isLoading ? (
+						<div className='flex items-center justify-center h-[600px] bg-muted rounded-lg'>
+							<Loader2 className='h-8 w-8 animate-spin text-muted-foreground' />
+						</div>
+					) : !quote ? (
+						<div className='flex items-center justify-center h-[600px] bg-muted rounded-lg'>
+							<p className='text-muted-foreground'>
+								No quote generated yet
 							</p>
+						</div>
+					) : (
+						<div
+							ref={canvasRef}
+							className='relative w-full aspect-square max-w-2xl mx-auto overflow-hidden rounded-lg p-8 text-center'
+							style={{
+								backgroundImage: `url(${quote?.backgroundImage})`,
+								backgroundSize: "cover",
+								backgroundPosition: "center",
+							}}>
+							{quote?.backgroundColor && (
+								<div
+									className='absolute inset-0'
+									style={{
+										backgroundColor: quote.backgroundColor,
+									}}></div>
+							)}
 
-							{quote?.author && (
+							<div className='relative z-10 flex flex-col items-center justify-center h-full w-full'>
 								<p
 									className={cn(
-										"mt-2 text-center",
+										"mb-4 px-4 font-semibold whitespace-pre-line text-center",
 										quote?.fontFamily
 									)}
 									style={{
 										color: quote?.textColor,
-										fontSize: `${
-											(quote?.fontSize || 24) * 0.5
-										}px`,
+										fontSize: `18px`,
+										maxWidth: "70%",
+										wordWrap: "break-word",
+										lineHeight: 1.4,
 										letterSpacing: "0.025em",
 										wordSpacing: "0.05em",
 										textRendering: "optimizeLegibility",
 										WebkitFontSmoothing: "antialiased",
 										MozOsxFontSmoothing: "grayscale",
 									}}>
-									— {quote.author}
+									{quote?.text}
 								</p>
-							)}
 
-							{/* {quote?.watermark && (
-								<p
-									className='absolute bottom-4 right-4 text-sm opacity-70'
-									style={{
-										color: quote?.textColor,
-										letterSpacing: "0.025em",
-										textRendering: "optimizeLegibility",
-										WebkitFontSmoothing: "antialiased",
-										MozOsxFontSmoothing: "grayscale",
-									}}>
-									{quote.watermark}
-								</p>
-							)} */}
+								{quote?.author && (
+									<p
+										className={cn(
+											"mt-2 text-center",
+											quote?.fontFamily
+										)}
+										style={{
+											color: quote?.textColor,
+											fontSize: `${
+												(quote?.fontSize || 24) * 0.5
+											}px`,
+											letterSpacing: "0.025em",
+											wordSpacing: "0.05em",
+											textRendering: "optimizeLegibility",
+											WebkitFontSmoothing: "antialiased",
+											MozOsxFontSmoothing: "grayscale",
+										}}>
+										— {quote.author}
+									</p>
+								)}
+
+								{/* {quote?.watermark && (
+									<p
+										className='absolute bottom-4 right-4 text-sm opacity-70'
+										style={{
+											color: quote?.textColor,
+											letterSpacing: "0.025em",
+											textRendering: "optimizeLegibility",
+											WebkitFontSmoothing: "antialiased",
+											MozOsxFontSmoothing: "grayscale",
+										}}>
+											{quote.watermark}
+										</p>
+									)} */}
+							</div>
 						</div>
-					</div>
+					)}
 				</div>
 
 				<div className='space-y-2'>

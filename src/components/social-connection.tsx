@@ -190,30 +190,48 @@ export function SocialConnections({
 			await initializeFacebookSDK();
 
 			// Request Facebook login
-			await new Promise<FacebookLoginResponse>((resolve, reject) => {
-				window.FB.login(
-					(response: FacebookLoginResponse) => {
-						if (response.authResponse) {
-							resolve(response);
-						} else {
-							reject(
-								new Error("Facebook login cancelled or failed")
-							);
+			const loginResponse = await new Promise<FacebookLoginResponse>(
+				(resolve, reject) => {
+					window.FB.login(
+						(response: FacebookLoginResponse) => {
+							if (response.authResponse) {
+								resolve(response);
+							} else {
+								reject(
+									new Error(
+										"Facebook login cancelled or failed"
+									)
+								);
+							}
+						},
+						{
+							scope: "pages_manage_posts,pages_read_engagement,pages_show_list,pages_messaging,pages_manage_metadata,pages_read_user_content,pages_manage_ads",
+							return_scopes: true,
 						}
-					},
-					{
-						scope: "pages_manage_posts,pages_read_engagement,pages_show_list,pages_messaging,pages_manage_metadata,pages_read_user_content,pages_manage_ads",
-						return_scopes: true,
-					}
-				);
-			});
+					);
+				}
+			);
 
-			// Get user's Facebook pages
+			if (!loginResponse.authResponse?.accessToken) {
+				throw new Error("Failed to get access token from Facebook");
+			}
+
+			// Exchange short-lived token for long-lived token
+			const longLivedTokenResponse = await fetch(
+				`/api/social/exchange-token?access_token=${loginResponse.authResponse.accessToken}`
+			);
+			if (!longLivedTokenResponse.ok) {
+				throw new Error("Failed to get long-lived access token");
+			}
+			const { longLivedToken } = await longLivedTokenResponse.json();
+
+			// Get user's Facebook pages with long-lived token
 			const pagesResponse = await new Promise<FacebookPagesResponse>(
 				(resolve, reject) => {
-					window.FB.api<FacebookPagesResponse>(
+					(window.FB.api as any)(
 						"/me/accounts",
-						(response) => {
+						{ access_token: longLivedToken },
+						(response: FacebookPagesResponse) => {
 							if (response.error) {
 								reject(
 									new Error(
