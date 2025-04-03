@@ -19,7 +19,6 @@ import {
 	FacebookLoginResponse,
 	FacebookPageResponse,
 	FacebookPagesResponse,
-	FacebookUserResponse,
 	InstagramAccount,
 	FacebookPage,
 } from "@/app/types/facebook";
@@ -71,6 +70,8 @@ export function SocialConnections({
 	const [showPageDialog, setShowPageDialog] = useState(false);
 	const [availablePages, setAvailablePages] = useState<FacebookPage[]>([]);
 	const [selectedPage, setSelectedPage] = useState<FacebookPage | null>(null);
+
+	console.log(selectedAccount, selectedPage);
 
 	useEffect(() => {
 		if (user) {
@@ -313,7 +314,7 @@ export function SocialConnections({
 				pagesResponse.data.map(async (page) => {
 					try {
 						return new Promise<InstagramAccount | null>(
-							(resolve, reject) => {
+							(resolve) => {
 								window.FB.api<FacebookPageResponse>(
 									`/${page.id}?fields=instagram_business_account{id,name,username,profile_picture_url}`,
 									(response) => {
