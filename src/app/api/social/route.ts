@@ -10,7 +10,15 @@ export async function POST(request: Request) {
 		await connectDb();
 
 		const body = await request.json();
-		const { userId, platform, accessToken, imageUrl, caption } = body;
+		const {
+			userId,
+			platform,
+			accessToken,
+			imageUrl,
+			caption,
+			instagramAccountId,
+			pageAccessToken,
+		} = body;
 
 		// Validate input
 		if (!userId) {
@@ -31,6 +39,11 @@ export async function POST(request: Request) {
 
 		// If this is a social media connection request
 		if (platform && accessToken) {
+			console.log("Processing social media connection request:", {
+				platform,
+				userId,
+			});
+
 			// Initialize Meta API
 			const metaApi = new MetaApi({ accessToken });
 
@@ -41,16 +54,26 @@ export async function POST(request: Request) {
 			const existingConnection = await SocialConnection.findOne({
 				userId: new mongoose.Types.ObjectId(userId),
 				platform,
-				profileId: profile.id,
 			});
+
+			const connectionData = {
+				accessToken,
+				profileId:
+					platform === "instagram" ? instagramAccountId : profile.id,
+				profileName: body.profileName || profile.name,
+				profileImage: body.profileImage || profile.picture?.data?.url,
+				pageAccessToken:
+					platform === "instagram" ? pageAccessToken : accessToken,
+				instagramAccountId:
+					platform === "instagram" ? instagramAccountId : undefined,
+				updatedAt: new Date(),
+			};
 
 			if (existingConnection) {
 				// Update existing connection
-				existingConnection.accessToken = accessToken;
-				existingConnection.profileName = profile.name;
-				existingConnection.profileImage = profile.picture?.data?.url;
-				existingConnection.updatedAt = new Date();
+				Object.assign(existingConnection, connectionData);
 				await existingConnection.save();
+				console.log("Updated existing connection:", existingConnection);
 
 				return NextResponse.json({
 					id: existingConnection._id,
@@ -66,11 +89,10 @@ export async function POST(request: Request) {
 			const newConnection = await SocialConnection.create({
 				userId: new mongoose.Types.ObjectId(userId),
 				platform,
-				accessToken,
-				profileId: profile.id,
-				profileName: profile.name,
-				profileImage: profile.picture?.data?.url,
+				...connectionData,
 			});
+
+			console.log("Created new connection:", newConnection);
 
 			return NextResponse.json(
 				{
@@ -87,11 +109,10 @@ export async function POST(request: Request) {
 
 		// If this is a social media post request
 		if (platform && imageUrl && caption) {
-			// console.log("Attempting to post to social media:", {
-			// 	platform,
-			// 	imageUrl,
-			// 	caption,
-			// });
+			console.log("Processing social media post request:", {
+				platform,
+				userId,
+			});
 
 			// Validate image URL
 			try {
@@ -117,32 +138,24 @@ export async function POST(request: Request) {
 					);
 				}
 
-				// console.log("Found social connection:", {
-				// 	platform,
-				// 	profileId: connection.profileId,
-				// 	profileName: connection.profileName,
-				// });
+				console.log("Found social connection:", {
+					platform,
+					profileId: connection.profileId,
+					profileName: connection.profileName,
+				});
 
 				// Initialize Meta API with the connection's access token
 				const metaApi = new MetaApi({
-					accessToken: connection.accessToken,
+					accessToken:
+						platform === "instagram"
+							? connection.pageAccessToken
+							: connection.accessToken,
 				});
 
 				// Post to the appropriate platform
 				let result;
 				try {
 					if (platform === "facebook") {
-						// console.log("Using Facebook connection:", {
-						// 	profileId: connection.profileId,
-						// 	accessToken: connection.accessToken
-						// 		? "present"
-						// 		: "missing",
-						// });
-
-						if (!connection.accessToken) {
-							throw new Error("Facebook access token is missing");
-						}
-
 						result = await metaApi.postToFacebook(
 							connection.profileId,
 							connection.accessToken,
@@ -151,8 +164,10 @@ export async function POST(request: Request) {
 						);
 					} else if (platform === "instagram") {
 						result = await metaApi.postToInstagram(
-							connection.profileId,
-							connection.accessToken,
+							connection.instagramAccountId ||
+								connection.profileId,
+							connection.pageAccessToken ||
+								connection.accessToken,
 							cleanImageUrl,
 							caption
 						);

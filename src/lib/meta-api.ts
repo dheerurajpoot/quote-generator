@@ -125,68 +125,117 @@ export class MetaApi {
 		caption: string
 	) {
 		try {
-			// First, create a container
+			console.log("Starting Instagram post process...");
+			console.log("Using account ID:", instagramAccountId);
+
+			// First, upload image to Cloudinary to ensure HTTPS URL
+			const cloudinaryUrl = await uploadImage(imageUrl);
+			console.log("Image uploaded to Cloudinary:", cloudinaryUrl);
+
+			// Create a container for the media
+			const containerFormData = new URLSearchParams();
+			containerFormData.append("image_url", cloudinaryUrl);
+			containerFormData.append("caption", caption);
+			containerFormData.append("access_token", pageAccessToken);
+
+			console.log("Creating media container...");
 			const containerResponse = await fetch(
 				`${
 					this.baseUrl
-				}/${instagramAccountId}/media?image_url=${encodeURIComponent(
-					imageUrl
-				)}&caption=${encodeURIComponent(
-					caption
-				)}&access_token=${pageAccessToken}`,
+				}/${instagramAccountId}/media?${containerFormData.toString()}`,
 				{
 					method: "POST",
-					headers: {
-						"Content-Type": "application/json",
-					},
 				}
 			);
 
-			if (!containerResponse.ok) {
-				const error = await containerResponse.json();
+			const containerText = await containerResponse.text();
+			console.log("Container response text:", containerText);
+
+			let containerData;
+			try {
+				containerData = JSON.parse(containerText);
+			} catch (e) {
+				console.error("Failed to parse container response:", e);
+				throw new Error(
+					`Invalid response from Instagram API: ${containerText}`
+				);
+			}
+
+			if (!containerResponse.ok || !containerData.id) {
+				console.error(
+					"Instagram container creation error:",
+					containerData
+				);
 				throw new Error(
 					`Failed to create Instagram container: ${
-						error.error?.message || "Unknown error"
+						containerData.error?.message || "Unknown error"
 					}`
 				);
 			}
 
-			const containerResult = await containerResponse.json();
-			if (!containerResult.id) {
-				throw new Error("No container ID received from Instagram");
+			const containerId = containerData.id;
+			console.log("Media container created with ID:", containerId);
+
+			// Wait for the container to be ready
+			let status = "IN_PROGRESS";
+			let attempts = 0;
+			const maxAttempts = 10;
+
+			while (status === "IN_PROGRESS" && attempts < maxAttempts) {
+				await new Promise((resolve) => setTimeout(resolve, 2000)); // Wait 2 seconds
+				console.log(
+					`Checking status attempt ${attempts + 1}/${maxAttempts}...`
+				);
+
+				const statusResponse = await fetch(
+					`${this.baseUrl}/${containerId}?fields=status_code&access_token=${pageAccessToken}`
+				);
+				const statusData = await statusResponse.json();
+				status = statusData.status_code;
+				console.log("Current status:", status);
+				attempts++;
 			}
 
-			const containerId = containerResult.id;
+			if (status !== "FINISHED") {
+				throw new Error(
+					`Container processing failed with status: ${status}`
+				);
+			}
 
-			// Then publish the container
+			// Publish the container
+			console.log("Publishing media...");
+			const publishFormData = new URLSearchParams();
+			publishFormData.append("creation_id", containerId);
+			publishFormData.append("access_token", pageAccessToken);
+
 			const publishResponse = await fetch(
-				`${this.baseUrl}/${instagramAccountId}/media_publish?creation_id=${containerId}&access_token=${pageAccessToken}`,
+				`${this.baseUrl}/${instagramAccountId}/media_publish`,
 				{
 					method: "POST",
 					headers: {
-						"Content-Type": "application/json",
+						"Content-Type": "application/x-www-form-urlencoded",
 					},
+					body: publishFormData.toString(),
 				}
 			);
 
-			if (!publishResponse.ok) {
-				const error = await publishResponse.json();
+			const publishData = await publishResponse.json();
+
+			if (!publishResponse.ok || !publishData.id) {
+				console.error("Instagram publish error:", publishData);
 				throw new Error(
 					`Failed to publish to Instagram: ${
-						error.error?.message || "Unknown error"
+						publishData.error?.message || "Unknown error"
 					}`
 				);
 			}
 
-			const publishResult = await publishResponse.json();
-			if (!publishResult.id) {
-				throw new Error("No post ID received from Instagram");
-			}
+			console.log("Successfully published to Instagram:", publishData);
 
 			return {
 				success: true,
-				postId: publishResult.id,
-				url: `https://instagram.com/p/${publishResult.id}`,
+				postId: publishData.id,
+				url: `https://instagram.com/p/${publishData.id}`,
 			};
 		} catch (error) {
 			console.error("Instagram posting error:", error);

@@ -21,7 +21,14 @@ import {
 	FacebookPagesResponse,
 	FacebookUserResponse,
 	InstagramAccount,
+	FacebookPage,
 } from "@/app/types/facebook";
+import {
+	Dialog,
+	DialogContent,
+	DialogHeader,
+	DialogTitle,
+} from "@/components/ui/dialog";
 
 interface SocialConnection {
 	id: string;
@@ -55,6 +62,15 @@ export function SocialConnections({
 	const [isConnecting, setIsConnecting] = useState<Record<string, boolean>>(
 		{}
 	);
+	const [selectedAccount, setSelectedAccount] =
+		useState<InstagramAccount | null>(null);
+	const [showAccountDialog, setShowAccountDialog] = useState(false);
+	const [availableAccounts, setAvailableAccounts] = useState<
+		InstagramAccount[]
+	>([]);
+	const [showPageDialog, setShowPageDialog] = useState(false);
+	const [availablePages, setAvailablePages] = useState<FacebookPage[]>([]);
+	const [selectedPage, setSelectedPage] = useState<FacebookPage | null>(null);
 
 	useEffect(() => {
 		if (user) {
@@ -110,6 +126,59 @@ export function SocialConnections({
 		}
 	};
 
+	const handlePageSelection = async (page: FacebookPage) => {
+		setSelectedPage(page);
+		setShowPageDialog(false);
+		try {
+			// Send the connection data to your backend
+			const apiResponse = await fetch("/api/social", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify({
+					userId: user?._id,
+					platform: "facebook",
+					accessToken: page.access_token,
+					profileId: page.id,
+					profileName: page.name,
+				}),
+			});
+
+			if (!apiResponse.ok) {
+				const errorData = await apiResponse.json();
+				throw new Error(
+					errorData.error || "Failed to save Facebook connection"
+				);
+			}
+
+			const data = await apiResponse.json();
+
+			// Add Facebook connection to state
+			const newConnection: SocialConnection = {
+				id: data.id,
+				platform: "facebook",
+				profileId: data.profileId,
+				profileName: data.profileName,
+				profileImage: data.profileImage,
+				connected: true,
+			};
+
+			setConnections((prev) => [
+				...prev.filter((c) => c.platform !== "facebook"),
+				newConnection,
+			]);
+			setSuccess("Successfully connected to Facebook!");
+		} catch (error) {
+			console.error("Error saving Facebook connection:", error);
+			if (error instanceof Error) {
+				setError(error.message || "Failed to save Facebook connection");
+			} else {
+				setError("Failed to save Facebook connection");
+			}
+		}
+	};
+
 	const connectFacebook = async () => {
 		try {
 			setIsConnecting((prev) => ({ ...prev, facebook: true }));
@@ -156,20 +225,10 @@ export function SocialConnections({
 							if (response.data && response.data.length > 0) {
 								resolve(response);
 							} else {
-								// Try to get more information about why no pages were found
-								window.FB.api<FacebookUserResponse>(
-									"/me",
-									(userResponse) => {
-										console.log(
-											"User response:",
-											userResponse
-										);
-										reject(
-											new Error(
-												"No Facebook pages found. Please make sure you have at least one Facebook page and have granted the necessary permissions."
-											)
-										);
-									}
+								reject(
+									new Error(
+										"No Facebook pages found. Please make sure you have at least one Facebook page."
+									)
 								);
 							}
 						}
@@ -177,50 +236,11 @@ export function SocialConnections({
 				}
 			);
 
-			// Get the first page (you might want to let users choose which page to connect)
-			const page = pagesResponse.data[0];
-
-			// Send the connection data to your backend
-			const apiResponse = await fetch("/api/social", {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json",
-				},
-				body: JSON.stringify({
-					userId: user?._id,
-					platform: "facebook",
-					accessToken: page.access_token,
-					profileId: page.id,
-					profileName: page.name,
-				}),
-			});
-
-			if (!apiResponse.ok) {
-				const errorData = await apiResponse.json();
-				throw new Error(
-					errorData.error || "Failed to save Facebook connection"
-				);
-			}
-
-			const data = await apiResponse.json();
-
-			// Add Facebook connection to state
-			const newConnection: SocialConnection = {
-				id: data.id,
-				platform: "facebook",
-				profileId: data.profileId,
-				profileName: data.profileName,
-				profileImage: data.profileImage,
-				connected: true,
-			};
-
-			setConnections((prev) => [
-				...prev.filter((c) => c.platform !== "facebook"),
-				newConnection,
-			]);
-			setSuccess("Successfully connected to Facebook!");
+			// Show dialog with available pages
+			setAvailablePages(pagesResponse.data);
+			setShowPageDialog(true);
 		} catch (err: unknown) {
-			console.error("Facebook connection error:", err); // Debug log
+			console.error("Facebook connection error:", err);
 			if (err instanceof Error) {
 				setError(err.message || "Failed to connect to Facebook");
 			} else {
@@ -253,17 +273,17 @@ export function SocialConnections({
 						}
 					},
 					{
-						scope: "instagram_basic,instagram_content_publish,pages_show_list,pages_read_engagement,pages_manage_posts,pages_manage_metadata,pages_read_user_content,pages_manage_ads",
+						scope: "instagram_basic,instagram_content_publish,instagram_manage_insights,pages_show_list,pages_read_engagement,pages_manage_posts,pages_manage_metadata,business_management",
 						return_scopes: true,
 					}
 				);
 			});
 
-			// Get user's Facebook pages
+			// Get user's Facebook pages with Instagram business accounts
 			const pagesResponse = await new Promise<FacebookPagesResponse>(
 				(resolve, reject) => {
 					window.FB.api<FacebookPagesResponse>(
-						"/me/accounts",
+						"/me/accounts?fields=id,name,access_token,instagram_business_account{id,name,username,profile_picture_url}",
 						(response) => {
 							if (response.error) {
 								reject(
@@ -291,43 +311,113 @@ export function SocialConnections({
 			// Get Instagram business accounts for each page
 			const instagramAccounts = await Promise.all(
 				pagesResponse.data.map(async (page) => {
-					return new Promise<InstagramAccount>((resolve, reject) => {
-						window.FB.api<FacebookPageResponse>(
-							`/${page.id}?fields=instagram_business_account`,
-							(response) => {
-								if (response.error) {
-									reject(
-										new Error(
-											response.error.message ||
-												"Failed to fetch Instagram account"
-										)
-									);
-									return;
-								}
-								if (response.instagram_business_account) {
-									resolve({
-										pageId: page.id,
-										pageName: page.name,
-										pageAccessToken: page.access_token,
-										instagramAccountId:
+					try {
+						return new Promise<InstagramAccount | null>(
+							(resolve, reject) => {
+								window.FB.api<FacebookPageResponse>(
+									`/${page.id}?fields=instagram_business_account{id,name,username,profile_picture_url}`,
+									(response) => {
+										console.log(
+											`Instagram account response for page ${page.name}:`,
+											response
+										);
+										if (response.error) {
+											console.error(
+												`Error fetching Instagram account for page ${page.name}:`,
+												response.error
+											);
+											resolve(null);
+											return;
+										}
+										if (
 											response.instagram_business_account
-												.id,
-									});
-								} else {
-									reject(
-										new Error(
-											"No Instagram business account found for this Facebook page."
-										)
-									);
-								}
+										) {
+											resolve({
+												pageId: page.id,
+												pageName: page.name,
+												pageAccessToken:
+													page.access_token,
+												instagramAccountId:
+													response
+														.instagram_business_account
+														.id,
+												username:
+													response
+														.instagram_business_account
+														.username,
+												profilePicture:
+													response
+														.instagram_business_account
+														.profile_picture_url,
+											});
+										} else {
+											console.log(
+												`No Instagram business account found for page ${page.name}`
+											);
+											resolve(null);
+										}
+									}
+								);
 							}
 						);
-					});
+					} catch (error) {
+						console.error(
+							`Error processing page ${page.name}:`,
+							error
+						);
+						return null;
+					}
 				})
 			);
 
-			// Get the first Instagram account
-			const instagramAccount = instagramAccounts[0];
+			// Filter out null accounts and create a list of valid Instagram accounts
+			const validAccounts = instagramAccounts.filter(
+				(account): account is InstagramAccount => account !== null
+			);
+
+			console.log("Valid Instagram accounts:", validAccounts);
+
+			if (validAccounts.length === 0) {
+				throw new Error(
+					"No Instagram Business Accounts found. Please make sure:\n1. Your Facebook page is connected to an Instagram Business Account\n2. You have granted all necessary permissions\n3. You are an admin of both the Facebook page and Instagram account"
+				);
+			}
+
+			// If there's only one account, use it directly
+			if (validAccounts.length === 1) {
+				const instagramAccount = validAccounts[0];
+				await saveInstagramConnection(instagramAccount);
+				return;
+			}
+
+			// If there are multiple accounts, show the dialog
+			setAvailableAccounts(validAccounts);
+			setShowAccountDialog(true);
+			setSelectedAccount(null);
+		} catch (err: unknown) {
+			console.error("Instagram connection error:", err);
+			if (err instanceof Error) {
+				setError(err.message || "Failed to connect to Instagram");
+			} else {
+				setError("Failed to connect to Instagram");
+			}
+		} finally {
+			setIsConnecting((prev) => ({ ...prev, instagram: false }));
+		}
+	};
+
+	const saveInstagramConnection = async (
+		instagramAccount: InstagramAccount
+	) => {
+		try {
+			console.log("Saving Instagram connection with data:", {
+				userId: user?._id,
+				platform: "instagram",
+				accessToken: instagramAccount.pageAccessToken,
+				profileId: instagramAccount.instagramAccountId,
+				profileName: instagramAccount.username,
+				profileImage: instagramAccount.profilePicture,
+			});
 
 			// Send the connection data to your backend
 			const apiResponse = await fetch("/api/social", {
@@ -340,7 +430,11 @@ export function SocialConnections({
 					platform: "instagram",
 					accessToken: instagramAccount.pageAccessToken,
 					profileId: instagramAccount.instagramAccountId,
-					profileName: instagramAccount.pageName,
+					profileName:
+						instagramAccount.username || instagramAccount.pageName,
+					profileImage: instagramAccount.profilePicture,
+					instagramAccountId: instagramAccount.instagramAccountId,
+					pageAccessToken: instagramAccount.pageAccessToken,
 				}),
 			});
 
@@ -352,6 +446,7 @@ export function SocialConnections({
 			}
 
 			const data = await apiResponse.json();
+			console.log("Instagram connection saved successfully:", data);
 
 			// Add Instagram connection to state
 			const newConnection: SocialConnection = {
@@ -368,15 +463,15 @@ export function SocialConnections({
 				newConnection,
 			]);
 			setSuccess("Successfully connected to Instagram!");
-		} catch (err: unknown) {
-			console.error("Instagram connection error:", err);
-			if (err instanceof Error) {
-				setError(err.message || "Failed to connect to Instagram");
+		} catch (error) {
+			console.error("Error saving Instagram connection:", error);
+			if (error instanceof Error) {
+				setError(
+					error.message || "Failed to save Instagram connection"
+				);
 			} else {
-				setError("Failed to connect to Instagram");
+				setError("Failed to save Instagram connection");
 			}
-		} finally {
-			setIsConnecting((prev) => ({ ...prev, instagram: false }));
 		}
 	};
 
@@ -427,6 +522,12 @@ export function SocialConnections({
 		} finally {
 			setIsConnecting((prev) => ({ ...prev, [platform]: false }));
 		}
+	};
+
+	const handleAccountSelection = (account: InstagramAccount) => {
+		setSelectedAccount(account);
+		setShowAccountDialog(false);
+		saveInstagramConnection(account);
 	};
 
 	if (loading) {
@@ -626,6 +727,66 @@ export function SocialConnections({
 					</CardFooter>
 				</Card>
 			</div>
+			<Dialog
+				open={showAccountDialog}
+				onOpenChange={setShowAccountDialog}>
+				<DialogContent>
+					<DialogHeader>
+						<DialogTitle>Select Instagram Account</DialogTitle>
+					</DialogHeader>
+					<div className='space-y-4'>
+						{availableAccounts.map((account) => (
+							<div
+								key={account.instagramAccountId}
+								className='flex items-center space-x-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50'
+								onClick={() => handleAccountSelection(account)}>
+								<img
+									src={account.profilePicture}
+									alt={account.username}
+									className='w-10 h-10 rounded-full'
+								/>
+								<div>
+									<p className='font-medium'>
+										{account.username}
+									</p>
+									<p className='text-sm text-gray-500'>
+										{account.pageName}
+									</p>
+								</div>
+							</div>
+						))}
+					</div>
+				</DialogContent>
+			</Dialog>
+			<Dialog open={showPageDialog} onOpenChange={setShowPageDialog}>
+				<DialogContent>
+					<DialogHeader>
+						<DialogTitle>Select Facebook Page</DialogTitle>
+					</DialogHeader>
+					<div className='space-y-4'>
+						{availablePages.map((page) => (
+							<div
+								key={page.id}
+								className='flex items-center space-x-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50'
+								onClick={() => handlePageSelection(page)}>
+								{page.picture?.data?.url && (
+									<img
+										src={page.picture.data.url}
+										alt={page.name}
+										className='w-10 h-10 rounded-full'
+									/>
+								)}
+								<div>
+									<p className='font-medium'>{page.name}</p>
+									<p className='text-sm text-gray-500'>
+										Facebook Page
+									</p>
+								</div>
+							</div>
+						))}
+					</div>
+				</DialogContent>
+			</Dialog>
 		</div>
 	);
 }

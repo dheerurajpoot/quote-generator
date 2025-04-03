@@ -12,6 +12,12 @@ export interface FacebookPage {
 	access_token: string;
 	id: string;
 	name: string;
+	picture?: {
+		data: {
+			url: string;
+		};
+	};
+	instagram_business_account?: InstagramBusinessAccount;
 }
 
 export interface FacebookPagesResponse {
@@ -34,6 +40,9 @@ export interface FacebookUserResponse {
 
 export interface InstagramBusinessAccount {
 	id: string;
+	name: string;
+	username: string;
+	profile_picture_url: string;
 }
 
 export interface FacebookPageResponse {
@@ -49,6 +58,17 @@ export interface InstagramAccount {
 	pageName: string;
 	pageAccessToken: string;
 	instagramAccountId: string;
+	username: string;
+	profilePicture: string;
+}
+
+export interface SocialConnection {
+	id: string;
+	platform: "facebook" | "instagram";
+	profileId: string;
+	profileName: string;
+	profileImage: string;
+	connected: boolean;
 }
 
 declare global {

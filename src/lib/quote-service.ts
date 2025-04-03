@@ -131,6 +131,14 @@ export async function postToSocialMedia(
 	caption: string
 ): Promise<SocialMediaResponse> {
 	try {
+		if (!userId) {
+			throw new Error("User ID is required to post to social media");
+		}
+
+		if (!imageUrl) {
+			throw new Error("Image URL is required to post to social media");
+		}
+
 		const response = await axios.post("/api/social", {
 			userId,
 			imageUrl,
