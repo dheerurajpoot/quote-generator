@@ -159,6 +159,7 @@ export default function AutoQuotePoster() {
 			if (intervalRef.current) {
 				clearInterval(intervalRef.current);
 			}
+			console.log(platforms);
 
 			// Initial post
 			await handlePostToSocialMedia();

@@ -228,9 +228,8 @@ export function SocialConnections({
 			// Get user's Facebook pages with long-lived token
 			const pagesResponse = await new Promise<FacebookPagesResponse>(
 				(resolve, reject) => {
-					(window.FB.api as any)(
-						"/me/accounts",
-						{ access_token: longLivedToken },
+					window.FB.api(
+						`/me/accounts?access_token=${longLivedToken}`,
 						(response: FacebookPagesResponse) => {
 							if (response.error) {
 								reject(
