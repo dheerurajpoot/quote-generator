@@ -26,7 +26,7 @@ export async function getRandomPexelsImage(): Promise<string> {
 				Authorization: PEXELS_API_KEY,
 			},
 			params: {
-				per_page: 30, // Get 30 images to randomize
+				per_page: 300, // Get 300 images to randomize
 			},
 		});
 
@@ -145,7 +145,6 @@ export async function postToSocialMedia(
 			platform,
 			caption,
 		});
-		console.log("response:", response);
 		return response;
 	} catch (error) {
 		console.error("Error posting to social media:", error);

@@ -43,6 +43,7 @@ export default function AutoQuotePoster() {
 	const [isAutoPosting, setIsAutoPosting] = useState(false);
 	const canvasRef = useRef<HTMLDivElement>(null);
 	const intervalRef = useRef<NodeJS.Timeout | null>(null);
+	const [isAutoPostingLoading, setIsAutoPostingLoading] = useState(false);
 	const { user } = useAuth();
 
 	const fetchNewQuote = useCallback(async () => {
@@ -65,14 +66,13 @@ export default function AutoQuotePoster() {
 			const imageUrl = await generateImageDataUrl();
 
 			const caption = `${quote.text}\n\n— ${quote.author}`;
-
 			// Post to selected platforms
+			setIsAutoPostingLoading(true);
 			const results = await Promise.all(
 				autoPostingPlatforms.map((platform) =>
 					postToSocialMedia(imageUrl, user._id, platform, caption)
 				)
 			);
-
 			// Check if any post was successful
 			const hasSuccess = results.some((res) => res.data.success);
 			if (hasSuccess) {
@@ -86,7 +86,8 @@ export default function AutoQuotePoster() {
 						userId: user._id,
 					}),
 				});
-
+				setIsAutoPostingLoading(false);
+				setIsAutoPosting(true);
 				toast.success("Posts Published!");
 				// Fetch a new quote for the next post
 				await fetchNewQuote();
@@ -258,12 +259,12 @@ export default function AutoQuotePoster() {
 				}
 
 				// Start auto posting
-				setIsAutoPosting(true);
+				// setIsAutoPosting(true);
 				startAutoPosting(
 					parseInt(postingInterval),
 					autoPostingPlatforms
 				);
-				toast.success("Auto-posting has been started");
+				// toast.success("Auto-posting has been started");
 			} else {
 				// Save disabled state to backend
 				const response = await fetch("/api/auto-posting", {
@@ -451,20 +452,6 @@ export default function AutoQuotePoster() {
 										— {quote.author}
 									</p>
 								)}
-
-								{/* {quote?.watermark && (
-									<p
-										className='absolute bottom-4 right-4 text-sm opacity-70'
-										style={{
-											color: quote?.textColor,
-											letterSpacing: "0.025em",
-											textRendering: "optimizeLegibility",
-											WebkitFontSmoothing: "antialiased",
-											MozOsxFontSmoothing: "grayscale",
-										}}>
-											{quote.watermark}
-										</p>
-									)} */}
 							</div>
 						</div>
 					)}
@@ -544,9 +531,13 @@ export default function AutoQuotePoster() {
 						variant={isAutoPosting ? "destructive" : "default"}
 						className='flex-1'
 						disabled={autoPostingPlatforms.length === 0}>
-						{isAutoPosting
-							? "Stop Auto Posting"
-							: "Start Auto Posting"}
+						{isAutoPostingLoading ? (
+							<Loader2 className='mr-2 h-4 w-4 animate-spin' />
+						) : isAutoPosting ? (
+							"Stop Auto Posting"
+						) : (
+							"Start Auto Posting"
+						)}
 					</Button>
 					<Button onClick={handleDownload} className='flex-1'>
 						Download
