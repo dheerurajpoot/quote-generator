@@ -13,15 +13,11 @@ const autoPostingSettingsSchema = new mongoose.Schema(
 		},
 		interval: {
 			type: Number,
-			default: 1, // hours
+			default: 1,
 		},
 		platforms: {
 			type: [String],
 			default: [],
-		},
-		lastPostTime: {
-			type: Date,
-			default: null,
 		},
 	},
 	{

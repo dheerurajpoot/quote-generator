@@ -54,7 +54,6 @@ export async function POST(request: Request) {
 					isEnabled,
 					interval,
 					platforms,
-					lastPostTime: isEnabled ? new Date() : null,
 				},
 			},
 			{ upsert: true, new: true }
@@ -75,7 +74,7 @@ export async function PUT(request: Request) {
 		await connectDb();
 
 		const body = await request.json();
-		const { userId } = body;
+		const { userId, interval } = body;
 
 		if (!userId) {
 			return NextResponse.json(
@@ -88,7 +87,7 @@ export async function PUT(request: Request) {
 			{ userId: new mongoose.Types.ObjectId(userId) },
 			{
 				$set: {
-					lastPostTime: new Date(),
+					interval: interval,
 				},
 			},
 			{ new: true }

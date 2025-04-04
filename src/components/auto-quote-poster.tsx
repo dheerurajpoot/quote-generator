@@ -21,6 +21,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Facebook, Instagram } from "lucide-react";
 import { AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import axios from "axios";
 
 interface Quote {
 	text: string;
@@ -36,16 +37,14 @@ interface Quote {
 export default function AutoQuotePoster() {
 	const [quote, setQuote] = useState<Quote | null>(null);
 	const [isLoading, setIsLoading] = useState(false);
-	const [postingInterval, setPostingInterval] = useState("1");
-	const [autoPostingPlatforms, setAutoPostingPlatforms] = useState<string[]>(
-		[]
-	);
+	const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([]);
 	const [isAutoPosting, setIsAutoPosting] = useState(false);
 	const canvasRef = useRef<HTMLDivElement>(null);
-	const intervalRef = useRef<NodeJS.Timeout | null>(null);
-	const [isAutoPostingLoading, setIsAutoPostingLoading] = useState(false);
+	const [postingInterval, setPostingInterval] = useState("60");
+	const [isPosting, setIsPosting] = useState(false);
 	const { user } = useAuth();
 
+	// Fetch a new quote
 	const fetchNewQuote = useCallback(async () => {
 		setIsLoading(true);
 		try {
@@ -53,277 +52,11 @@ export default function AutoQuotePoster() {
 			setQuote(newQuote);
 		} catch (error) {
 			console.error("Error fetching quote:", error);
+			toast.error("Failed to fetch a new quote");
 		} finally {
 			setIsLoading(false);
 		}
 	}, []);
-
-	const handlePostToSocialMedia = useCallback(async () => {
-		if (!quote || !canvasRef.current || !user?._id) return;
-
-		try {
-			// Generate image from quote
-			const imageUrl = await generateImageDataUrl();
-
-			const caption = `${quote.text}\n\n— ${quote.author}`;
-			// Post to selected platforms
-			setIsAutoPostingLoading(true);
-			const results = await Promise.all(
-				autoPostingPlatforms.map((platform) =>
-					postToSocialMedia(imageUrl, user._id, platform, caption)
-				)
-			);
-			// Check if any post was successful
-			const hasSuccess = results.some((res) => res.data.success);
-			if (hasSuccess) {
-				// Update last post time in backend
-				await fetch("/api/auto-posting", {
-					method: "PUT",
-					headers: {
-						"Content-Type": "application/json",
-					},
-					body: JSON.stringify({
-						userId: user._id,
-					}),
-				});
-				setIsAutoPostingLoading(false);
-				setIsAutoPosting(true);
-				toast.success("Posts Published!");
-				// Fetch a new quote for the next post
-				await fetchNewQuote();
-			} else {
-				// If no posts were successful, stop auto-posting
-				setIsAutoPosting(false);
-				if (intervalRef.current) {
-					clearInterval(intervalRef.current);
-				}
-
-				// Update backend settings
-				await fetch("/api/auto-posting", {
-					method: "POST",
-					headers: {
-						"Content-Type": "application/json",
-					},
-					body: JSON.stringify({
-						userId: user._id,
-						isEnabled: false,
-						interval: parseInt(postingInterval),
-						platforms: autoPostingPlatforms,
-					}),
-				});
-
-				toast.error(
-					"Failed to post to any platform. Auto-posting has been stopped."
-				);
-			}
-		} catch (error) {
-			console.error("Error posting to social media:", error);
-			// Stop auto-posting on error
-			setIsAutoPosting(false);
-			if (intervalRef.current) {
-				clearInterval(intervalRef.current);
-			}
-
-			// Update backend settings
-			if (user?._id) {
-				await fetch("/api/auto-posting", {
-					method: "POST",
-					headers: {
-						"Content-Type": "application/json",
-					},
-					body: JSON.stringify({
-						userId: user._id,
-						isEnabled: false,
-						interval: parseInt(postingInterval),
-						platforms: autoPostingPlatforms,
-					}),
-				});
-			}
-
-			let errorMessage = "Failed to post to social media";
-			if (error instanceof Error) {
-				errorMessage = error.message;
-			}
-			toast.error(errorMessage);
-		}
-	}, [
-		quote,
-		user?._id,
-		autoPostingPlatforms,
-		postingInterval,
-		fetchNewQuote,
-	]);
-
-	const startAutoPosting = useCallback(
-		async (interval: number, platforms: string[]) => {
-			// Clear any existing interval
-			if (intervalRef.current) {
-				clearInterval(intervalRef.current);
-			}
-			console.log(platforms);
-
-			// Initial post
-			await handlePostToSocialMedia();
-
-			// Set up interval for subsequent posts
-			const intervalTime = interval * 60 * 60 * 1000; // Convert hours to milliseconds
-			intervalRef.current = setInterval(async () => {
-				await handlePostToSocialMedia();
-			}, intervalTime);
-		},
-		[handlePostToSocialMedia]
-	);
-
-	// Load initial quote
-	useEffect(() => {
-		fetchNewQuote();
-	}, [fetchNewQuote]);
-
-	// Load auto-posting settings from backend
-	useEffect(() => {
-		let mounted = true;
-
-		const loadSettings = async () => {
-			if (!user?._id) return;
-
-			try {
-				const response = await fetch(
-					`/api/auto-posting?userId=${user._id}`
-				);
-				if (!response.ok) {
-					throw new Error("Failed to load auto-posting settings");
-				}
-
-				if (!mounted) return;
-
-				const settings = await response.json();
-				setAutoPostingPlatforms(settings.platforms || []);
-				setPostingInterval(settings.interval?.toString() || "1");
-				setIsAutoPosting(settings.isEnabled || false);
-
-				// If auto-posting is enabled, start the interval
-				if (settings.isEnabled && mounted) {
-					startAutoPosting(settings.interval, settings.platforms);
-				}
-			} catch (error) {
-				console.error("Error loading auto-posting settings:", error);
-				if (mounted) {
-					toast.error("Failed to load auto-posting settings");
-				}
-			}
-		};
-
-		loadSettings();
-
-		return () => {
-			mounted = false;
-			if (intervalRef.current) {
-				clearInterval(intervalRef.current);
-				intervalRef.current = null;
-			}
-		};
-	}, [user?._id]);
-
-	const handleAutoPostingToggle = async () => {
-		if (!user?._id) {
-			toast.error("Please sign in to use auto-posting");
-			return;
-		}
-
-		try {
-			if (!isAutoPosting) {
-				// Check if any platforms are selected
-				if (autoPostingPlatforms.length === 0) {
-					toast.error(
-						"Please select at least one platform for auto-posting"
-					);
-					return;
-				}
-
-				// Save settings to backend
-				const response = await fetch("/api/auto-posting", {
-					method: "POST",
-					headers: {
-						"Content-Type": "application/json",
-					},
-					body: JSON.stringify({
-						userId: user._id,
-						isEnabled: true,
-						interval: parseInt(postingInterval),
-						platforms: autoPostingPlatforms,
-					}),
-				});
-
-				if (!response.ok) {
-					throw new Error("Failed to save auto-posting settings");
-				}
-
-				// Start auto posting
-				// setIsAutoPosting(true);
-				startAutoPosting(
-					parseInt(postingInterval),
-					autoPostingPlatforms
-				);
-				// toast.success("Auto-posting has been started");
-			} else {
-				// Save disabled state to backend
-				const response = await fetch("/api/auto-posting", {
-					method: "POST",
-					headers: {
-						"Content-Type": "application/json",
-					},
-					body: JSON.stringify({
-						userId: user._id,
-						isEnabled: false,
-						interval: parseInt(postingInterval),
-						platforms: autoPostingPlatforms,
-					}),
-				});
-
-				if (!response.ok) {
-					throw new Error("Failed to save auto-posting settings");
-				}
-
-				// Stop auto posting
-				setIsAutoPosting(false);
-				if (intervalRef.current) {
-					clearInterval(intervalRef.current);
-				}
-				toast.success("Auto-posting has been stopped");
-			}
-		} catch (error) {
-			console.error("Error toggling auto-posting:", error);
-			toast.error("Failed to toggle auto-posting");
-		}
-	};
-
-	const handlePlatformToggle = async (platform: string) => {
-		const newPlatforms = autoPostingPlatforms.includes(platform)
-			? autoPostingPlatforms.filter((p) => p !== platform)
-			: [...autoPostingPlatforms, platform];
-
-		setAutoPostingPlatforms(newPlatforms);
-
-		// Save settings to backend if user is signed in
-		if (user?._id) {
-			try {
-				await fetch("/api/auto-posting", {
-					method: "POST",
-					headers: {
-						"Content-Type": "application/json",
-					},
-					body: JSON.stringify({
-						userId: user._id,
-						isEnabled: isAutoPosting,
-						interval: parseInt(postingInterval),
-						platforms: newPlatforms,
-					}),
-				});
-			} catch (error) {
-				console.error("Error saving platform settings:", error);
-			}
-		}
-	};
 
 	// Generate image data URL for social sharing
 	const generateImageDataUrl = async () => {
@@ -346,8 +79,98 @@ export default function AutoQuotePoster() {
 				}
 			},
 		});
-		const dataUrl = canvas.toDataURL("image/png", 1.0);
-		return dataUrl;
+		return canvas.toDataURL("image/png", 1.0);
+	};
+
+	// Post to social media
+	const handlePostToSocialMedia = useCallback(async () => {
+		if (
+			!quote ||
+			!canvasRef.current ||
+			!user?._id ||
+			selectedPlatforms.length === 0
+		)
+			return;
+
+		try {
+			// Generate image from quote
+			const imageUrl = await generateImageDataUrl();
+			if (!imageUrl) return;
+
+			const caption = `${quote.text}\n\n— ${quote.author}`;
+
+			// Post to selected platforms
+			setIsPosting(true);
+			const results = await Promise.all(
+				selectedPlatforms.map((platform) =>
+					postToSocialMedia(imageUrl, user._id, platform, caption)
+				)
+			);
+
+			// Check if any post was successful
+			const hasSuccess = results.some((res) => res.data.success);
+			if (hasSuccess) {
+				toast.success(
+					"Auto-posting started. Posts will be made every 5 minutes."
+				);
+
+				// Fetch a new quote for the next post
+				await fetchNewQuote();
+			} else {
+				toast.error("Failed to post to any platform.");
+			}
+		} catch (error) {
+			console.error("Error posting to social media:", error);
+			let errorMessage = "Failed to post to social media";
+			if (error instanceof Error) {
+				errorMessage = error.message;
+			}
+			toast.error(errorMessage);
+		} finally {
+			setIsPosting(false);
+		}
+	}, [quote, user?._id, selectedPlatforms, fetchNewQuote]);
+
+	// Toggle auto posting
+	let autoInterval: NodeJS.Timeout | null = null;
+	const handleAutoPostingToggle = () => {
+		if (isAutoPosting) {
+			// Stop auto posting
+			if (autoInterval) {
+				clearInterval(autoInterval);
+			}
+			setIsAutoPosting(false);
+			toast.success("Auto-posting has been stopped");
+		} else {
+			// Start auto posting
+			if (selectedPlatforms.length === 0) {
+				toast.error(
+					"Please select at least one platform for auto-posting"
+				);
+				return;
+			}
+
+			// Set auto-posting state
+			setIsAutoPosting(true);
+
+			// Initial post
+			handlePostToSocialMedia();
+
+			// Set up interval for subsequent posts (every 5 minutes)
+			autoInterval = setInterval(
+				handlePostToSocialMedia,
+				parseInt(postingInterval) * 60 * 1000
+			);
+		}
+	};
+
+	// Toggle platform selection
+	const handlePlatformToggle = (platform: string) => {
+		const newPlatforms = selectedPlatforms.includes(platform)
+			? selectedPlatforms.filter((p) => p !== platform)
+			: [...selectedPlatforms, platform];
+
+		setSelectedPlatforms(newPlatforms);
 	};
 
 	// Handle download
@@ -355,6 +178,11 @@ export default function AutoQuotePoster() {
 		if (!canvasRef.current) return;
 		await downloadQuoteImage(canvasRef.current, "quote-art.png");
 	};
+
+	// Load initial quote
+	useEffect(() => {
+		fetchNewQuote();
+	}, [fetchNewQuote]);
 
 	return (
 		<Card className='w-full max-w-2xl mx-auto'>
@@ -369,14 +197,14 @@ export default function AutoQuotePoster() {
 						<AlertCircle className='h-4 w-4 text-green-600' />
 						<AlertDescription className='text-green-600'>
 							Auto-posting is active for:{" "}
-							{autoPostingPlatforms
+							{selectedPlatforms
 								.map(
 									(p) =>
 										p.charAt(0).toUpperCase() + p.slice(1)
 								)
 								.join(", ")}
 							<br />
-							Next post in: {postingInterval} hour(s)
+							Next post in: 5 minutes
 						</AlertDescription>
 					</Alert>
 				)}
@@ -463,12 +291,12 @@ export default function AutoQuotePoster() {
 						<Input
 							type='number'
 							min='1'
-							max='24'
+							max='1440'
 							value={postingInterval}
 							onChange={(e) => setPostingInterval(e.target.value)}
 							className='w-24'
 						/>
-						<span className='self-center'>hours</span>
+						<span className='self-center'>minutes</span>
 					</div>
 				</div>
 
@@ -478,9 +306,7 @@ export default function AutoQuotePoster() {
 						<div className='flex items-center space-x-2'>
 							<Checkbox
 								id='facebook'
-								checked={autoPostingPlatforms.includes(
-									"facebook"
-								)}
+								checked={selectedPlatforms.includes("facebook")}
 								onCheckedChange={() =>
 									handlePlatformToggle("facebook")
 								}
@@ -495,7 +321,7 @@ export default function AutoQuotePoster() {
 						<div className='flex items-center space-x-2'>
 							<Checkbox
 								id='instagram'
-								checked={autoPostingPlatforms.includes(
+								checked={selectedPlatforms.includes(
 									"instagram"
 								)}
 								onCheckedChange={() =>
@@ -530,9 +356,12 @@ export default function AutoQuotePoster() {
 						onClick={handleAutoPostingToggle}
 						variant={isAutoPosting ? "destructive" : "default"}
 						className='flex-1'
-						disabled={autoPostingPlatforms.length === 0}>
-						{isAutoPostingLoading ? (
-							<Loader2 className='mr-2 h-4 w-4 animate-spin' />
+						disabled={selectedPlatforms.length === 0 || isPosting}>
+						{isPosting ? (
+							<>
+								<Loader2 className='mr-2 h-4 w-4 animate-spin' />
+								Posting...
+							</>
 						) : isAutoPosting ? (
 							"Stop Auto Posting"
 						) : (
