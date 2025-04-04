@@ -163,6 +163,7 @@ export default function AutoQuotePoster() {
 
 			// Initial post
 			await handlePostToSocialMedia();
+			console.log(platforms);
 
 			// Set up interval for subsequent posts
 			const intervalTime = interval * 60 * 60 * 1000; // Convert hours to milliseconds
