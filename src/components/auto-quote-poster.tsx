@@ -43,6 +43,8 @@ export default function AutoQuotePoster() {
 	const [postingInterval, setPostingInterval] = useState("60");
 	const [isPosting, setIsPosting] = useState(false);
 	const { user } = useAuth();
+	const autoIntervalRef = useRef<NodeJS.Timeout | null>(null);
+	const settingsLoadedRef = useRef(false);
 
 	// Fetch a new quote
 	const fetchNewQuote = useCallback(async () => {
@@ -88,7 +90,8 @@ export default function AutoQuotePoster() {
 			!quote ||
 			!canvasRef.current ||
 			!user?._id ||
-			selectedPlatforms.length === 0
+			selectedPlatforms.length === 0 ||
+			isPosting
 		)
 			return;
 
@@ -111,7 +114,7 @@ export default function AutoQuotePoster() {
 			const hasSuccess = results.some((res) => res.data.success);
 			if (hasSuccess) {
 				toast.success(
-					"Auto-posting started. Posts will be made every 5 minutes."
+					`Post successful. Next post in ${postingInterval} minutes.`
 				);
 
 				// Fetch a new quote for the next post
@@ -129,17 +132,39 @@ export default function AutoQuotePoster() {
 		} finally {
 			setIsPosting(false);
 		}
-	}, [quote, user?._id, selectedPlatforms, fetchNewQuote]);
+	}, [
+		quote,
+		user?._id,
+		selectedPlatforms,
+		fetchNewQuote,
+		postingInterval,
+		isPosting,
+	]);
 
 	// Toggle auto posting
-	let autoInterval: NodeJS.Timeout | null = null;
-	const handleAutoPostingToggle = () => {
+	const handleAutoPostingToggle = useCallback(async () => {
 		if (isAutoPosting) {
 			// Stop auto posting
-			if (autoInterval) {
-				clearInterval(autoInterval);
+			if (autoIntervalRef.current) {
+				clearInterval(autoIntervalRef.current);
+				autoIntervalRef.current = null;
 			}
 			setIsAutoPosting(false);
+
+			// Save settings to database
+			if (user?._id) {
+				try {
+					await axios.post("/api/auto-posting", {
+						userId: user._id,
+						isEnabled: false,
+						interval: parseInt(postingInterval),
+						platforms: selectedPlatforms,
+					});
+				} catch (error) {
+					console.error("Error saving auto-posting settings:", error);
+				}
+			}
+
 			toast.success("Auto-posting has been stopped");
 		} else {
 			// Start auto posting
@@ -153,25 +178,48 @@ export default function AutoQuotePoster() {
 			// Set auto-posting state
 			setIsAutoPosting(true);
 
+			// Save settings to database
+			if (user?._id) {
+				try {
+					await axios.post("/api/auto-posting", {
+						userId: user._id,
+						isEnabled: true,
+						interval: parseInt(postingInterval),
+						platforms: selectedPlatforms,
+					});
+				} catch (error) {
+					console.error("Error saving auto-posting settings:", error);
+				}
+			}
+
 			// Initial post
 			handlePostToSocialMedia();
 
-			// Set up interval for subsequent posts (every 5 minutes)
-			autoInterval = setInterval(
+			// Set up interval for subsequent posts
+			autoIntervalRef.current = setInterval(
 				handlePostToSocialMedia,
 				parseInt(postingInterval) * 60 * 1000
 			);
 		}
-	};
+	}, [
+		isAutoPosting,
+		selectedPlatforms,
+		postingInterval,
+		handlePostToSocialMedia,
+		user?._id,
+	]);
 
 	// Toggle platform selection
-	const handlePlatformToggle = (platform: string) => {
-		const newPlatforms = selectedPlatforms.includes(platform)
-			? selectedPlatforms.filter((p) => p !== platform)
-			: [...selectedPlatforms, platform];
+	const handlePlatformToggle = useCallback(
+		(platform: string) => {
+			const newPlatforms = selectedPlatforms.includes(platform)
+				? selectedPlatforms.filter((p) => p !== platform)
+				: [...selectedPlatforms, platform];
 
-		setSelectedPlatforms(newPlatforms);
-	};
+			setSelectedPlatforms(newPlatforms);
+		},
+		[selectedPlatforms]
+	);
 
 	// Handle download
 	const handleDownload = async () => {
@@ -183,6 +231,51 @@ export default function AutoQuotePoster() {
 	useEffect(() => {
 		fetchNewQuote();
 	}, [fetchNewQuote]);
+
+	// Load auto-posting settings when user is available
+	useEffect(() => {
+		const loadSettings = async () => {
+			if (!user?._id || settingsLoadedRef.current) return;
+
+			try {
+				const response = await axios.get(
+					`/api/auto-posting?userId=${user._id}`
+				);
+				const settings = response.data;
+
+				// Update state with fetched settings
+				setIsAutoPosting(settings.isEnabled);
+				setPostingInterval(settings.interval.toString());
+				setSelectedPlatforms(settings.platforms);
+
+				// If auto-posting is enabled, set up the interval
+				if (settings.isEnabled) {
+					// Set up interval without initial post
+					autoIntervalRef.current = setInterval(
+						handlePostToSocialMedia,
+						settings.interval * 60 * 1000
+					);
+				}
+
+				// Mark settings as loaded
+				settingsLoadedRef.current = true;
+			} catch (error) {
+				console.error("Error fetching auto-posting settings:", error);
+				settingsLoadedRef.current = true;
+			}
+		};
+
+		loadSettings();
+	}, [user?._id, handlePostToSocialMedia]);
+
+	// Clean up interval on unmount
+	useEffect(() => {
+		return () => {
+			if (autoIntervalRef.current) {
+				clearInterval(autoIntervalRef.current);
+			}
+		};
+	}, []);
 
 	return (
 		<Card className='w-full max-w-2xl mx-auto'>
@@ -204,7 +297,7 @@ export default function AutoQuotePoster() {
 								)
 								.join(", ")}
 							<br />
-							Next post in: 5 minutes
+							Next post in: {postingInterval} minutes
 						</AlertDescription>
 					</Alert>
 				)}
