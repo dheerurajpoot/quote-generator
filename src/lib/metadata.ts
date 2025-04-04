@@ -6,6 +6,8 @@ import {
 	SITE_IMAGE,
 	SITE_TWITTER,
 	SITE_AUTHOR,
+	SITE_KEYWORDS,
+	SITE_ICON,
 } from "./constant";
 
 export const defaultMetadata: Metadata = {
@@ -15,6 +17,10 @@ export const defaultMetadata: Metadata = {
 	},
 	description: SITE_DESCRIPTION,
 	metadataBase: new URL(SITE_URL),
+	keywords: SITE_KEYWORDS,
+	icons: {
+		icon: SITE_ICON,
+	},
 	authors: [{ name: SITE_AUTHOR }],
 	creator: SITE_AUTHOR,
 	openGraph: {
