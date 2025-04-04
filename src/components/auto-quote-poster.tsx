@@ -158,39 +158,25 @@ export default function AutoQuotePoster() {
 			// Clear any existing interval
 			if (intervalRef.current) {
 				clearInterval(intervalRef.current);
-				intervalRef.current = null;
 			}
+			console.log(platforms);
 
 			// Initial post
 			await handlePostToSocialMedia();
-			console.log(platforms);
 
 			// Set up interval for subsequent posts
 			const intervalTime = interval * 60 * 60 * 1000; // Convert hours to milliseconds
 			intervalRef.current = setInterval(async () => {
-				try {
-					await handlePostToSocialMedia();
-				} catch (error) {
-					console.error("Error in auto-posting interval:", error);
-					// Don't stop the interval on error, just log it
-				}
+				await handlePostToSocialMedia();
 			}, intervalTime);
-
-			// Save the interval ID to state for cleanup
-			setIsAutoPosting(true);
 		},
 		[handlePostToSocialMedia]
 	);
 
-	// Cleanup interval on component unmount
+	// Load initial quote
 	useEffect(() => {
-		return () => {
-			if (intervalRef.current) {
-				clearInterval(intervalRef.current);
-				intervalRef.current = null;
-			}
-		};
-	}, []);
+		fetchNewQuote();
+	}, [fetchNewQuote]);
 
 	// Load auto-posting settings from backend
 	useEffect(() => {
@@ -230,8 +216,12 @@ export default function AutoQuotePoster() {
 
 		return () => {
 			mounted = false;
+			if (intervalRef.current) {
+				clearInterval(intervalRef.current);
+				intervalRef.current = null;
+			}
 		};
-	}, [user?._id, startAutoPosting]);
+	}, [user?._id]);
 
 	const handleAutoPostingToggle = async () => {
 		if (!user?._id) {
@@ -268,18 +258,13 @@ export default function AutoQuotePoster() {
 				}
 
 				// Start auto posting
+				setIsAutoPosting(true);
 				startAutoPosting(
 					parseInt(postingInterval),
 					autoPostingPlatforms
 				);
 				toast.success("Auto-posting has been started");
 			} else {
-				// Clear the interval
-				if (intervalRef.current) {
-					clearInterval(intervalRef.current);
-					intervalRef.current = null;
-				}
-
 				// Save disabled state to backend
 				const response = await fetch("/api/auto-posting", {
 					method: "POST",
@@ -300,6 +285,9 @@ export default function AutoQuotePoster() {
 
 				// Stop auto posting
 				setIsAutoPosting(false);
+				if (intervalRef.current) {
+					clearInterval(intervalRef.current);
+				}
 				toast.success("Auto-posting has been stopped");
 			}
 		} catch (error) {
