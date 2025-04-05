@@ -4,6 +4,7 @@ export const GET = async (request: Request) => {
 	try {
 		const { searchParams } = new URL(request.url);
 		const accessToken = searchParams.get("access_token");
+		const platform = searchParams.get("platform") || "facebook";
 
 		if (!accessToken) {
 			return NextResponse.json(
@@ -14,6 +15,7 @@ export const GET = async (request: Request) => {
 
 		// Log the values for debugging
 		console.log("Attempting to exchange token with:", {
+			platform,
 			appId: process.env.FACEBOOK_CLIENT_ID,
 			hasSecret: !!process.env.FACEBOOK_CLIENT_SECRET,
 			accessToken: accessToken.substring(0, 10) + "...", // Log only first 10 chars for security
@@ -26,7 +28,7 @@ export const GET = async (request: Request) => {
 
 		if (!response.ok) {
 			const error = await response.json();
-			console.error("Facebook token exchange error:", error);
+			console.error(`${platform} token exchange error:`, error);
 			return NextResponse.json(
 				{ error: error.error?.message || "Failed to exchange token" },
 				{ status: 500 }
@@ -35,9 +37,74 @@ export const GET = async (request: Request) => {
 
 		const data = await response.json();
 		console.log(
-			"Successfully exchanged token, expires in:",
+			`Successfully exchanged ${platform} token, expires in:`,
 			data.expires_in
 		);
+
+		// For Instagram, we need to get the long-lived user access token
+		if (platform === "instagram") {
+			// Get the Instagram Business Account ID
+			const accountResponse = await fetch(
+				`https://graph.facebook.com/v18.0/me/accounts?access_token=${data.access_token}`
+			);
+
+			if (!accountResponse.ok) {
+				const error = await accountResponse.json();
+				console.error("Error getting Instagram account:", error);
+				return NextResponse.json(
+					{
+						error:
+							error.error?.message ||
+							"Failed to get Instagram account",
+					},
+					{ status: 500 }
+				);
+			}
+
+			const accountData = await accountResponse.json();
+			if (!accountData.data?.[0]?.id) {
+				return NextResponse.json(
+					{ error: "No Instagram Business Account found" },
+					{ status: 400 }
+				);
+			}
+
+			// Get the Instagram Business Account access token
+			const instagramTokenResponse = await fetch(
+				`https://graph.facebook.com/v18.0/${accountData.data[0].id}?fields=instagram_business_account&access_token=${data.access_token}`
+			);
+
+			if (!instagramTokenResponse.ok) {
+				const error = await instagramTokenResponse.json();
+				console.error(
+					"Error getting Instagram business account:",
+					error
+				);
+				return NextResponse.json(
+					{
+						error:
+							error.error?.message ||
+							"Failed to get Instagram business account",
+					},
+					{ status: 500 }
+				);
+			}
+
+			const instagramData = await instagramTokenResponse.json();
+			if (!instagramData.instagram_business_account?.id) {
+				return NextResponse.json(
+					{ error: "No Instagram Business Account ID found" },
+					{ status: 400 }
+				);
+			}
+
+			return NextResponse.json({
+				longLivedToken: data.access_token,
+				expiresIn: data.expires_in,
+				instagramAccountId: instagramData.instagram_business_account.id,
+				pageAccessToken: accountData.data[0].access_token,
+			});
+		}
 
 		return NextResponse.json({
 			longLivedToken: data.access_token,

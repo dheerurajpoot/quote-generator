@@ -281,14 +281,14 @@ export default function AutoQuotePoster() {
 		loadSettings();
 	}, [user?._id, handlePostToSocialMedia]);
 
-	// Clean up interval on unmount
-	useEffect(() => {
-		return () => {
-			if (autoIntervalRef.current) {
-				clearInterval(autoIntervalRef.current);
-			}
-		};
-	}, []);
+	// // Clean up interval on unmount
+	// useEffect(() => {
+	// 	return () => {
+	// 		if (autoIntervalRef.current) {
+	// 			clearInterval(autoIntervalRef.current);
+	// 		}
+	// 	};
+	// }, []);
 
 	return (
 		<Card className='w-full max-w-2xl mx-auto'>
