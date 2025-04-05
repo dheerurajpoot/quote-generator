@@ -26,7 +26,7 @@ export async function getRandomPexelsImage(): Promise<string> {
 				Authorization: PEXELS_API_KEY,
 			},
 			params: {
-				per_page: 300, // Get 300 images to randomize
+				per_page: 500,
 			},
 		});
 
@@ -39,7 +39,7 @@ export async function getRandomPexelsImage(): Promise<string> {
 		return randomImage.src.large; // Return high-quality image URL
 	} catch (error) {
 		console.error("Error fetching image:", error);
-		return "/fallback.jpg"; // Fallback image if API fails
+		return "/img1.jpg"; // Fallback image if API fails
 	}
 }
 

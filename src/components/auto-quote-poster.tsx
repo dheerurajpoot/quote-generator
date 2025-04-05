@@ -52,9 +52,11 @@ export default function AutoQuotePoster() {
 		try {
 			const newQuote = await getRandomHindiQuote();
 			setQuote(newQuote);
+			return newQuote;
 		} catch (error) {
 			console.error("Error fetching quote:", error);
 			toast.error("Failed to fetch a new quote");
+			return null;
 		} finally {
 			setIsLoading(false);
 		}
@@ -87,7 +89,6 @@ export default function AutoQuotePoster() {
 	// Post to social media
 	const handlePostToSocialMedia = useCallback(async () => {
 		if (
-			!quote ||
 			!canvasRef.current ||
 			!user?._id ||
 			selectedPlatforms.length === 0 ||
@@ -96,11 +97,27 @@ export default function AutoQuotePoster() {
 			return;
 
 		try {
+			// Fetch a new quote before posting
+			const newQuote = await fetchNewQuote();
+			if (!newQuote) {
+				toast.error("Failed to fetch a quote for posting");
+				return;
+			}
+
+			// Make sure the quote is set in state before generating image
+			setQuote(newQuote);
+
+			// Wait a moment for the state to update and the UI to render
+			await new Promise((resolve) => setTimeout(resolve, 100));
+
 			// Generate image from quote
 			const imageUrl = await generateImageDataUrl();
-			if (!imageUrl) return;
+			if (!imageUrl) {
+				toast.error("Failed to generate image");
+				return;
+			}
 
-			const caption = `${quote.text}\n\n— ${quote.author}`;
+			const caption = `${newQuote.text}\n\n— ${newQuote.author}`;
 
 			// Post to selected platforms
 			setIsPosting(true);
@@ -116,9 +133,6 @@ export default function AutoQuotePoster() {
 				toast.success(
 					`Post successful. Next post in ${postingInterval} minutes.`
 				);
-
-				// Fetch a new quote for the next post
-				await fetchNewQuote();
 			} else {
 				toast.error("Failed to post to any platform.");
 			}
@@ -133,7 +147,6 @@ export default function AutoQuotePoster() {
 			setIsPosting(false);
 		}
 	}, [
-		quote,
 		user?._id,
 		selectedPlatforms,
 		fetchNewQuote,
