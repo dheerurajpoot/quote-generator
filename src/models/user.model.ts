@@ -36,6 +36,8 @@ const userModel = new mongoose.Schema(
 		forgotPasswordTokenExpiry: Date,
 		verifyToken: String,
 		verifyTokenExpiry: Date,
+		facebookAppId: { type: String },
+		facebookAppSecret: { type: String },
 	},
 	{ timestamps: true }
 );

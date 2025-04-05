@@ -22,7 +22,8 @@ export async function middleware(request: NextRequest) {
 	const isProtectedPath =
 		path.startsWith("/dashboard") ||
 		path.startsWith("/api/subscriptions") ||
-		path.startsWith("/api/settings");
+		path.startsWith("/api/settings") ||
+		path.startsWith("/api/users/facebook-credentials");
 
 	// Admin-only paths (require login and admin role)
 	const isAdminPath = path.startsWith("/admin");
@@ -47,8 +48,11 @@ export async function middleware(request: NextRequest) {
 		return NextResponse.redirect(new URL("/unauthorized", request.url));
 	}
 
-	// Check if it's a settings API route
-	if (path.startsWith("/api/settings")) {
+	// Check if it's a settings API route (excluding Facebook credentials)
+	if (
+		path.startsWith("/api/settings") &&
+		!path.includes("facebook-credentials")
+	) {
 		// If no user role or not admin, return unauthorized
 		if (!isAdmin) {
 			return NextResponse.json(
@@ -70,6 +74,7 @@ export const config = {
 		"/admin/:path*",
 		"/verifyemail",
 		"/api/settings/:path*",
+		"/api/users/facebook-credentials",
 		"/dashboard/:path*",
 		"/api/subscriptions/:path*",
 		"/about",

@@ -13,8 +13,16 @@ import {
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Check, AlertCircle, ImageIcon, Lock } from "lucide-react";
+import {
+	Check,
+	AlertCircle,
+	ImageIcon,
+	Lock,
+	Settings,
+	Calendar,
+} from "lucide-react";
 import { SocialConnections } from "@/components/social-connection";
+import { FacebookSettings } from "@/components/settings/facebook-settings";
 import Link from "next/link";
 
 export default function DashboardPage() {
@@ -51,6 +59,30 @@ export default function DashboardPage() {
 		}
 	};
 
+	// Format date to a readable string
+	const formatDate = (date: Date | undefined) => {
+		if (!date) return "N/A";
+		return new Date(date).toLocaleDateString("en-US", {
+			year: "numeric",
+			month: "long",
+			day: "numeric",
+		});
+	};
+
+	// Calculate days remaining in subscription
+	const getDaysRemaining = () => {
+		if (!subscription || subscription.tier === "free") return null;
+
+		const endDate = new Date(subscription.currentPeriodEnd);
+		const today = new Date();
+		const diffTime = endDate.getTime() - today.getTime();
+		const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+		return diffDays;
+	};
+
+	const daysRemaining = getDaysRemaining();
+
 	return (
 		<div className='container mx-auto py-12'>
 			<div className='max-w-5xl mx-auto'>
@@ -72,219 +104,169 @@ export default function DashboardPage() {
 					</Alert>
 				)}
 
-				<div className='grid grid-cols-1 md:grid-cols-3 gap-6 mb-8'>
-					<Card>
-						<CardHeader className='pb-2'>
-							<CardTitle className='text-sm font-medium'>
-								Total Quotes Created
-							</CardTitle>
-						</CardHeader>
-						<CardContent>
-							<div className='text-2xl font-bold'>12</div>
-						</CardContent>
-					</Card>
-					<Card>
-						<CardHeader className='pb-2'>
-							<CardTitle className='text-sm font-medium'>
-								Social Media Posts
-							</CardTitle>
-						</CardHeader>
-						<CardContent>
-							<div className='text-2xl font-bold'>
-								{isSubscribed() ? "5" : "0"}
-							</div>
-						</CardContent>
-					</Card>
-					<Card>
-						<CardHeader className='pb-2'>
-							<CardTitle className='text-sm font-medium'>
-								Subscription Status
-							</CardTitle>
-						</CardHeader>
-						<CardContent>
-							<div className='flex items-center gap-2'>
-								<div className='text-2xl font-bold'>
-									{currentPlan?.name || "None"}
-								</div>
-								{subscription?.status === "active" && (
-									<Badge variant='outline' className='ml-2'>
-										Active
-									</Badge>
-								)}
-								{subscription?.status === "canceled" && (
-									<Badge
-										variant='outline'
-										className='bg-yellow-100 text-yellow-800 border-yellow-200'>
-										Cancelled
-									</Badge>
-								)}
-								{subscription?.status === "expired" && (
-									<Badge
-										variant='outline'
-										className='bg-red-100 text-red-800 border-red-200'>
-										Expired
-									</Badge>
-								)}
-							</div>
-						</CardContent>
-					</Card>
-				</div>
-
-				<Tabs defaultValue='subscription'>
-					<TabsList className='mb-4'>
-						<TabsTrigger value='subscription'>
-							Subscription
+				<Tabs defaultValue='overview' className='space-y-6'>
+					<TabsList>
+						<TabsTrigger value='overview'>Overview</TabsTrigger>
+						<TabsTrigger value='settings'>
+							<Settings className='h-4 w-4 mr-2' />
+							Settings
 						</TabsTrigger>
-						<TabsTrigger value='social'>Social Media</TabsTrigger>
-						<TabsTrigger value='images'>Image Search</TabsTrigger>
 					</TabsList>
 
-					<TabsContent value='subscription'>
-						<Card>
+					<TabsContent value='overview'>
+						<div className='grid grid-cols-1 md:grid-cols-3 gap-6 mb-8'>
+							<Card>
+								<CardHeader className='pb-2'>
+									<CardTitle className='text-sm font-medium'>
+										Total Quotes Created
+									</CardTitle>
+								</CardHeader>
+								<CardContent>
+									<div className='text-2xl font-bold'>12</div>
+								</CardContent>
+							</Card>
+							<Card>
+								<CardHeader className='pb-2'>
+									<CardTitle className='text-sm font-medium'>
+										Social Media Posts
+									</CardTitle>
+								</CardHeader>
+								<CardContent>
+									<div className='text-2xl font-bold'>
+										{isSubscribed() ? "5" : "0"}
+									</div>
+								</CardContent>
+							</Card>
+							<Card>
+								<CardHeader className='pb-2'>
+									<CardTitle className='text-sm font-medium'>
+										Subscription Status
+									</CardTitle>
+								</CardHeader>
+								<CardContent>
+									<div className='flex items-center gap-2'>
+										<Badge
+											variant={
+												subscription?.tier === "free"
+													? "secondary"
+													: "default"
+											}>
+											{subscription?.tier === "free"
+												? "Free"
+												: "Premium"}
+										</Badge>
+										{subscription?.tier !== "free" && (
+											<Button
+												variant='outline'
+												size='sm'
+												onClick={
+													handleCancelSubscription
+												}>
+												Cancel
+											</Button>
+										)}
+									</div>
+								</CardContent>
+							</Card>
+						</div>
+
+						<Card className='mb-8'>
 							<CardHeader>
-								<CardTitle>Your Subscription</CardTitle>
+								<CardTitle className='flex items-center'>
+									<Calendar className='h-5 w-5 mr-2' />
+									Subscription Details
+								</CardTitle>
 								<CardDescription>
-									Manage your subscription plan and billing
+									Information about your current subscription
 								</CardDescription>
 							</CardHeader>
-							<CardContent className='space-y-4'>
-								{currentPlan ? (
-									<div className='space-y-4'>
-										<div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
-											<div>
-												<h3 className='text-sm font-medium text-muted-foreground mb-1'>
-													Current Plan
-												</h3>
-												<p className='text-lg font-semibold'>
-													{currentPlan.name}
-												</p>
-											</div>
-											<div>
-												<h3 className='text-sm font-medium text-muted-foreground mb-1'>
-													Billing Period
-												</h3>
-												<p className='text-lg font-semibold'>
-													{subscription?.tier ===
-													"free"
-														? "N/A"
-														: `${new Date(
-																subscription?.createdAt ||
-																	""
-														  ).toLocaleDateString()} - ${new Date(
-																subscription?.currentPeriodEnd ||
-																	""
-														  ).toLocaleDateString()}`}
-												</p>
-											</div>
-										</div>
-										{subscription?.tier === "premium" &&
-											subscription?.status ===
-												"active" && (
-												<div className='pt-4'>
-													<Button
-														variant='destructive'
-														onClick={
-															handleCancelSubscription
-														}
-														className='w-full md:w-auto'>
-														Cancel Subscription
-													</Button>
-												</div>
+							<CardContent>
+								<div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+									<div>
+										<p className='text-sm text-muted-foreground'>
+											Plan
+										</p>
+										<p className='font-medium'>
+											{currentPlan?.name || "Free"}
+										</p>
+									</div>
+									<div>
+										<p className='text-sm text-muted-foreground'>
+											Status
+										</p>
+										<p className='font-medium capitalize'>
+											{subscription?.status || "Active"}
+										</p>
+									</div>
+									<div>
+										<p className='text-sm text-muted-foreground'>
+											Start Date
+										</p>
+										<p className='font-medium'>
+											{formatDate(
+												subscription?.createdAt
 											)}
-									</div>
-								) : (
-									<div className='text-center py-8'>
-										<h3 className='text-lg font-medium mb-2'>
-											No Active Subscription
-										</h3>
-										<p className='text-muted-foreground mb-4'>
-											Upgrade to Premium to access all
-											features
 										</p>
-										<Button asChild>
-											<Link href='/pricing'>
-												View Plans
-											</Link>
-										</Button>
 									</div>
-								)}
+									<div>
+										<p className='text-sm text-muted-foreground'>
+											Expiry Date
+										</p>
+										<p className='font-medium'>
+											{subscription?.tier === "free"
+												? "N/A"
+												: formatDate(
+														subscription?.currentPeriodEnd
+												  )}
+										</p>
+									</div>
+									{subscription?.tier !== "free" &&
+										subscription?.status === "active" &&
+										daysRemaining !== null && (
+											<div className='md:col-span-2'>
+												<p className='text-sm text-muted-foreground'>
+													Time Remaining
+												</p>
+												<p className='font-medium'>
+													{daysRemaining > 0
+														? `${daysRemaining} day${
+																daysRemaining !==
+																1
+																	? "s"
+																	: ""
+														  } remaining`
+														: "Expires today"}
+												</p>
+											</div>
+										)}
+									{subscription?.tier === "free" && (
+										<div className='md:col-span-2'>
+											<p className='text-sm text-muted-foreground'>
+												Time Remaining
+											</p>
+											<p className='font-medium'>N/A</p>
+										</div>
+									)}
+								</div>
+							</CardContent>
+						</Card>
+
+						<Card>
+							<CardHeader>
+								<CardTitle>Social Media Connections</CardTitle>
+								<CardDescription>
+									Connect your social media accounts to share
+									your quotes
+								</CardDescription>
+							</CardHeader>
+							<CardContent>
+								<SocialConnections />
 							</CardContent>
 						</Card>
 					</TabsContent>
 
-					<TabsContent value='social'>
-						<Card>
-							<CardHeader>
-								<CardTitle>Social Media Integration</CardTitle>
-								<CardDescription>
-									Connect and manage your social media
-									accounts
-								</CardDescription>
-							</CardHeader>
-							<CardContent>
-								{!isSubscribed() ? (
-									<div className='text-center py-6'>
-										<h3 className='text-lg font-semibold mb-2'>
-											Upgrade to Post to Social Media
-										</h3>
-										<p className='text-muted-foreground mb-4'>
-											Subscribe to our Premium plan to
-											unlock social media posting
-											features.
-										</p>
-										<Button asChild>
-											<Link href='/pricing'>
-												View Plans
-											</Link>
-										</Button>
-									</div>
-								) : (
-									<SocialConnections />
-								)}
-							</CardContent>
-						</Card>
-					</TabsContent>
-
-					<TabsContent value='images'>
-						<Card>
-							<CardHeader>
-								<CardTitle>Image Search</CardTitle>
-								<CardDescription>
-									Search and use high-quality images for your
-									quotes
-								</CardDescription>
-							</CardHeader>
-							<CardContent>
-								{canSearchImages() ? (
-									<div className='text-center py-8'>
-										<ImageIcon className='h-12 w-12 mx-auto mb-4 text-muted-foreground' />
-										<h3 className='text-lg font-medium mb-2'>
-											Image Search Enabled
-										</h3>
-										<p className='text-muted-foreground mb-4'>
-											You can now search for images in the
-											quote generator
-										</p>
-									</div>
-								) : (
-									<div className='text-center py-8'>
-										<Lock className='h-12 w-12 mx-auto mb-4 text-muted-foreground' />
-										<h3 className='text-lg font-medium mb-2'>
-											Premium Feature
-										</h3>
-										<p className='text-muted-foreground mb-4'>
-											Upgrade to Premium to access image
-											search functionality
-										</p>
-										<Button asChild>
-											<Link href='/pricing'>
-												Upgrade Now
-											</Link>
-										</Button>
-									</div>
-								)}
-							</CardContent>
-						</Card>
+					<TabsContent value='settings'>
+						<FacebookSettings />
 					</TabsContent>
 				</Tabs>
 			</div>
