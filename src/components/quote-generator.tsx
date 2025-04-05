@@ -30,13 +30,10 @@ import {
 	Search,
 	Loader2,
 	Palette,
-	Lock,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { searchImages, type ImageSearchResult } from "@/lib/image-service";
 import { downloadQuoteImage } from "@/lib/download-utils";
-import { useSubscription } from "@/context/subscription-context";
-import { useRouter } from "next/navigation";
 
 const DEFAULT_BACKGROUNDS = [
 	"/img1.jpg?height=600&width=600",
@@ -77,8 +74,6 @@ const FONT_WEIGHTS = [
 ];
 
 export default function QuoteGenerator() {
-	const router = useRouter();
-	const { canSearchImages } = useSubscription();
 	const [quote, setQuote] = useState("Enter your quote text here...");
 	const [author, setAuthor] = useState("");
 	const [watermark, setWatermark] = useState("@quote_art");
@@ -129,11 +124,6 @@ export default function QuoteGenerator() {
 		if (!searchQuery.trim()) {
 			setHasSearched(false);
 			setSearchResults([]);
-			return;
-		}
-
-		if (!canSearchImages()) {
-			router.push("/pricing");
 			return;
 		}
 
@@ -412,72 +402,45 @@ export default function QuoteGenerator() {
 										</div>
 									) : (
 										<>
-											{canSearchImages() ? (
-												<div className='space-y-2'>
-													<Label>Search Images</Label>
-													<div className='flex items-center gap-2'>
-														<Input
-															placeholder='Search for images...'
-															value={searchQuery}
-															onChange={(e) =>
-																setSearchQuery(
-																	e.target
-																		.value
-																)
-															}
-															onKeyDown={(e) =>
-																e.key ===
-																	"Enter" &&
-																handleImageSearch()
-															}
-														/>
-														<Button
-															onClick={
-																handleImageSearch
-															}
-															disabled={
-																isSearching
-															}>
-															{isSearching ? (
-																<Loader2 className='h-4 w-4 animate-spin' />
-															) : (
-																<Search className='h-4 w-4' />
-															)}
-														</Button>
-														{hasSearched && (
-															<Button
-																variant='ghost'
-																size='icon'
-																onClick={
-																	clearSearch
-																}>
-																×
-															</Button>
-														)}
-													</div>
-												</div>
-											) : (
-												<div className='border rounded-lg p-4 bg-muted/30 text-center'>
-													<Lock className='h-5 w-5 mx-auto mb-2 text-muted-foreground' />
-													<h3 className='font-medium mb-1'>
-														Premium Feature
-													</h3>
-													<p className='text-sm text-muted-foreground mb-3'>
-														Upgrade to Premium to
-														access image search
-														functionality.
-													</p>
-													<Button
-														size='sm'
-														onClick={() =>
-															router.push(
-																"/pricing"
+											<div className='space-y-2'>
+												<Label>Search Images</Label>
+												<div className='flex items-center gap-2'>
+													<Input
+														placeholder='Search for images...'
+														value={searchQuery}
+														onChange={(e) =>
+															setSearchQuery(
+																e.target.value
 															)
-														}>
-														Upgrade Now
+														}
+														onKeyDown={(e) =>
+															e.key === "Enter" &&
+															handleImageSearch()
+														}
+													/>
+													<Button
+														onClick={
+															handleImageSearch
+														}
+														disabled={isSearching}>
+														{isSearching ? (
+															<Loader2 className='h-4 w-4 animate-spin' />
+														) : (
+															<Search className='h-4 w-4' />
+														)}
 													</Button>
+													{hasSearched && (
+														<Button
+															variant='ghost'
+															size='icon'
+															onClick={
+																clearSearch
+															}>
+															×
+														</Button>
+													)}
 												</div>
-											)}
+											</div>
 
 											<div className='space-y-2'>
 												{hasSearched &&

@@ -103,11 +103,8 @@ export default function AutoQuotePoster() {
 				toast.error("Failed to fetch a quote for posting");
 				return;
 			}
-
-			// Make sure the quote is set in state before generating image
 			setQuote(newQuote);
 
-			// Wait a moment for the state to update and the UI to render
 			await new Promise((resolve) => setTimeout(resolve, 100));
 
 			// Generate image from quote
