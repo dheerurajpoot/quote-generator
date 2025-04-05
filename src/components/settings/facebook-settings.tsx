@@ -15,6 +15,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Check, AlertCircle, Trash2 } from "lucide-react";
 import toast from "react-hot-toast";
 import axios from "axios";
+import Link from "next/link";
 
 export function FacebookSettings() {
 	const [appId, setAppId] = useState("");
@@ -198,26 +199,31 @@ export function FacebookSettings() {
 					<ol className='list-decimal list-inside space-y-2 text-sm'>
 						<li>
 							Go to{" "}
-							<a
+							<Link
 								href='https://developers.facebook.com'
 								target='_blank'
 								rel='noopener noreferrer'
-								className='text-primary hover:underline'>
+								className='text-blue-600 hover:underline'>
 								Facebook Developers
-							</a>
+							</Link>
 						</li>
-						<li>Click on "My Apps" and then "Create App"</li>
-						<li>Gave a name to your app "QuoteArt"</li>
+						<li>
+							Click on &quot;My Apps&quot; and then &quot;Create
+							App&quot;
+						</li>
+						<li>Gave a name to your app &quot;QuoteArt&quot;</li>
 						<li>Fill in your app details and create the app</li>
-						<li>In use cases choose "Other"</li>
-						<li>Choose app type as "Consumer"</li>
+						<li>In use cases choose &quot;Other&quot;</li>
+						<li>Choose app type as &quot;Consumer&quot;</li>
 						<li>Once created, go to your app dashboard</li>
 						<li>Find your App ID in the app settings</li>
 						<li>
 							To get your App Secret:
 							<ul className='list-disc list-inside ml-4 mt-1'>
 								<li>Go to Settings &gt; Basic</li>
-								<li>Click "Show" next to App Secret</li>
+								<li>
+									Click &quot;Show&quot; next to App Secret
+								</li>
 								<li>
 									Enter your Facebook password to reveal the
 									secret

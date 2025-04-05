@@ -13,26 +13,13 @@ import {
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import {
-	Check,
-	AlertCircle,
-	ImageIcon,
-	Lock,
-	Settings,
-	Calendar,
-} from "lucide-react";
+import { Check, AlertCircle, Settings, Calendar } from "lucide-react";
 import { SocialConnections } from "@/components/social-connection";
 import { FacebookSettings } from "@/components/settings/facebook-settings";
-import Link from "next/link";
 
 export default function DashboardPage() {
-	const {
-		subscription,
-		plans,
-		cancelSubscription,
-		isSubscribed,
-		canSearchImages,
-	} = useSubscription();
+	const { subscription, plans, cancelSubscription, isSubscribed } =
+		useSubscription();
 	const [error, setError] = useState("");
 	const [success, setSuccess] = useState("");
 
