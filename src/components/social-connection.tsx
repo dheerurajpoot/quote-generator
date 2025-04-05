@@ -71,8 +71,6 @@ export function SocialConnections({
 	const [availablePages, setAvailablePages] = useState<FacebookPage[]>([]);
 	const [selectedPage, setSelectedPage] = useState<FacebookPage | null>(null);
 
-	console.log(selectedAccount, selectedPage);
-
 	useEffect(() => {
 		if (user) {
 			fetchConnections();
@@ -335,10 +333,6 @@ export function SocialConnections({
 								window.FB.api<FacebookPageResponse>(
 									`/${page.id}?fields=instagram_business_account{id,name,username,profile_picture_url}`,
 									(response) => {
-										console.log(
-											`Instagram account response for page ${page.name}:`,
-											response
-										);
 										if (response.error) {
 											console.error(
 												`Error fetching Instagram account for page ${page.name}:`,
@@ -393,8 +387,6 @@ export function SocialConnections({
 				(account): account is InstagramAccount => account !== null
 			);
 
-			console.log("Valid Instagram accounts:", validAccounts);
-
 			if (validAccounts.length === 0) {
 				throw new Error(
 					"No Instagram Business Accounts found. Please make sure:\n1. Your Facebook page is connected to an Instagram Business Account\n2. You have granted all necessary permissions\n3. You are an admin of both the Facebook page and Instagram account"
@@ -428,15 +420,6 @@ export function SocialConnections({
 		instagramAccount: InstagramAccount
 	) => {
 		try {
-			console.log("Saving Instagram connection with data:", {
-				userId: user?._id,
-				platform: "instagram",
-				accessToken: instagramAccount.pageAccessToken,
-				profileId: instagramAccount.instagramAccountId,
-				profileName: instagramAccount.username,
-				profileImage: instagramAccount.profilePicture,
-			});
-
 			// Send the connection data to your backend
 			const apiResponse = await fetch("/api/social", {
 				method: "POST",
@@ -464,7 +447,6 @@ export function SocialConnections({
 			}
 
 			const data = await apiResponse.json();
-			console.log("Instagram connection saved successfully:", data);
 
 			// Add Instagram connection to state
 			const newConnection: SocialConnection = {

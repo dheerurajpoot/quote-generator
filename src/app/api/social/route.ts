@@ -39,11 +39,6 @@ export async function POST(request: Request) {
 
 		// If this is a social media connection request
 		if (platform && accessToken) {
-			console.log("Processing social media connection request:", {
-				platform,
-				userId,
-			});
-
 			// Initialize Meta API
 			const metaApi = new MetaApi({ accessToken });
 
@@ -73,7 +68,6 @@ export async function POST(request: Request) {
 				// Update existing connection
 				Object.assign(existingConnection, connectionData);
 				await existingConnection.save();
-				console.log("Updated existing connection:", existingConnection);
 
 				return NextResponse.json({
 					id: existingConnection._id,
@@ -92,8 +86,6 @@ export async function POST(request: Request) {
 				...connectionData,
 			});
 
-			console.log("Created new connection:", newConnection);
-
 			return NextResponse.json(
 				{
 					id: newConnection._id,
@@ -109,11 +101,6 @@ export async function POST(request: Request) {
 
 		// If this is a social media post request
 		if (platform && imageUrl && caption) {
-			console.log("Processing social media post request:", {
-				platform,
-				userId,
-			});
-
 			// Validate image URL
 			try {
 				const url = new URL(imageUrl);
@@ -137,12 +124,6 @@ export async function POST(request: Request) {
 						{ status: 400 }
 					);
 				}
-
-				console.log("Found social connection:", {
-					platform,
-					profileId: connection.profileId,
-					profileName: connection.profileName,
-				});
 
 				// Initialize Meta API with the connection's access token
 				const metaApi = new MetaApi({
@@ -177,8 +158,6 @@ export async function POST(request: Request) {
 							{ status: 400 }
 						);
 					}
-
-					console.log("Post successful:", result);
 
 					return NextResponse.json({
 						success: true,
@@ -247,7 +226,6 @@ export async function DELETE(request: Request) {
 		});
 
 		if (!connection) {
-			console.log("No connection found to delete");
 			return NextResponse.json(
 				{ error: "No connection found to delete" },
 				{ status: 404 }

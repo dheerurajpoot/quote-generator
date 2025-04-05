@@ -125,12 +125,7 @@ export class MetaApi {
 		caption: string
 	) {
 		try {
-			console.log("Starting Instagram post process...");
-			console.log("Using account ID:", instagramAccountId);
-
-			// First, upload image to Cloudinary to ensure HTTPS URL
 			const cloudinaryUrl = await uploadImage(imageUrl);
-			console.log("Image uploaded to Cloudinary:", cloudinaryUrl);
 
 			// Create a container for the media
 			const containerFormData = new URLSearchParams();
@@ -138,7 +133,6 @@ export class MetaApi {
 			containerFormData.append("caption", caption);
 			containerFormData.append("access_token", pageAccessToken);
 
-			console.log("Creating media container...");
 			const containerResponse = await fetch(
 				`${
 					this.baseUrl
@@ -149,7 +143,6 @@ export class MetaApi {
 			);
 
 			const containerText = await containerResponse.text();
-			console.log("Container response text:", containerText);
 
 			let containerData;
 			try {
@@ -174,7 +167,6 @@ export class MetaApi {
 			}
 
 			const containerId = containerData.id;
-			console.log("Media container created with ID:", containerId);
 
 			// Wait for the container to be ready
 			let status = "IN_PROGRESS";
@@ -183,16 +175,12 @@ export class MetaApi {
 
 			while (status === "IN_PROGRESS" && attempts < maxAttempts) {
 				await new Promise((resolve) => setTimeout(resolve, 2000)); // Wait 2 seconds
-				console.log(
-					`Checking status attempt ${attempts + 1}/${maxAttempts}...`
-				);
 
 				const statusResponse = await fetch(
 					`${this.baseUrl}/${containerId}?fields=status_code&access_token=${pageAccessToken}`
 				);
 				const statusData = await statusResponse.json();
 				status = statusData.status_code;
-				console.log("Current status:", status);
 				attempts++;
 			}
 
@@ -203,7 +191,6 @@ export class MetaApi {
 			}
 
 			// Publish the container
-			console.log("Publishing media...");
 			const publishFormData = new URLSearchParams();
 			publishFormData.append("creation_id", containerId);
 			publishFormData.append("access_token", pageAccessToken);
@@ -229,9 +216,6 @@ export class MetaApi {
 					}`
 				);
 			}
-
-			console.log("Successfully published to Instagram:", publishData);
-
 			return {
 				success: true,
 				postId: publishData.id,
