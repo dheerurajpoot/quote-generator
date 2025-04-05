@@ -61,15 +61,12 @@ export function SocialConnections({
 	const [isConnecting, setIsConnecting] = useState<Record<string, boolean>>(
 		{}
 	);
-	const [selectedAccount, setSelectedAccount] =
-		useState<InstagramAccount | null>(null);
 	const [showAccountDialog, setShowAccountDialog] = useState(false);
 	const [availableAccounts, setAvailableAccounts] = useState<
 		InstagramAccount[]
 	>([]);
 	const [showPageDialog, setShowPageDialog] = useState(false);
 	const [availablePages, setAvailablePages] = useState<FacebookPage[]>([]);
-	const [selectedPage, setSelectedPage] = useState<FacebookPage | null>(null);
 
 	useEffect(() => {
 		if (user) {
@@ -126,7 +123,6 @@ export function SocialConnections({
 	};
 
 	const handlePageSelection = async (page: FacebookPage) => {
-		setSelectedPage(page);
 		setShowPageDialog(false);
 		try {
 			// Send the connection data to your backend
@@ -403,7 +399,6 @@ export function SocialConnections({
 			// If there are multiple accounts, show the dialog
 			setAvailableAccounts(validAccounts);
 			setShowAccountDialog(true);
-			setSelectedAccount(null);
 		} catch (err: unknown) {
 			console.error("Instagram connection error:", err);
 			if (err instanceof Error) {
@@ -525,7 +520,6 @@ export function SocialConnections({
 	};
 
 	const handleAccountSelection = (account: InstagramAccount) => {
-		setSelectedAccount(account);
 		setShowAccountDialog(false);
 		saveInstagramConnection(account);
 	};
