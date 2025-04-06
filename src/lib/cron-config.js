@@ -1,30 +1,23 @@
-import { schedule } from "node-cron";
+import cron from "node-cron";
 import axios from "axios";
-import { connectDb } from "./dbconfig";
-import { AutoPostingSettings } from "@/models/autoPostingSettings.model";
-import { Document } from "mongoose";
-
-interface AutoPostingSettingsDocument extends Document {
-	userId: string;
-	isEnabled: boolean;
-	interval: number;
-	lastPostTime: Date | null;
-	_id: string;
-}
+import { connectDb } from "./dbconfig.js";
+import { AutoPostingSettings } from "../models/autoPostingSettings.model.js";
 
 // Function to start all cron jobs
-export function startCronJobs(): void {
+export function startCronJobs() {
 	console.log("Starting cron jobs...");
 
-	schedule("* * * * *", async () => {
+	cron.schedule("* * * * *", async () => {
 		try {
+			console.log("Running auto-posting cron job...");
+
 			// Connect to the database
 			await connectDb();
 
 			// Get all auto-posting settings that are enabled
-			const settings = (await AutoPostingSettings.find({
+			const settings = await AutoPostingSettings.find({
 				isEnabled: true,
-			})) as AutoPostingSettingsDocument[];
+			});
 
 			if (!settings || settings.length === 0) {
 				console.log("No auto-posting settings found");

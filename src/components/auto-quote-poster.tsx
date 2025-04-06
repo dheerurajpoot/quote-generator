@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import {
 	Card,
@@ -11,10 +11,8 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { getRandomHindiQuote, postToSocialMedia } from "@/lib/quote-service";
+import { postToSocialMedia } from "@/lib/quote-service";
 import { Loader2 } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { downloadQuoteImage } from "@/lib/download-utils";
 import { useAuth } from "@/context/auth-context";
 import toast from "react-hot-toast";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -22,16 +20,12 @@ import { Facebook, Instagram } from "lucide-react";
 import { AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import axios from "axios";
+import Image from "next/image";
 
 interface Quote {
 	text: string;
 	author: string;
-	backgroundImage?: string;
-	textColor?: string;
-	backgroundColor?: string;
-	fontFamily?: string;
-	fontSize?: number;
-	watermark?: string;
+	imageUrl?: string;
 }
 
 export default function AutoQuotePoster() {
@@ -39,20 +33,25 @@ export default function AutoQuotePoster() {
 	const [isLoading, setIsLoading] = useState(false);
 	const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([]);
 	const [isAutoPosting, setIsAutoPosting] = useState(false);
-	const canvasRef = useRef<HTMLDivElement>(null);
 	const [postingInterval, setPostingInterval] = useState("60");
 	const [isPosting, setIsPosting] = useState(false);
 	const { user } = useAuth();
-	const autoIntervalRef = useRef<NodeJS.Timeout | null>(null);
-	const settingsLoadedRef = useRef(false);
 
-	// Fetch a new quote
+	// Fetch a new quote and its server-generated image
 	const fetchNewQuote = useCallback(async () => {
 		setIsLoading(true);
 		try {
-			const newQuote = await getRandomHindiQuote();
-			setQuote(newQuote);
-			return newQuote;
+			// Fetch quote and server-generated image
+			const response = await axios.get("/api/quotes/generate");
+			const { quote: newQuote, imageUrl } = response.data;
+
+			setQuote({
+				text: newQuote.text,
+				author: newQuote.author,
+				imageUrl: imageUrl,
+			});
+
+			return { text: newQuote.text, author: newQuote.author, imageUrl };
 		} catch (error) {
 			console.error("Error fetching quote:", error);
 			toast.error("Failed to fetch a new quote");
@@ -62,65 +61,29 @@ export default function AutoQuotePoster() {
 		}
 	}, []);
 
-	// Generate image data URL for social sharing
-	const generateImageDataUrl = async () => {
-		if (!canvasRef.current) return;
-
-		const html2canvas = (await import("html2canvas")).default;
-		const canvas = await html2canvas(canvasRef.current, {
-			allowTaint: true,
-			useCORS: true,
-			scale: 2,
-			logging: false,
-			removeContainer: true,
-			backgroundColor: null,
-			onclone: (clonedDoc) => {
-				const clonedElement = clonedDoc.querySelector(
-					"[data-html2canvas-ignore]"
-				);
-				if (clonedElement) {
-					clonedElement.remove();
-				}
-			},
-		});
-		return canvas.toDataURL("image/png", 1.0);
-	};
-
 	// Post to social media
 	const handlePostToSocialMedia = useCallback(async () => {
 		if (
-			!canvasRef.current ||
 			!user?._id ||
 			selectedPlatforms.length === 0 ||
-			isPosting
+			isPosting ||
+			!quote?.imageUrl
 		)
 			return;
 
 		try {
-			// Fetch a new quote before posting
-			const newQuote = await fetchNewQuote();
-			if (!newQuote) {
-				toast.error("Failed to fetch a quote for posting");
-				return;
-			}
-			setQuote(newQuote);
-
-			await new Promise((resolve) => setTimeout(resolve, 100));
-
-			// Generate image from quote
-			const imageUrl = await generateImageDataUrl();
-			if (!imageUrl) {
-				toast.error("Failed to generate image");
-				return;
-			}
-
-			const caption = `${newQuote.text}\n\n— ${newQuote.author}`;
+			const caption = `${quote.text}\n\n— ${quote.author}`;
 
 			// Post to selected platforms
 			setIsPosting(true);
 			const results = await Promise.all(
 				selectedPlatforms.map((platform) =>
-					postToSocialMedia(imageUrl, user._id, platform, caption)
+					postToSocialMedia(
+						quote.imageUrl!,
+						user._id,
+						platform,
+						caption
+					)
 				)
 			);
 
@@ -130,6 +93,8 @@ export default function AutoQuotePoster() {
 				toast.success(
 					`Post successful. Next post in ${postingInterval} minutes.`
 				);
+				// Fetch new quote for next time
+				fetchNewQuote();
 			} else {
 				toast.error("Failed to post to any platform.");
 			}
@@ -146,19 +111,16 @@ export default function AutoQuotePoster() {
 	}, [
 		user?._id,
 		selectedPlatforms,
-		fetchNewQuote,
+		quote,
 		postingInterval,
 		isPosting,
+		fetchNewQuote,
 	]);
 
 	// Toggle auto posting
 	const handleAutoPostingToggle = useCallback(async () => {
 		if (isAutoPosting) {
 			// Stop auto posting
-			if (autoIntervalRef.current) {
-				clearInterval(autoIntervalRef.current);
-				autoIntervalRef.current = null;
-			}
 			setIsAutoPosting(false);
 
 			// Save settings to database
@@ -211,6 +173,21 @@ export default function AutoQuotePoster() {
 		user?._id,
 	]);
 
+	// Handle download
+	const handleDownload = async () => {
+		if (!quote?.imageUrl) return;
+		const response = await fetch(quote.imageUrl);
+		const blob = await response.blob();
+		const url = window.URL.createObjectURL(blob);
+		const a = document.createElement("a");
+		a.href = url;
+		a.download = "quote-art.png";
+		document.body.appendChild(a);
+		a.click();
+		window.URL.revokeObjectURL(url);
+		document.body.removeChild(a);
+	};
+
 	// Toggle platform selection
 	const handlePlatformToggle = useCallback(
 		(platform: string) => {
@@ -223,12 +200,6 @@ export default function AutoQuotePoster() {
 		[selectedPlatforms]
 	);
 
-	// Handle download
-	const handleDownload = async () => {
-		if (!canvasRef.current) return;
-		await downloadQuoteImage(canvasRef.current, "quote-art.png");
-	};
-
 	// Load initial quote
 	useEffect(() => {
 		fetchNewQuote();
@@ -237,7 +208,7 @@ export default function AutoQuotePoster() {
 	// Load auto-posting settings when user is available
 	useEffect(() => {
 		const loadSettings = async () => {
-			if (!user?._id || settingsLoadedRef.current) return;
+			if (!user?._id) return;
 
 			try {
 				const response = await axios.get(
@@ -245,15 +216,11 @@ export default function AutoQuotePoster() {
 				);
 				const settings = response.data;
 
-				// Update state with fetched settings
 				setIsAutoPosting(settings.isEnabled);
 				setPostingInterval(settings.interval.toString());
 				setSelectedPlatforms(settings.platforms);
-
-				settingsLoadedRef.current = true;
 			} catch (error) {
 				console.error("Error fetching auto-posting settings:", error);
-				settingsLoadedRef.current = true;
 			}
 		};
 
@@ -292,71 +259,21 @@ export default function AutoQuotePoster() {
 						<div className='flex items-center justify-center h-[600px] bg-muted rounded-lg'>
 							<Loader2 className='h-8 w-8 animate-spin text-muted-foreground' />
 						</div>
-					) : !quote ? (
+					) : !quote?.imageUrl ? (
 						<div className='flex items-center justify-center h-[600px] bg-muted rounded-lg'>
 							<p className='text-muted-foreground'>
 								No quote generated yet
 							</p>
 						</div>
 					) : (
-						<div
-							ref={canvasRef}
-							className='relative w-full aspect-square max-w-2xl mx-auto overflow-hidden rounded-lg p-8 text-center'
-							style={{
-								backgroundImage: `url(${quote?.backgroundImage})`,
-								backgroundSize: "cover",
-								backgroundPosition: "center",
-							}}>
-							{quote?.backgroundColor && (
-								<div
-									className='absolute inset-0'
-									style={{
-										backgroundColor: quote.backgroundColor,
-									}}></div>
-							)}
-
-							<div className='relative z-10 flex flex-col items-center justify-center h-full w-full'>
-								<p
-									className={cn(
-										"mb-4 px-4 font-semibold whitespace-pre-line text-center",
-										quote?.fontFamily
-									)}
-									style={{
-										color: quote?.textColor,
-										fontSize: `18px`,
-										maxWidth: "70%",
-										wordWrap: "break-word",
-										lineHeight: 1.4,
-										letterSpacing: "0.025em",
-										wordSpacing: "0.05em",
-										textRendering: "optimizeLegibility",
-										WebkitFontSmoothing: "antialiased",
-										MozOsxFontSmoothing: "grayscale",
-									}}>
-									{quote?.text}
-								</p>
-
-								{quote?.author && (
-									<p
-										className={cn(
-											"mt-2 text-center",
-											quote?.fontFamily
-										)}
-										style={{
-											color: quote?.textColor,
-											fontSize: `${
-												(quote?.fontSize || 24) * 0.5
-											}px`,
-											letterSpacing: "0.025em",
-											wordSpacing: "0.05em",
-											textRendering: "optimizeLegibility",
-											WebkitFontSmoothing: "antialiased",
-											MozOsxFontSmoothing: "grayscale",
-										}}>
-										— {quote.author}
-									</p>
-								)}
-							</div>
+						<div className='relative w-full aspect-square max-w-2xl mx-auto overflow-hidden rounded-lg'>
+							<Image
+								src={quote.imageUrl}
+								alt={`Quote: ${quote.text}`}
+								fill
+								className='object-cover'
+								priority
+							/>
 						</div>
 					)}
 				</div>
@@ -444,7 +361,10 @@ export default function AutoQuotePoster() {
 							"Start Auto Posting"
 						)}
 					</Button>
-					<Button onClick={handleDownload} className='flex-1'>
+					<Button
+						onClick={handleDownload}
+						className='flex-1'
+						disabled={!quote?.imageUrl}>
 						Download
 					</Button>
 				</div>

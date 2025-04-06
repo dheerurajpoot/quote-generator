@@ -1,7 +1,6 @@
 import express from "express";
 import next from "next";
-import { startCronJobs } from "./src/lib/cron-config";
-
+import { startCronJobs } from "./src/lib/cron-config.js";
 const dev = process.env.NODE_ENV !== "production";
 const app = next({ dev });
 const handle = app.getRequestHandler();

@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+
 const autoPostingSettingsSchema = new mongoose.Schema(
 	{
 		userId: {
@@ -35,4 +36,4 @@ const AutoPostingSettings =
 	mongoose.models.AutoPostingSettings ||
 	mongoose.model("AutoPostingSettings", autoPostingSettingsSchema);
 
-module.exports = { AutoPostingSettings };
+export { AutoPostingSettings };
