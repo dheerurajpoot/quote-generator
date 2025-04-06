@@ -10,6 +10,7 @@ interface AutoPostingSettingsDocument extends Document {
 	interval: number;
 	lastPostTime: Date | null;
 	_id: string;
+}
 
 // Function to start all cron jobs
 export function startCronJobs(): void {
