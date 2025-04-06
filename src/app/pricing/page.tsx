@@ -301,10 +301,12 @@ export default function PricingPage() {
 									{subscription.status === "active"
 										? "end"
 										: "renew"}{" "}
-									on
-									{new Date(
-										subscription.currentPeriodEnd
-									).toLocaleDateString()}
+									on{" "}
+									<strong>
+										{new Date(
+											subscription.currentPeriodEnd
+										).toLocaleDateString()}
+									</strong>
 									.
 								</>
 							)}
