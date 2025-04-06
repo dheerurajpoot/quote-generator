@@ -1,5 +1,4 @@
-const mongoose = require("mongoose");
-
+import mongoose from "mongoose";
 const autoPostingSettingsSchema = new mongoose.Schema(
 	{
 		userId: {

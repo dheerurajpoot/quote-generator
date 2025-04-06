@@ -1,6 +1,6 @@
-const express = require("express");
-const next = require("next");
-const { startCronJobs } = require("./src/lib/cron-config");
+import express from "express";
+import next from "next";
+import { startCronJobs } from "./src/lib/cron-config";
 
 const dev = process.env.NODE_ENV !== "production";
 const app = next({ dev });

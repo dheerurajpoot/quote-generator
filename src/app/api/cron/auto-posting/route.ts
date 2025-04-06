@@ -8,6 +8,15 @@ import { MetaApi } from "@/lib/meta-api";
 import { uploadImage } from "@/lib/image-utils";
 import { generateQuoteImage } from "@/lib/server-image-generator";
 
+interface AutoPostingSettingsDocument {
+	_id: mongoose.Types.ObjectId;
+	userId: mongoose.Types.ObjectId;
+	isEnabled: boolean;
+	interval: number;
+	platforms: string[];
+	lastPostTime: Date | null;
+}
+
 // This function will be called by the cron job
 export async function GET(request: Request) {
 	try {
@@ -31,7 +40,9 @@ export async function GET(request: Request) {
 				});
 			}
 
-			const result = await processUserAutoPosting(setting);
+			const result = await processUserAutoPosting(
+				setting as AutoPostingSettingsDocument
+			);
 			return NextResponse.json({
 				success: true,
 				result,
@@ -53,7 +64,9 @@ export async function GET(request: Request) {
 		// Process each user's auto-posting settings
 		for (const setting of settings) {
 			try {
-				const result = await processUserAutoPosting(setting);
+				const result = await processUserAutoPosting(
+					setting as AutoPostingSettingsDocument
+				);
 				results.push(result);
 			} catch (error) {
 				console.error(
@@ -91,7 +104,7 @@ export async function GET(request: Request) {
 }
 
 // Helper function to process a single user's auto-posting
-async function processUserAutoPosting(setting: any) {
+async function processUserAutoPosting(setting: AutoPostingSettingsDocument) {
 	const userId = setting.userId.toString();
 
 	try {
