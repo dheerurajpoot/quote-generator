@@ -7,22 +7,37 @@ cloudinary.config({
 	api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-export async function uploadImage(imageUrl: string): Promise<string> {
+export async function uploadImage(input: string | Buffer): Promise<string> {
 	try {
-		// If it's a data URL, upload it directly
-		if (imageUrl.startsWith("data:")) {
-			const result = await cloudinary.uploader.upload(imageUrl, {
+		let result;
+
+		if (Buffer.isBuffer(input)) {
+			// If input is a Buffer, convert it to base64 with data URI prefix
+			const base64Data = `data:image/png;base64,${input.toString(
+				"base64"
+			)}`;
+			result = await cloudinary.uploader.upload(base64Data, {
 				folder: "quote-generator",
 				resource_type: "auto",
 			});
-			return result.secure_url;
+		} else if (input.startsWith("data:")) {
+			// If it's a data URL, upload it directly
+			result = await cloudinary.uploader.upload(input, {
+				folder: "quote-generator",
+				resource_type: "auto",
+			});
+		} else {
+			// If it's an HTTPS URL, upload it using the URL
+			result = await cloudinary.uploader.upload(input, {
+				folder: "quote-generator",
+				resource_type: "auto",
+			});
 		}
 
-		// If it's an HTTPS URL, upload it using the URL
-		const result = await cloudinary.uploader.upload(imageUrl, {
-			folder: "quote-generator",
-			resource_type: "auto",
-		});
+		if (!result || !result.secure_url) {
+			throw new Error("Failed to get secure URL from Cloudinary");
+		}
+
 		return result.secure_url;
 	} catch (error) {
 		console.error("Error uploading image to Cloudinary:", error);

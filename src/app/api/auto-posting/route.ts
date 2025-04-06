@@ -54,6 +54,7 @@ export async function POST(request: Request) {
 					isEnabled,
 					interval,
 					platforms,
+					lastPostTime: isEnabled ? new Date() : null,
 				},
 			},
 			{ upsert: true, new: true }

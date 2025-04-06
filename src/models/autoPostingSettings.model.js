@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+const mongoose = require("mongoose");
 
 const autoPostingSettingsSchema = new mongoose.Schema(
 	{
@@ -36,6 +36,4 @@ const AutoPostingSettings =
 	mongoose.models.AutoPostingSettings ||
 	mongoose.model("AutoPostingSettings", autoPostingSettingsSchema);
 
-// Support both CommonJS and ES modules
-export { AutoPostingSettings };
-export default { AutoPostingSettings };
+module.exports = { AutoPostingSettings };

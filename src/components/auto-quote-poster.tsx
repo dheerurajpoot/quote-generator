@@ -184,8 +184,6 @@ export default function AutoQuotePoster() {
 				);
 				return;
 			}
-
-			// Set auto-posting state
 			setIsAutoPosting(true);
 
 			// Save settings to database
@@ -204,12 +202,6 @@ export default function AutoQuotePoster() {
 
 			// Initial post
 			handlePostToSocialMedia();
-
-			// Set up interval for subsequent posts
-			autoIntervalRef.current = setInterval(
-				handlePostToSocialMedia,
-				parseInt(postingInterval) * 60 * 1000
-			);
 		}
 	}, [
 		isAutoPosting,
@@ -258,16 +250,6 @@ export default function AutoQuotePoster() {
 				setPostingInterval(settings.interval.toString());
 				setSelectedPlatforms(settings.platforms);
 
-				// If auto-posting is enabled, set up the interval
-				if (settings.isEnabled) {
-					// Set up interval without initial post
-					autoIntervalRef.current = setInterval(
-						handlePostToSocialMedia,
-						settings.interval * 60 * 1000
-					);
-				}
-
-				// Mark settings as loaded
 				settingsLoadedRef.current = true;
 			} catch (error) {
 				console.error("Error fetching auto-posting settings:", error);
@@ -276,16 +258,7 @@ export default function AutoQuotePoster() {
 		};
 
 		loadSettings();
-	}, [user?._id, handlePostToSocialMedia]);
-
-	// // Clean up interval on unmount
-	// useEffect(() => {
-	// 	return () => {
-	// 		if (autoIntervalRef.current) {
-	// 			clearInterval(autoIntervalRef.current);
-	// 		}
-	// 	};
-	// }, []);
+	}, [user?._id]);
 
 	return (
 		<Card className='w-full max-w-2xl mx-auto'>
