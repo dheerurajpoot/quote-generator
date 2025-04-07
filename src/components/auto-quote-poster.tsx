@@ -95,10 +95,12 @@ export default function AutoQuotePoster() {
 				);
 				// Fetch new quote for next time
 				fetchNewQuote();
+				return hasSuccess;
 			} else {
 				toast.error("Failed to post to any platform.");
 			}
 		} catch (error) {
+			setIsAutoPosting(false);
 			console.error("Error posting to social media:", error);
 			let errorMessage = "Failed to post to social media";
 			if (error instanceof Error) {
@@ -148,22 +150,26 @@ export default function AutoQuotePoster() {
 			}
 			setIsAutoPosting(true);
 
-			// Save settings to database
-			if (user?._id) {
-				try {
-					await axios.post("/api/auto-posting", {
-						userId: user._id,
-						isEnabled: true,
-						interval: parseInt(postingInterval),
-						platforms: selectedPlatforms,
-					});
-				} catch (error) {
-					console.error("Error saving auto-posting settings:", error);
+			// Initial post
+			const res = await handlePostToSocialMedia();
+			if (res) {
+				// Save settings to database
+				if (user?._id) {
+					try {
+						await axios.post("/api/auto-posting", {
+							userId: user._id,
+							isEnabled: true,
+							interval: parseInt(postingInterval),
+							platforms: selectedPlatforms,
+						});
+					} catch (error) {
+						console.error(
+							"Error saving auto-posting settings:",
+							error
+						);
+					}
 				}
 			}
-
-			// Initial post
-			handlePostToSocialMedia();
 		}
 	}, [
 		isAutoPosting,
