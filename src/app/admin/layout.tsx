@@ -2,7 +2,6 @@
 
 import type React from "react";
 
-import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/auth-context";
 import { Button } from "@/components/ui/button";
@@ -35,15 +34,6 @@ export default function AdminLayout({
 }) {
 	const { user, isAdmin, signOut } = useAuth();
 	const router = useRouter();
-
-	useEffect(() => {
-		// Redirect if not admin (client-side check in addition to middleware)
-		if (user && !isAdmin()) {
-			router.push("/unauthorized");
-		} else if (!user) {
-			router.push("/login?redirect=/admin");
-		}
-	}, [user, isAdmin, router]);
 
 	const handleSignOut = async () => {
 		await signOut();

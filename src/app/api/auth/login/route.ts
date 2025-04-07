@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
 			{ userId: user._id },
 			process.env.TOKEN_SECRET!,
 			{
-				expiresIn: "1d",
+				expiresIn: "30d",
 			}
 		);
 
@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
 			httpOnly: true,
 			secure: process.env.NODE_ENV === "production",
 			sameSite: "strict",
-			maxAge: 86400, // 1 day
+			maxAge: 30 * 24 * 60 * 60,
 		});
 
 		return response;

@@ -14,17 +14,11 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Check, AlertCircle, Loader2 } from "lucide-react";
-import { useSubscriptionControl } from "@/hooks/useSubscriptionControl";
 
 export default function AdminSettingsPage() {
 	const [isLoading, setIsLoading] = useState(false);
 	const [success, setSuccess] = useState("");
 	const [error, setError] = useState("");
-	const {
-		isEnabled: isSubscriptionEnabled,
-		isLoading: isSubscriptionConfigLoading,
-		toggleSubscription,
-	} = useSubscriptionControl();
 
 	const [maintenanceMode, setMaintenanceMode] = useState(false);
 
@@ -101,31 +95,6 @@ export default function AdminSettingsPage() {
 							Save Changes
 						</Button>
 					</CardFooter>
-				</Card>
-
-				{/* Subscription Settings */}
-				<Card>
-					<CardHeader>
-						<CardTitle>Subscription Settings</CardTitle>
-						<CardDescription>
-							Configure subscription-related settings
-						</CardDescription>
-					</CardHeader>
-					<CardContent className='space-y-4'>
-						<div className='flex items-center justify-between'>
-							<div className='space-y-0.5'>
-								<Label>Enable Subscriptions</Label>
-								<p className='text-sm text-muted-foreground'>
-									Enable or disable subscription features
-								</p>
-							</div>
-							<Switch
-								checked={isSubscriptionEnabled}
-								onCheckedChange={toggleSubscription}
-								disabled={isSubscriptionConfigLoading}
-							/>
-						</div>
-					</CardContent>
 				</Card>
 			</div>
 

@@ -12,7 +12,7 @@ import Link from "next/link";
 
 export default function UnauthorizedPage() {
 	return (
-		<div className='container flex items-center justify-center min-h-[calc(100vh-8rem)] py-12'>
+		<div className='container mx-auto flex items-center justify-center min-h-[calc(100vh-8rem)] py-12'>
 			<Card className='max-w-md w-full'>
 				<CardHeader className='text-center'>
 					<div className='flex justify-center mb-4'>
