@@ -52,7 +52,8 @@ export default function RootLayout({
 				/>
 			</head>
 			<body
-				className={`${inter.variable} ${poppins.variable} font-sans min-h-screen flex flex-col`}>
+				className={`${inter.variable} ${poppins.variable} font-sans min-h-screen flex flex-col`}
+				suppressHydrationWarning>
 				<AuthProvider>
 					<SubscriptionProvider>
 						<Header />
