@@ -2,23 +2,26 @@ import { createCanvas, loadImage, registerFont } from "canvas";
 import path from "path";
 import axios from "axios";
 import fs from "fs/promises";
+import { existsSync } from "fs";
 
-// Register Hindi font from node_modules with error handling
-let fontRegistered = false;
+// Register Mukta fonts for Hindi text
+const muktaRegularPath = path.join(
+	process.cwd(),
+	"public/fonts/Mukta-Regular.ttf"
+);
+const muktaBoldPath = path.join(process.cwd(), "public/fonts/Mukta-Bold.ttf");
+
 try {
-	const fontPath = path.join(
-		process.cwd(),
-		"node_modules/@fontsource/noto-sans-devanagari/files/noto-sans-devanagari-devanagari-900-normal.woff"
-	);
-	registerFont(fontPath, {
-		family: "NotoSansDevanagari",
-		weight: "900",
-	});
-	fontRegistered = true;
-	console.log("Hindi font registered successfully");
+	if (existsSync(muktaRegularPath)) {
+		registerFont(muktaRegularPath, { family: "Mukta", weight: "400" });
+		console.log("Mukta Regular font registered successfully");
+	}
+	if (existsSync(muktaBoldPath)) {
+		registerFont(muktaBoldPath, { family: "Mukta", weight: "700" });
+		console.log("Mukta Bold font registered successfully");
+	}
 } catch (error) {
-	console.error("Error registering Hindi font:", error);
-	// Continue without the custom font
+	console.error("Error registering Mukta fonts:", error);
 }
 
 interface Quote {
@@ -34,65 +37,62 @@ interface Quote {
 
 async function loadImageFromUrl(url: string): Promise<Buffer> {
 	try {
-		const response = await axios.get(url, {
-			responseType: "arraybuffer",
-		});
+		const response = await axios.get(url, { responseType: "arraybuffer" });
 		return Buffer.from(response.data);
 	} catch (error) {
 		console.error("Error loading image from URL:", error);
-		// Return default image if URL loading fails
 		const defaultImagePath = path.join(process.cwd(), "public", "img1.jpg");
 		return fs.readFile(defaultImagePath);
 	}
 }
 
-// Helper function to intelligently break text
-function smartTextBreak(text: string): string[] {
-	// First, try to break at commas, semicolons, or other natural break points
-	const breakPoints = /[,;।]/;
-	if (breakPoints.test(text)) {
-		return text
-			.split(breakPoints)
-			.map((part) => part.trim())
-			.filter((part) => part.length > 0);
-	}
+// Helper function to check if a character is a Hindi word boundary
+function isHindiWordBoundary(char: string): boolean {
+	// Space, Danda (।), and other common Hindi punctuation marks
+	return /[\s।,.!?]/.test(char);
+}
 
-	// If no natural break points, break at a reasonable length
-	const words = text.split(" ");
-	const lines = [];
-	let currentLine = words[0];
-	let currentLength = currentLine.length;
-	const targetLength = 30; // Adjust this value based on your needs
+function wrapText(ctx: any, text: string, maxWidth: number): string[] {
+	// Split text into words while preserving Hindi word boundaries
+	const words = text.split(/(?<=[\s।,.!?])/);
+	const lines: string[] = [];
+	let currentLine = words[0] || "";
 
 	for (let i = 1; i < words.length; i++) {
 		const word = words[i];
-		if (currentLength + word.length + 1 <= targetLength) {
-			currentLine += " " + word;
-			currentLength += word.length + 1;
+		const width = ctx.measureText(currentLine + word).width;
+
+		if (width < maxWidth) {
+			currentLine += word;
 		} else {
-			lines.push(currentLine);
+			// Only push non-empty lines
+			if (currentLine.trim()) {
+				lines.push(currentLine.trim());
+			}
 			currentLine = word;
-			currentLength = word.length;
 		}
 	}
-	lines.push(currentLine);
+
+	// Add the last line if it's not empty
+	if (currentLine.trim()) {
+		lines.push(currentLine.trim());
+	}
+
 	return lines;
 }
 
 export async function generateQuoteImage(quote: Quote): Promise<Buffer> {
-	// Create a canvas with fixed dimensions
-	const canvas = createCanvas(1200, 1200);
+	// Create a larger canvas for better quality
+	const canvas = createCanvas(1500, 1500);
 	const ctx = canvas.getContext("2d");
 
 	try {
-		// Load and draw background image
+		// Load and draw background
 		let imageBuffer;
 		if (quote.backgroundImage && quote.backgroundImage.startsWith("http")) {
 			try {
 				imageBuffer = await loadImageFromUrl(quote.backgroundImage);
 			} catch (error) {
-				console.error("Error loading image from URL:", error);
-				// Use default image if URL loading fails
 				const defaultImagePath = path.join(
 					process.cwd(),
 					"public",
@@ -101,7 +101,6 @@ export async function generateQuoteImage(quote: Quote): Promise<Buffer> {
 				imageBuffer = await fs.readFile(defaultImagePath);
 			}
 		} else {
-			// Use default image from public directory
 			const defaultImagePath = path.join(
 				process.cwd(),
 				"public",
@@ -113,61 +112,55 @@ export async function generateQuoteImage(quote: Quote): Promise<Buffer> {
 		const image = await loadImage(imageBuffer);
 		ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
 
-		// Add semi-transparent overlay with gradient
-		const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
-		gradient.addColorStop(0, "rgba(0, 0, 0, 0.7)");
-		gradient.addColorStop(0.5, "rgba(0, 0, 0, 0.5)");
-		gradient.addColorStop(1, "rgba(0, 0, 0, 0.7)");
-		ctx.fillStyle = gradient;
+		// Add dark overlay for better text visibility
+		ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
 		ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-		// Configure text settings
-		ctx.fillStyle = quote.textColor || "#ffffff";
+		// Configure text rendering
 		ctx.textAlign = "center";
 		ctx.textBaseline = "middle";
+		ctx.fillStyle = "#ffffff";
 
-		// Set font size and family with fallback
-		const fontSize = 34; // Increased font size
-		if (fontRegistered) {
-			ctx.font = `400 ${fontSize}px "NotoSansDevanagari"`;
-		} else {
-			ctx.font = `400 ${fontSize}px Arial`;
-			console.log("Using fallback font Arial");
-		}
+		// Set up text properties with bold weight
+		const fontSize = Math.floor(canvas.width * 0.045);
+		ctx.font = `600 ${fontSize}px Mukta`;
 
-		// Smart text wrapping
-		const lines = smartTextBreak(quote.text);
-		const lineHeight = fontSize * 1.4; // Increased line height for Hindi text
+		// Add text shadow for better visibility
+		ctx.shadowColor = "rgba(0, 0, 0, 0.8)";
+		ctx.shadowBlur = 15;
+		ctx.shadowOffsetX = 5;
+		ctx.shadowOffsetY = 5;
+
+		// Calculate text wrapping
+		const maxWidth = canvas.width * 0.8;
+		const lines = wrapText(ctx, quote.text, maxWidth);
+
+		// Calculate total height of text block
+		const lineHeight = fontSize * 1.5;
 		const totalHeight = lines.length * lineHeight;
 		const startY = (canvas.height - totalHeight) / 2;
 
-		// Draw each line with a subtle text shadow
-		ctx.shadowColor = "rgba(0, 0, 0, 0.5)";
-		ctx.shadowBlur = 10;
-		ctx.shadowOffsetX = 2;
-		ctx.shadowOffsetY = 2;
-
+		// Draw each line
 		lines.forEach((line, i) => {
-			ctx.fillText(line, canvas.width / 2, startY + i * lineHeight);
+			const y = startY + i * lineHeight;
+			ctx.fillText(line, canvas.width / 2, y);
 		});
 
-		// Reset shadow for author and watermark
-		ctx.shadowColor = "transparent";
+		// Reset shadow for author text
+		ctx.shadowBlur = 10;
+		ctx.shadowOffsetX = 3;
+		ctx.shadowOffsetY = 3;
 
-		// Draw author with larger font and better positioning
-		const authorFontSize = fontSize * 0.6;
-		if (fontRegistered) {
-			ctx.font = `400 ${authorFontSize}px "NotoSansDevanagari"`;
-		} else {
-			ctx.font = `400 ${authorFontSize}px Arial`;
-		}
+		// Draw author with regular weight
+		const authorFontSize = Math.floor(fontSize * 0.7);
+		ctx.font = `400 ${authorFontSize}px Mukta`;
 		ctx.fillText(
 			`— ${quote.author}`,
 			canvas.width / 2,
-			startY + totalHeight + lineHeight * 0.8
+			startY + totalHeight + lineHeight
 		);
 
-		// Convert canvas to buffer
+		// Return the image buffer
 		return canvas.toBuffer("image/png");
 	} catch (error) {
 		console.error("Error generating quote image:", error);
