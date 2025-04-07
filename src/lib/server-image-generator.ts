@@ -1,4 +1,9 @@
-import { createCanvas, loadImage, registerFont } from "canvas";
+import {
+	createCanvas,
+	loadImage,
+	registerFont,
+	CanvasRenderingContext2D,
+} from "canvas";
 import path from "path";
 import axios from "axios";
 import fs from "fs/promises";
@@ -46,13 +51,11 @@ async function loadImageFromUrl(url: string): Promise<Buffer> {
 	}
 }
 
-// Helper function to check if a character is a Hindi word boundary
-function isHindiWordBoundary(char: string): boolean {
-	// Space, Danda (।), and other common Hindi punctuation marks
-	return /[\s।,.!?]/.test(char);
-}
-
-function wrapText(ctx: any, text: string, maxWidth: number): string[] {
+function wrapText(
+	ctx: CanvasRenderingContext2D,
+	text: string,
+	maxWidth: number
+): string[] {
 	// Split text into words while preserving Hindi word boundaries
 	const words = text.split(/(?<=[\s।,.!?])/);
 	const lines: string[] = [];
@@ -93,6 +96,7 @@ export async function generateQuoteImage(quote: Quote): Promise<Buffer> {
 			try {
 				imageBuffer = await loadImageFromUrl(quote.backgroundImage);
 			} catch (error) {
+				console.log("error", error);
 				const defaultImagePath = path.join(
 					process.cwd(),
 					"public",
@@ -121,8 +125,8 @@ export async function generateQuoteImage(quote: Quote): Promise<Buffer> {
 		ctx.textBaseline = "middle";
 		ctx.fillStyle = "#ffffff";
 
-		// Set up text properties with bold weight
-		const fontSize = Math.floor(canvas.width * 0.045);
+		// Set up text properties with bold weight and smaller font size
+		const fontSize = Math.floor(canvas.width * 0.035); // Decreased from 0.045 to 0.035
 		ctx.font = `600 ${fontSize}px Mukta`;
 
 		// Add text shadow for better visibility
