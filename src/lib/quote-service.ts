@@ -50,10 +50,24 @@ export async function getRandomHindiQuote(): Promise<Quote> {
 			"https://hindi-quotes.vercel.app/random"
 		);
 
-		const image = await getRandomPexelsImage();
+		// Check if the response has the expected format
+		if (!response.data || !response.data.quote) {
+			console.error("Unexpected API response format:", response.data);
+			throw new Error("Unexpected API response format");
+		}
+
+		// Get a background image, with fallback to default if it fails
+		let image = "/img1.jpg";
+		try {
+			image = await getRandomPexelsImage();
+		} catch (imageError) {
+			console.error("Error fetching Pexels image:", imageError);
+			// Continue with default image
+		}
+
 		return {
 			text: response.data.quote,
-			author: response.data.author || "QuoteArt",
+			author: "QuoteArt", // Since the API no longer provides an author
 			// Default styling
 			backgroundImage: `${image}?height=600&width=600`,
 			textColor: "#ffffff",

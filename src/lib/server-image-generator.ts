@@ -3,15 +3,23 @@ import path from "path";
 import axios from "axios";
 import fs from "fs/promises";
 
-// Register Hindi font from node_modules
-const fontPath = path.join(
-	process.cwd(),
-	"node_modules/@fontsource/noto-sans-devanagari/files/noto-sans-devanagari-devanagari-900-normal.woff"
-);
-registerFont(fontPath, {
-	family: "NotoSansDevanagari",
-	weight: "900",
-});
+// Register Hindi font from node_modules with error handling
+let fontRegistered = false;
+try {
+	const fontPath = path.join(
+		process.cwd(),
+		"node_modules/@fontsource/noto-sans-devanagari/files/noto-sans-devanagari-devanagari-900-normal.woff"
+	);
+	registerFont(fontPath, {
+		family: "NotoSansDevanagari",
+		weight: "900",
+	});
+	fontRegistered = true;
+	console.log("Hindi font registered successfully");
+} catch (error) {
+	console.error("Error registering Hindi font:", error);
+	// Continue without the custom font
+}
 
 interface Quote {
 	text: string;
@@ -80,7 +88,18 @@ export async function generateQuoteImage(quote: Quote): Promise<Buffer> {
 		// Load and draw background image
 		let imageBuffer;
 		if (quote.backgroundImage && quote.backgroundImage.startsWith("http")) {
-			imageBuffer = await loadImageFromUrl(quote.backgroundImage);
+			try {
+				imageBuffer = await loadImageFromUrl(quote.backgroundImage);
+			} catch (error) {
+				console.error("Error loading image from URL:", error);
+				// Use default image if URL loading fails
+				const defaultImagePath = path.join(
+					process.cwd(),
+					"public",
+					"img1.jpg"
+				);
+				imageBuffer = await fs.readFile(defaultImagePath);
+			}
 		} else {
 			// Use default image from public directory
 			const defaultImagePath = path.join(
@@ -107,9 +126,14 @@ export async function generateQuoteImage(quote: Quote): Promise<Buffer> {
 		ctx.textAlign = "center";
 		ctx.textBaseline = "middle";
 
-		// Set font size and family
+		// Set font size and family with fallback
 		const fontSize = 34; // Increased font size
-		ctx.font = `400 ${fontSize}px "NotoSansDevanagari"`;
+		if (fontRegistered) {
+			ctx.font = `400 ${fontSize}px "NotoSansDevanagari"`;
+		} else {
+			ctx.font = `400 ${fontSize}px Arial`;
+			console.log("Using fallback font Arial");
+		}
 
 		// Smart text wrapping
 		const lines = smartTextBreak(quote.text);
@@ -132,7 +156,11 @@ export async function generateQuoteImage(quote: Quote): Promise<Buffer> {
 
 		// Draw author with larger font and better positioning
 		const authorFontSize = fontSize * 0.6;
-		ctx.font = `400 ${authorFontSize}px "NotoSansDevanagari"`;
+		if (fontRegistered) {
+			ctx.font = `400 ${authorFontSize}px "NotoSansDevanagari"`;
+		} else {
+			ctx.font = `400 ${authorFontSize}px Arial`;
+		}
 		ctx.fillText(
 			`— ${quote.author}`,
 			canvas.width / 2,

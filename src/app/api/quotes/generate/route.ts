@@ -8,11 +8,25 @@ export async function GET() {
 		// Get a random quote
 		const quote = await getRandomHindiQuote();
 
-		// Generate the image on the server
-		const imageBuffer = await generateQuoteImage(quote);
+		if (!quote || !quote.text) {
+			console.error("Failed to get a valid quote");
+			return NextResponse.json(
+				{ error: "Failed to get a valid quote" },
+				{ status: 500 }
+			);
+		}
 
-		// Upload the image to Cloudinary
-		const imageUrl = await uploadImage(imageBuffer);
+		// Generate the image on the server
+		let imageUrl;
+		try {
+			const imageBuffer = await generateQuoteImage(quote);
+			// Upload the image to Cloudinary
+			imageUrl = await uploadImage(imageBuffer);
+		} catch (imageError) {
+			console.error("Error generating or uploading image:", imageError);
+			// Use a placeholder image if generation or upload fails
+			imageUrl = "https://via.placeholder.com/1200x1200?text=Quote+Image";
+		}
 
 		return NextResponse.json({
 			quote: {
