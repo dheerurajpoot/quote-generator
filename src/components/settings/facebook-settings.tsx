@@ -229,8 +229,8 @@ export function FacebookSettings() {
 							Apps&quot; and then &quot;Create App&quot;
 						</li>
 						<li>
-							Create a meta for developer account (if you don't
-							have one)
+							Create a meta for developer account (if you
+							don&apos;t have one)
 						</li>
 						<li>
 							Verify details like phone number, email, etc. and
