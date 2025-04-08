@@ -2,6 +2,7 @@ import Faq from "@/components/faq";
 import HowItWorks from "@/components/how-it-works";
 import QuoteGenerator from "@/components/quote-generator";
 import Testimonial from "@/components/testimonial";
+import TrendingQuotes from "@/components/trending-quotes";
 import { ImageIcon, Type, Download } from "lucide-react";
 
 export default function Home() {
@@ -12,6 +13,21 @@ export default function Home() {
 				className='w-full py-12 md:py-24 bg-muted/50'>
 				<div className='container mx-auto px-4 md:px-6'>
 					<QuoteGenerator />
+				</div>
+			</section>
+
+			<section className='w-full py-12 md:py-24 bg-background'>
+				<div className='container mx-auto px-4 md:px-6'>
+					<div className='text-center mb-12'>
+						<h2 className='text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl'>
+							Trending Quotes
+						</h2>
+						<p className='mx-auto max-w-[700px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed mt-4'>
+							Discover and share inspiring quotes from around the
+							world
+						</p>
+					</div>
+					<TrendingQuotes />
 				</div>
 			</section>
 
