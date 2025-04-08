@@ -44,7 +44,6 @@ export async function getRandomPexelsImage(): Promise<string> {
 }
 
 export async function getRandomHindiQuote(): Promise<Quote> {
-	console.log("getRandomHindiQuote.....");
 	try {
 		// Using a free Hindi quotes API
 		const response = await axios.get(
