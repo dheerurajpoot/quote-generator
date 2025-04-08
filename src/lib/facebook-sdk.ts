@@ -7,7 +7,6 @@ declare global {
 async function getFacebookCredentials() {
 	const response = await fetch("/api/users/facebook-credentials");
 	const data = await response.json();
-	console.log("data", data);
 	return data;
 }
 

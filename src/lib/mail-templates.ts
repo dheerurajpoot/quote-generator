@@ -65,13 +65,13 @@ export const forgotMailTemplate = (token: string): string => {
 		} account.</p>
         <p>Click the button below to reset your password:</p>
         <a href="${
-			process.env.DOMAIN_NAME
+			process.env.NEXT_PUBLIC_APP_URL
 		}/reset-password?token=${encodeURIComponent(
 		token
 	)}" class="button">Reset Password</a>
         <p>Or copy and paste this link into your browser:</p>
         <div class="link">${
-			process.env.DOMAIN_NAME
+			process.env.NEXT_PUBLIC_APP_URL
 		}/reset-password?token=${encodeURIComponent(token)}</div>
         <p>This link will expire in 1 hour.</p>
         <div class="warning">
@@ -134,13 +134,13 @@ export const verifyMailTemplate = (token: string): string => {
 		}! Please verify your email address to complete your registration.</p>
         <p>Click the button below to verify your email:</p>
         <a href="${
-			process.env.DOMAIN_NAME
+			process.env.NEXT_PUBLIC_APP_URL
 		}/verifyemail?token=${encodeURIComponent(
 		token
 	)}" class="button">Verify Email</a>
         <p>Or copy and paste this link into your browser:</p>
         <div class="link">${
-			process.env.DOMAIN_NAME
+			process.env.NEXT_PUBLIC_APP_URL
 		}/verifyemail?token=${encodeURIComponent(token)}</div>
         <p>This link will expire in 1 hour.</p>
         <p>If you didn't create an account with us, please ignore this email or contact support if you have concerns.</p>
