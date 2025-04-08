@@ -38,6 +38,10 @@ const userModel = new mongoose.Schema(
 		verifyTokenExpiry: Date,
 		facebookAppId: { type: String },
 		facebookAppSecret: { type: String },
+		author: {
+			type: String,
+			default: "QuoteArt",
+		},
 	},
 	{ timestamps: true }
 );

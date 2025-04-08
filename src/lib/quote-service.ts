@@ -56,6 +56,9 @@ export async function getRandomHindiQuote(): Promise<Quote> {
 			throw new Error("Unexpected API response format");
 		}
 
+		const res = await axios.get("/api/users/facebook-credentials");
+		const { author } = res.data;
+
 		// Get a background image, with fallback to default if it fails
 		let image = "/img1.jpg";
 		try {
@@ -67,8 +70,7 @@ export async function getRandomHindiQuote(): Promise<Quote> {
 
 		return {
 			text: response.data.quote,
-			author: "QuoteArt", // Since the API no longer provides an author
-			// Default styling
+			author: author || "QuoteArt",
 			backgroundImage: `${image}?height=600&width=600`,
 			textColor: "#ffffff",
 			backgroundColor: "rgba(0, 0, 0, 0.5)",

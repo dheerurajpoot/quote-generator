@@ -20,6 +20,7 @@ import Link from "next/link";
 export function FacebookSettings() {
 	const [appId, setAppId] = useState("");
 	const [appSecret, setAppSecret] = useState("");
+	const [author, setAuthor] = useState("");
 	const [error, setError] = useState("");
 	const [success, setSuccess] = useState("");
 	const [isLoading, setIsLoading] = useState(false);
@@ -40,6 +41,9 @@ export function FacebookSettings() {
 				}
 				if (response.data.appSecret) {
 					setAppSecret(response.data.appSecret);
+				}
+				if (response.data.author) {
+					setAuthor(response.data.author);
 				}
 			} catch (err) {
 				console.error("Error fetching credentials:", err);
@@ -67,7 +71,7 @@ export function FacebookSettings() {
 		try {
 			await axios.post(
 				"/api/users/facebook-credentials",
-				{ appId, appSecret },
+				{ appId, appSecret, author },
 				{
 					withCredentials: true,
 					headers: {
@@ -108,6 +112,7 @@ export function FacebookSettings() {
 
 			setAppId("");
 			setAppSecret("");
+			setAuthor("");
 			setSuccess("Facebook credentials removed successfully!");
 			toast.success("Facebook credentials removed successfully!");
 		} catch (err) {
@@ -173,6 +178,18 @@ export function FacebookSettings() {
 							placeholder='Enter your Facebook App Secret'
 						/>
 					</div>
+					<div className='space-y-2'>
+						<Label htmlFor='author'>
+							Author/Page Name/Watermark
+						</Label>
+						<Input
+							id='author'
+							type='text'
+							value={author}
+							onChange={(e) => setAuthor(e.target.value)}
+							placeholder='Enter your name'
+						/>
+					</div>
 
 					<div className='flex gap-2'>
 						<Button
@@ -208,8 +225,16 @@ export function FacebookSettings() {
 							</Link>
 						</li>
 						<li>
-							Click on &quot;My Apps&quot; and then &quot;Create
-							App&quot;
+							Click on &quot;Get Started&quot; or &quot;My
+							Apps&quot; and then &quot;Create App&quot;
+						</li>
+						<li>
+							Create a meta for developer account (if you don't
+							have one)
+						</li>
+						<li>
+							Verify details like phone number, email, etc. and
+							choose &quot;Developer&quot; in about section.
 						</li>
 						<li>Gave a name to your app &quot;QuoteArt&quot;</li>
 						<li>Fill in your app details and create the app</li>

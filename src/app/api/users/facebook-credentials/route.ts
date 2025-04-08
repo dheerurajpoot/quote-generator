@@ -41,6 +41,7 @@ export async function GET(request: NextRequest) {
 		return NextResponse.json({
 			appId: user.facebookAppId || "",
 			appSecret: user.facebookAppSecret || "",
+			author: user.author || "",
 		});
 	} catch (error) {
 		console.error("Error in GET Facebook credentials:", error);
@@ -71,7 +72,7 @@ export async function POST(request: NextRequest) {
 			);
 		}
 
-		const { appId, appSecret } = await request.json();
+		const { appId, appSecret, author } = await request.json();
 
 		if (!appId || !appSecret) {
 			return NextResponse.json(
@@ -82,6 +83,7 @@ export async function POST(request: NextRequest) {
 
 		user.facebookAppId = appId;
 		user.facebookAppSecret = appSecret;
+		user.author = author;
 		await user.save();
 
 		return NextResponse.json({
@@ -117,6 +119,7 @@ export async function DELETE(request: NextRequest) {
 
 		user.facebookAppId = "";
 		user.facebookAppSecret = "";
+		user.author = "";
 		await user.save();
 
 		return NextResponse.json({
