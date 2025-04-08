@@ -1,10 +1,38 @@
 import { NextResponse } from "next/server";
+import { connectDb } from "@/lib/dbconfig";
+import { User } from "@/models/user.model";
+import jwt from "jsonwebtoken";
+
+// Helper function to get user from token
+async function getUserFromToken(token: string) {
+	try {
+		const decoded = jwt.verify(token, process.env.TOKEN_SECRET!) as {
+			userId: string;
+		};
+		console.log("decoded", decoded);
+
+		await connectDb();
+		const user = await User.findById(decoded.userId);
+		console.log("user", user);
+
+		return user;
+	} catch (error) {
+		console.error("Error getting user from token:", error);
+		return null;
+	}
+}
 
 export const GET = async (request: Request) => {
 	try {
 		const { searchParams } = new URL(request.url);
 		const accessToken = searchParams.get("access_token");
 		const platform = searchParams.get("platform") || "facebook";
+		const token = request.headers
+			.get("cookie")
+			?.split("; ")
+			.find((row) => row.startsWith("token="))
+			?.split("=")[1];
+		console.log("token", token);
 
 		if (!accessToken) {
 			return NextResponse.json(
@@ -13,17 +41,44 @@ export const GET = async (request: Request) => {
 			);
 		}
 
+		if (!token) {
+			return NextResponse.json(
+				{ error: "Authentication required" },
+				{ status: 401 }
+			);
+		}
+
+		// Get user from token
+		const user = await getUserFromToken(token);
+		console.log("user", user);
+		if (!user) {
+			return NextResponse.json(
+				{ error: "User not found" },
+				{ status: 401 }
+			);
+		}
+
+		// Check if user has Facebook credentials
+		if (!user.facebookAppId || !user.facebookAppSecret) {
+			return NextResponse.json(
+				{
+					error: "Facebook credentials not found. Please set up your Facebook app credentials first.",
+				},
+				{ status: 400 }
+			);
+		}
+
 		// Log the values for debugging
 		console.log("Attempting to exchange token with:", {
 			platform,
-			appId: process.env.FACEBOOK_CLIENT_ID,
-			hasSecret: !!process.env.FACEBOOK_CLIENT_SECRET,
+			appId: user.facebookAppId,
+			hasSecret: !!user.facebookAppSecret,
 			accessToken: accessToken.substring(0, 10) + "...", // Log only first 10 chars for security
 		});
 
 		// Exchange short-lived token for long-lived token
 		const response = await fetch(
-			`https://graph.facebook.com/v18.0/oauth/access_token?grant_type=fb_exchange_token&client_id=${process.env.FACEBOOK_CLIENT_ID}&client_secret=${process.env.FACEBOOK_CLIENT_SECRET}&fb_exchange_token=${accessToken}`
+			`https://graph.facebook.com/v18.0/oauth/access_token?grant_type=fb_exchange_token&client_id=${user.facebookAppId}&client_secret=${user.facebookAppSecret}&fb_exchange_token=${accessToken}`
 		);
 
 		if (!response.ok) {
