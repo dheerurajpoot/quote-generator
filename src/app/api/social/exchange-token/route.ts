@@ -32,7 +32,6 @@ export const GET = async (request: Request) => {
 			?.split("; ")
 			.find((row) => row.startsWith("token="))
 			?.split("=")[1];
-		console.log("token", token);
 
 		if (!accessToken) {
 			return NextResponse.json(
@@ -50,7 +49,6 @@ export const GET = async (request: Request) => {
 
 		// Get user from token
 		const user = await getUserFromToken(token);
-		console.log("user", user);
 		if (!user) {
 			return NextResponse.json(
 				{ error: "User not found" },
