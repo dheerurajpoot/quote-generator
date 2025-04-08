@@ -84,7 +84,7 @@ export default function TrendingQuotes() {
 							} rounded-lg p-6 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02]`}>
 							<div className='relative'>
 								<p className='text-lg font-medium mb-4 text-white'>
-									"{quote}"
+									&quot;{quote}&quot;
 								</p>
 								<p className='text-sm text-white/80 mb-4'>
 									- QuoteArt
