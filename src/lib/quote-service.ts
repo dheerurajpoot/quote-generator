@@ -44,6 +44,7 @@ export async function getRandomPexelsImage(): Promise<string> {
 }
 
 export async function getRandomHindiQuote(): Promise<Quote> {
+	console.log("getRandomHindiQuote.....");
 	try {
 		// Using a free Hindi quotes API
 		const response = await axios.get(
@@ -56,13 +57,12 @@ export async function getRandomHindiQuote(): Promise<Quote> {
 			throw new Error("Unexpected API response format");
 		}
 
-		// Get a background image, with fallback to default if it fails
+		// Get a background image
 		let image = "/img1.jpg";
 		try {
 			image = await getRandomPexelsImage();
 		} catch (imageError) {
 			console.error("Error fetching Pexels image:", imageError);
-			// Continue with default image
 		}
 
 		return {
@@ -113,27 +113,6 @@ export async function getRandomHindiQuote(): Promise<Quote> {
 		return fallbackQuotes[
 			Math.floor(Math.random() * fallbackQuotes.length)
 		];
-	}
-}
-
-export async function generateQuoteImage(
-	// quote: Quote,
-	canvasRef: HTMLDivElement
-): Promise<string> {
-	try {
-		// Generate image using html2canvas
-		const html2canvas = (await import("html2canvas")).default;
-		const canvas = await html2canvas(canvasRef, {
-			allowTaint: true,
-			useCORS: true,
-			scale: 2,
-		});
-
-		// Return the image data URL
-		return canvas.toDataURL("image/png");
-	} catch (error) {
-		console.error("Error generating quote image:", error);
-		throw error;
 	}
 }
 
