@@ -1,18 +1,39 @@
 import Faq from "@/components/faq";
 import HowItWorks from "@/components/how-it-works";
-import QuoteGenerator from "@/components/quote-generator";
+import RamdomQuotes from "@/components/random-quotes";
 import Testimonial from "@/components/testimonial";
 import TrendingQuotes from "@/components/trending-quotes";
+import { Button } from "@/components/ui/button";
 import { ImageIcon, Type, Download } from "lucide-react";
+import Link from "next/link";
 
 export default function Home() {
 	return (
 		<div className='flex flex-col min-h-[calc(100vh-8rem)]'>
+			<section className='w-full py-12 md:py-24 lg:py-32 bg-gradient-to-b from-background to-muted'>
+				<div className='container mx-auto px-4 md:px-6'>
+					<div className='flex flex-col items-center space-y-4 text-center'>
+						<div className='space-y-2'>
+							<h1 className='text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl lg:text-6xl'>
+								Create Beautiful Quote Images in Seconds
+							</h1>
+							<p className='mx-auto max-w-[700px] text-muted-foreground md:text-xl'>
+								Design stunning quote images with custom
+								backgrounds, fonts, and styles. Perfect for
+								social media, blogs, and more.
+							</p>
+							<Button className='mt-4'>
+								<Link href='/edit'>Create Quote</Link>
+							</Button>
+						</div>
+					</div>
+				</div>
+			</section>
 			<section
 				id='generator'
 				className='w-full py-12 md:py-24 bg-muted/50'>
 				<div className='container mx-auto px-4 md:px-6'>
-					<QuoteGenerator />
+					<RamdomQuotes />
 				</div>
 			</section>
 

@@ -1,14 +1,15 @@
-import mongoose, { Schema } from "mongoose";
+import mongoose, { Schema, Document } from "mongoose";
 
 export interface ISocialConnection extends Document {
 	userId: mongoose.Types.ObjectId;
-	platform: string;
+	platform: "facebook" | "instagram";
 	accessToken: string;
-	refreshToken?: string;
-	expiresAt?: Date;
+	pageAccessToken?: string;
+	instagramAccountId?: string;
 	profileId: string;
 	profileName: string;
 	profileImage?: string;
+	expiresAt?: Date;
 	createdAt: Date;
 	updatedAt: Date;
 }
@@ -17,14 +18,16 @@ const SocialConnectionSchema = new Schema<ISocialConnection>({
 	userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
 	platform: { type: String, enum: ["facebook", "instagram"], required: true },
 	accessToken: { type: String, required: true },
-	refreshToken: { type: String },
-	expiresAt: { type: Date },
+	pageAccessToken: { type: String },
+	instagramAccountId: { type: String },
 	profileId: { type: String, required: true },
 	profileName: { type: String, required: true },
 	profileImage: { type: String },
+	expiresAt: { type: Date },
 	createdAt: { type: Date, default: Date.now },
 	updatedAt: { type: Date, default: Date.now },
 });
+
 export const SocialConnection =
 	mongoose.models.SocialConnection ||
 	mongoose.model<ISocialConnection>(

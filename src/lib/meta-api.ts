@@ -1,23 +1,115 @@
 import { uploadImage } from "./image-utils";
+import { SocialConnection } from "@/models/socialConnection.model";
+import { User } from "@/models/user.model";
+import { connectDb } from "./dbconfig";
 
 export interface MetaApiConfig {
 	accessToken: string;
 	apiVersion?: string;
+	userId?: string;
+	platform?: string;
 }
 
 export class MetaApi {
 	private accessToken: string;
 	private apiVersion: string;
 	private baseUrl: string;
+	private userId?: string;
+	private platform?: string;
 
 	constructor(config: MetaApiConfig) {
 		this.accessToken = config.accessToken;
 		this.apiVersion = config.apiVersion || "v18.0";
 		this.baseUrl = `https://graph.facebook.com/${this.apiVersion}`;
+		this.userId = config.userId;
+		this.platform = config.platform;
+	}
+
+	// Check if token is expired and refresh if needed
+	private async checkTokenExpiration() {
+		if (!this.userId || !this.platform) return;
+
+		try {
+			await connectDb();
+			const connection = await SocialConnection.findOne({
+				userId: this.userId,
+				platform: this.platform,
+			});
+
+			if (!connection) return;
+
+			// Check if token is expired or will expire in the next hour
+			const now = new Date();
+			const oneHourFromNow = new Date(now.getTime() + 60 * 60 * 1000);
+
+			if (connection.expiresAt && connection.expiresAt < oneHourFromNow) {
+				// Token is expired or will expire soon, refresh it
+				const user = await User.findById(this.userId);
+				if (!user?.facebookAppId || !user?.facebookAppSecret) {
+					throw new Error("Facebook app credentials not found");
+				}
+
+				// Exchange the token for a new long-lived token
+				const response = await fetch(
+					`https://graph.facebook.com/${this.apiVersion}/oauth/access_token?grant_type=fb_exchange_token&client_id=${user.facebookAppId}&client_secret=${user.facebookAppSecret}&fb_exchange_token=${this.accessToken}`
+				);
+
+				if (!response.ok) {
+					const error = await response.json();
+					throw new Error(
+						`Failed to refresh token: ${
+							error.error?.message || "Unknown error"
+						}`
+					);
+				}
+
+				const data = await response.json();
+
+				// Calculate new expiration date
+				const expiresAt = new Date();
+				expiresAt.setSeconds(expiresAt.getSeconds() + data.expires_in);
+
+				// Update the connection with the new token
+				connection.accessToken = data.access_token;
+				connection.expiresAt = expiresAt;
+				await connection.save();
+
+				// Update the instance token
+				this.accessToken = data.access_token;
+
+				// For Instagram, we need to get a new page access token
+				if (this.platform === "instagram") {
+					const pagesResponse = await fetch(
+						`${this.baseUrl}/me/accounts?access_token=${data.access_token}`
+					);
+
+					if (!pagesResponse.ok) {
+						const error = await pagesResponse.json();
+						throw new Error(
+							`Failed to get pages: ${
+								error.error?.message || "Unknown error"
+							}`
+						);
+					}
+
+					const pagesData = await pagesResponse.json();
+					if (pagesData.data?.[0]?.access_token) {
+						connection.pageAccessToken =
+							pagesData.data[0].access_token;
+						await connection.save();
+					}
+				}
+			}
+		} catch (error) {
+			console.error("Error checking token expiration:", error);
+			throw error; // Re-throw to handle it in the calling method
+		}
 	}
 
 	// Get user profile information
 	async getUserProfile() {
+		await this.checkTokenExpiration();
+
 		const response = await fetch(
 			`${this.baseUrl}/me?fields=id,name,picture&access_token=${this.accessToken}`
 		);
@@ -34,6 +126,8 @@ export class MetaApi {
 
 	// Get user's Facebook pages
 	async getUserPages() {
+		await this.checkTokenExpiration();
+
 		const response = await fetch(
 			`${this.baseUrl}/me/accounts?fields=id,name,access_token,picture&access_token=${this.accessToken}`
 		);
@@ -48,6 +142,8 @@ export class MetaApi {
 
 	// Get Instagram business accounts connected to Facebook pages
 	async getInstagramAccounts(pageId: string, pageAccessToken: string) {
+		await this.checkTokenExpiration();
+
 		const response = await fetch(
 			`${this.baseUrl}/${pageId}?fields=instagram_business_account{id,name,username,profile_picture_url}&access_token=${pageAccessToken}`
 		);
@@ -69,6 +165,8 @@ export class MetaApi {
 		imageUrl: string,
 		caption: string
 	) {
+		await this.checkTokenExpiration();
+
 		try {
 			// Upload image to Cloudinary first
 			const cloudinaryUrl = await uploadImage(imageUrl);
@@ -124,6 +222,8 @@ export class MetaApi {
 		imageUrl: string,
 		caption: string
 	) {
+		await this.checkTokenExpiration();
+
 		try {
 			const cloudinaryUrl = await uploadImage(imageUrl);
 

@@ -115,6 +115,78 @@ export async function getRandomHindiQuote(): Promise<Quote> {
 	}
 }
 
+export async function getRandomEnglishQuote(): Promise<Quote> {
+	try {
+		// Using a free English quotes API
+		const response = await axios.get(
+			"https://quotes-api-self.vercel.app/quote"
+		);
+
+		// Check if the response has the expected format
+		if (!response.data || !response.data.quote) {
+			console.error("Unexpected API response format:", response.data);
+			throw new Error("Unexpected API response format");
+		}
+
+		// Get a background image
+		let image = "/img1.jpg";
+		try {
+			image = await getRandomPexelsImage();
+		} catch (imageError) {
+			console.error("Error fetching Pexels image:", imageError);
+		}
+
+		return {
+			text: response.data.quote,
+			author: "QuoteArt",
+			backgroundImage: `${image}?height=600&width=600`,
+			textColor: "#ffffff",
+			backgroundColor: "rgba(0, 0, 0, 0.5)",
+			fontFamily: "font-sans",
+			fontSize: 24,
+			watermark: "@quote_art",
+		};
+	} catch (error) {
+		console.error("Error fetching quote:", error);
+		// Fallback quotes in case API fails
+		const fallbackQuotes: Quote[] = [
+			{
+				text: "जीवन में सफलता पाने के लिए सबसे पहले खुद पर विश्वास करना जरूरी है।",
+				author: "स्वामी विवेकानंद",
+				backgroundImage: "/img1.jpg?height=600&width=600",
+				textColor: "#ffffff",
+				backgroundColor: "rgba(0, 0, 0, 0.5)",
+				fontFamily: "font-sans",
+				fontSize: 24,
+				watermark: "@quote_art",
+			},
+			{
+				text: "कर्म करो, फल की चिंता मत करो।",
+				author: "श्री कृष्ण",
+				backgroundImage: "/img1.jpg?height=600&width=600",
+				textColor: "#ffffff",
+				backgroundColor: "rgba(0, 0, 0, 0.5)",
+				fontFamily: "font-sans",
+				fontSize: 24,
+				watermark: "@quote_art",
+			},
+			{
+				text: "जीवन में आगे बढ़ने के लिए साहस की जरूरत होती है।",
+				author: "चाणक्य",
+				backgroundImage: "/img1.jpg?height=600&width=600",
+				textColor: "#ffffff",
+				backgroundColor: "rgba(0, 0, 0, 0.5)",
+				fontFamily: "font-sans",
+				fontSize: 24,
+				watermark: "@quote_art",
+			},
+		];
+		return fallbackQuotes[
+			Math.floor(Math.random() * fallbackQuotes.length)
+		];
+	}
+}
+
 export async function postToSocialMedia(
 	imageUrl: string | undefined,
 	userId: string | undefined,

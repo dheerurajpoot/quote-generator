@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { connectDb } from "@/lib/dbconfig";
 import { User } from "@/models/user.model";
+import { SocialConnection } from "@/models/socialConnection.model";
 import jwt from "jsonwebtoken";
 
 // Helper function to get user from token
@@ -89,10 +90,15 @@ export const GET = async (request: Request) => {
 		}
 
 		const data = await response.json();
+		console.log("data", data);
 		console.log(
 			`Successfully exchanged ${platform} token, expires in:`,
 			data.expires_in
 		);
+
+		// Calculate expiration date
+		const expiresAt = new Date();
+		expiresAt.setSeconds(expiresAt.getSeconds() + data.expires_in);
 
 		// For Instagram, we need to get the long-lived user access token
 		if (platform === "instagram") {
@@ -151,17 +157,50 @@ export const GET = async (request: Request) => {
 				);
 			}
 
+			// Update or create social connection with expiration
+			await SocialConnection.findOneAndUpdate(
+				{
+					userId: user._id,
+					platform: "instagram",
+				},
+				{
+					accessToken: data.access_token,
+					pageAccessToken: accountData.data[0].access_token,
+					instagramAccountId:
+						instagramData.instagram_business_account.id,
+					expiresAt: expiresAt,
+					updatedAt: new Date(),
+				},
+				{ upsert: true, new: true }
+			);
+
 			return NextResponse.json({
 				longLivedToken: data.access_token,
 				expiresIn: data.expires_in,
+				expiresAt: expiresAt,
 				instagramAccountId: instagramData.instagram_business_account.id,
 				pageAccessToken: accountData.data[0].access_token,
 			});
 		}
 
+		// For Facebook, update the social connection with expiration
+		await SocialConnection.findOneAndUpdate(
+			{
+				userId: user._id,
+				platform: "facebook",
+			},
+			{
+				accessToken: data.access_token,
+				expiresAt: expiresAt,
+				updatedAt: new Date(),
+			},
+			{ upsert: true, new: true }
+		);
+
 		return NextResponse.json({
 			longLivedToken: data.access_token,
 			expiresIn: data.expires_in,
+			expiresAt: expiresAt,
 		});
 	} catch (error) {
 		console.error("Error exchanging token:", error);

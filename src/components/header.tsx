@@ -34,6 +34,11 @@ export function Header() {
 						className='text-sm font-medium flex items-center gap-1 transition-colors hover:text-primary'>
 						<span className='hidden md:inline'>Home</span>
 					</Link>
+					<Link
+						href='/edit'
+						className='text-sm font-medium flex items-center gap-1 transition-colors hover:text-primary'>
+						<span className='hidden md:inline'>Create</span>
+					</Link>
 					{isSubscribed() && (
 						<Link
 							href='/auto-poster'
