@@ -17,7 +17,6 @@ import {
 import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { downloadQuoteImage } from "@/lib/download-utils";
-import { useAuth } from "@/context/auth-context";
 import toast from "react-hot-toast";
 
 interface Quote {
@@ -37,7 +36,6 @@ export default function RamdomQuotes() {
 	const [isLoading, setIsLoading] = useState(false);
 	const [isEnglishLoading, setIsEnglishLoading] = useState(false);
 	const canvasRef = useRef<HTMLDivElement>(null);
-	const { user } = useAuth();
 
 	const fetchNewQuote = useCallback(async () => {
 		setIsLoading(true);

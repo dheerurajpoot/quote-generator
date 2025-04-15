@@ -1,5 +1,4 @@
 import QuoteGenerator from "@/components/quote-generator";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export const metadata = {
 	title: "Create your desired quote - QuoteArt",

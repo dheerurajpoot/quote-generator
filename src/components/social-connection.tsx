@@ -28,7 +28,6 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
-import { MetaApi } from "@/lib/meta-api";
 
 interface SocialConnection {
 	id: string;
