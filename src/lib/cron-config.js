@@ -1,13 +1,47 @@
 import cron from "node-cron";
 import axios from "axios";
+import https from "https";
 import { connectDb } from "./dbconfig.js";
 import { AutoPostingSettings } from "../models/autoPostingSettings.model.js";
 
+// Configure axios with HTTPS agent
+const httpsAgent = new https.Agent({
+	rejectUnauthorized: false,
+	keepAlive: true,
+	timeout: 60000, // 60 seconds timeout
+});
+
+// Create axios instance with custom configuration
+const apiClient = axios.create({
+	httpsAgent,
+	timeout: 60000,
+	headers: {
+		"Content-Type": "application/json",
+	},
+});
+
+// Retry function for failed requests
+async function retryRequest(url, maxRetries = 3) {
+	let lastError;
+	for (let i = 0; i < maxRetries; i++) {
+		try {
+			const response = await apiClient.get(url);
+			return response;
+		} catch (error) {
+			lastError = error;
+			console.log(`Attempt ${i + 1} failed, retrying...`);
+			await new Promise((resolve) => setTimeout(resolve, 5000)); // Wait 5 seconds before retry
+		}
+	}
+	throw lastError;
+}
+
 // Function to start all cron jobs
-export function startCronJobs() {
+const startCronJobs = () => {
 	console.log("Starting cron jobs...");
 
-	cron.schedule("* * * * *", async () => {
+	// Run every 5 minutes instead of every minute to avoid rate limiting
+	cron.schedule("*/5 * * * *", async () => {
 		try {
 			console.log("Running auto-posting cron job...");
 
@@ -38,22 +72,44 @@ export function startCronJobs() {
 
 					// If it's not time to post yet, skip this user
 					if (timeDiffInMinutes < intervalInMinutes) {
+						console.log(
+							`Skipping user ${setting.userId} - not time to post yet`
+						);
 						continue;
 					}
 
-					// Call the auto-posting API for this user
-					await axios.get(
+					console.log(
+						`Processing auto-posting for user ${setting.userId}`
+					);
+
+					// Call the auto-posting API for this user with retry logic
+					const response = await retryRequest(
 						`${process.env.NEXT_PUBLIC_APP_URL}/api/cron/auto-posting?userId=${setting.userId}`
 					);
 
-					// Update the last post time
-					await AutoPostingSettings.findByIdAndUpdate(setting._id, {
-						$set: { lastPostTime: now },
-					});
+					if (response.data.success) {
+						// Update the last post time only if the post was successful
+						await AutoPostingSettings.findByIdAndUpdate(
+							setting._id,
+							{
+								$set: { lastPostTime: now },
+							}
+						);
+						console.log(
+							`Successfully posted for user ${setting.userId}`
+						);
+					} else {
+						console.error(
+							`Failed to post for user ${setting.userId}:`,
+							response.data.error
+						);
+					}
 				} catch (error) {
 					console.error(
 						`Error processing auto-posting for user ${setting.userId}:`,
-						error
+						error?.response?.data ||
+							error?.message ||
+							"Unknown error"
 					);
 				}
 			}
@@ -63,4 +119,6 @@ export function startCronJobs() {
 	});
 
 	console.log("Cron jobs started successfully");
-}
+};
+
+export { startCronJobs };
