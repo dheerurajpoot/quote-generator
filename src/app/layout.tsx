@@ -50,6 +50,11 @@ export default function RootLayout({
 						`,
 					}}
 				/>
+				<script
+					async
+					src='https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3138751846532107'
+					crossOrigin='anonymous'
+				/>
 			</head>
 			<body
 				className={`${inter.variable} ${poppins.variable} font-sans min-h-screen flex flex-col`}
