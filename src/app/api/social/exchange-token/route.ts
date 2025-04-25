@@ -10,12 +10,8 @@ async function getUserFromToken(token: string) {
 		const decoded = jwt.verify(token, process.env.TOKEN_SECRET!) as {
 			userId: string;
 		};
-		console.log("decoded", decoded);
-
 		await connectDb();
 		const user = await User.findById(decoded.userId);
-		console.log("user", user);
-
 		return user;
 	} catch (error) {
 		console.error("Error getting user from token:", error);
@@ -67,14 +63,6 @@ export const GET = async (request: Request) => {
 			);
 		}
 
-		// Log the values for debugging
-		console.log("Attempting to exchange token with:", {
-			platform,
-			appId: user.facebookAppId,
-			hasSecret: !!user.facebookAppSecret,
-			accessToken: accessToken.substring(0, 10) + "...", // Log only first 10 chars for security
-		});
-
 		// Exchange short-lived token for long-lived token
 		const response = await fetch(
 			`https://graph.facebook.com/v18.0/oauth/access_token?grant_type=fb_exchange_token&client_id=${user.facebookAppId}&client_secret=${user.facebookAppSecret}&fb_exchange_token=${accessToken}`
@@ -90,15 +78,14 @@ export const GET = async (request: Request) => {
 		}
 
 		const data = await response.json();
-		console.log("data", data);
-		console.log(
-			`Successfully exchanged ${platform} token, expires in:`,
-			data.expires_in
-		);
+
+		// Default expiration time for Facebook tokens is 60 days (5184000 seconds)
+		const DEFAULT_EXPIRATION = 5184000;
+		const expiresIn = data.expires_in || DEFAULT_EXPIRATION;
 
 		// Calculate expiration date
 		const expiresAt = new Date();
-		expiresAt.setSeconds(expiresAt.getSeconds() + data.expires_in);
+		expiresAt.setSeconds(expiresAt.getSeconds() + expiresIn);
 
 		// For Instagram, we need to get the long-lived user access token
 		if (platform === "instagram") {
