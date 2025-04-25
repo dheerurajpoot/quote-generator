@@ -1,6 +1,14 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+
+interface ApiErrorResponse {
+	response: {
+		data: {
+			error: string;
+		};
+	};
+}
 import { Button } from "@/components/ui/button";
 import {
 	Card,
@@ -90,6 +98,8 @@ export default function AutoQuotePoster() {
 			// Check if any post was successful
 			const hasSuccess = results.some((res) => res.data.success);
 			if (hasSuccess) {
+				setIsAutoPosting(true);
+
 				toast.success(
 					`Post successful. Next post in ${postingInterval} minutes.`
 				);
@@ -103,8 +113,10 @@ export default function AutoQuotePoster() {
 			setIsAutoPosting(false);
 			console.error("Error posting to social media:", error);
 			let errorMessage = "Failed to post to social media";
-			if (error instanceof Error) {
-				errorMessage = error.message;
+			if (error && typeof error === "object" && "response" in error) {
+				errorMessage =
+					(error as ApiErrorResponse)?.response?.data?.error ||
+					errorMessage;
 			}
 			toast.error(errorMessage);
 		} finally {
@@ -148,7 +160,6 @@ export default function AutoQuotePoster() {
 				);
 				return;
 			}
-			setIsAutoPosting(true);
 
 			// Initial post
 			const res = await handlePostToSocialMedia();

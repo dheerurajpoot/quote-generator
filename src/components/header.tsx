@@ -39,15 +39,11 @@ export function Header() {
 						className='text-sm font-medium flex items-center gap-1 transition-colors hover:text-primary'>
 						<span className='hidden md:inline'>Create</span>
 					</Link>
-					{isSubscribed() && (
-						<Link
-							href='/auto-poster'
-							className='text-sm font-medium flex items-center gap-1 transition-colors hover:text-primary'>
-							<span className='hidden md:inline'>
-								Auto Poster
-							</span>
-						</Link>
-					)}
+					<Link
+						href='/auto-poster'
+						className='text-sm font-medium flex items-center gap-1 transition-colors hover:text-primary'>
+						<span className='hidden md:inline'>Auto Poster</span>
+					</Link>
 					<Link
 						href='/about'
 						className='text-sm font-medium flex items-center gap-1 transition-colors hover:text-primary'>
@@ -59,11 +55,11 @@ export function Header() {
 						<span className='hidden md:inline'>Contact</span>
 					</Link>
 
-					<Link
+					{/* <Link
 						href='/pricing'
 						className='text-sm font-medium flex items-center gap-1 transition-colors hover:text-primary'>
 						<span className='hidden md:inline'>Pricing</span>
-					</Link>
+					</Link> */}
 					{isAdmin() && (
 						<Link
 							href='/admin'

@@ -22,9 +22,14 @@ export default function Home() {
 								backgrounds, fonts, and styles. Perfect for
 								social media, blogs, and more.
 							</p>
-							<Button className='mt-4'>
-								<Link href='/edit'>Create Quote</Link>
-							</Button>
+							<div className='flex gap-2 mt-4 justify-center'>
+								<Button className='mt-4' variant='default'>
+									<Link href='/edit'>Create Quote</Link>
+								</Button>
+								<Button className='mt-4' variant='outline'>
+									<Link href='/auto-poster'>Auto Poster</Link>
+								</Button>
+							</div>
 						</div>
 					</div>
 				</div>
