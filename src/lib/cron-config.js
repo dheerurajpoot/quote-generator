@@ -36,7 +36,6 @@ const apiClient = axios.create({
 
 // Enhanced retry function with better error detection
 async function retryRequest(url, maxRetries = 3) {
-	let lastError;
 	let attempt = 0;
 
 	const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
