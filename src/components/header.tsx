@@ -44,31 +44,22 @@ export function Header() {
 						className='text-sm font-medium flex items-center gap-1 transition-colors hover:text-primary'>
 						<span className='hidden md:inline'>Auto Poster</span>
 					</Link>
+
 					<Link
-						href='/about'
+						href='/pricing'
 						className='text-sm font-medium flex items-center gap-1 transition-colors hover:text-primary'>
-						<span className='hidden md:inline'>About</span>
+						<span className='hidden md:inline'>Pricing</span>
 					</Link>
 					<Link
 						href='/contact'
 						className='text-sm font-medium flex items-center gap-1 transition-colors hover:text-primary'>
 						<span className='hidden md:inline'>Contact</span>
 					</Link>
-
-					{/* <Link
-						href='/pricing'
+					<Link
+						href='/about'
 						className='text-sm font-medium flex items-center gap-1 transition-colors hover:text-primary'>
-						<span className='hidden md:inline'>Pricing</span>
-					</Link> */}
-					{isAdmin() && (
-						<Link
-							href='/admin'
-							className='text-sm font-medium flex items-center gap-1 transition-colors hover:text-primary'>
-							<span className='hidden md:inline'>
-								Admin Panel
-							</span>
-						</Link>
-					)}
+						<span className='hidden md:inline'>About</span>
+					</Link>
 				</nav>
 				<div className='flex items-center gap-2'>
 					{user ? (

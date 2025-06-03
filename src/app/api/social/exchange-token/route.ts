@@ -89,6 +89,33 @@ export const GET = async (request: Request) => {
 
 		// For Instagram, we need to get the long-lived user access token
 		if (platform === "instagram") {
+			// First, exchange the short-lived token for a long-lived one
+			const igTokenResponse = await fetch(
+				`https://graph.instagram.com/access_token?grant_type=ig_exchange_token&client_secret=${user.facebookAppSecret}&access_token=${accessToken}`
+			);
+
+			if (!igTokenResponse.ok) {
+				const error = await igTokenResponse.json();
+				return NextResponse.json(
+					{
+						error:
+							error.error?.message ||
+							"Failed to exchange Instagram token",
+					},
+					{ status: 500 }
+				);
+			}
+
+			const igTokenData = await igTokenResponse.json();
+			console.log("Instagram token data:", igTokenData);
+
+			// Update the access token and expiration with the long-lived token data
+			data.access_token = igTokenData.access_token;
+			expiresAt.setSeconds(
+				expiresAt.getSeconds() +
+					(igTokenData.expires_in || DEFAULT_EXPIRATION)
+			);
+
 			// Get the Instagram Business Account ID
 			const accountResponse = await fetch(
 				`https://graph.facebook.com/v18.0/me/accounts?access_token=${data.access_token}`

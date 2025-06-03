@@ -35,7 +35,8 @@ export default function RamdomQuotes() {
 	const [englishQuote, setEnglishQuote] = useState<Quote | null>(null);
 	const [isLoading, setIsLoading] = useState(false);
 	const [isEnglishLoading, setIsEnglishLoading] = useState(false);
-	const canvasRef = useRef<HTMLDivElement>(null);
+	const hindiCanvasRef = useRef<HTMLDivElement>(null);
+	const englishCanvasRef = useRef<HTMLDivElement>(null);
 
 	const fetchNewQuote = useCallback(async () => {
 		setIsLoading(true);
@@ -67,14 +68,20 @@ export default function RamdomQuotes() {
 		fetchNewEnglishQuote();
 	}, []);
 
-	const handleDownload = async () => {
-		if (!canvasRef.current) return;
-		await downloadQuoteImage(canvasRef.current, "quote-art.png");
-		toast.success("Quote Downloaded!");
+	const handleHindiDownload = async () => {
+		if (!hindiCanvasRef.current) return;
+		await downloadQuoteImage(hindiCanvasRef.current, "hindi-quote.png");
+		toast.success("Hindi Quote Downloaded!");
+	};
+
+	const handleEnglishDownload = async () => {
+		if (!englishCanvasRef.current) return;
+		await downloadQuoteImage(englishCanvasRef.current, "english-quote.png");
+		toast.success("English Quote Downloaded!");
 	};
 
 	return (
-		<div className='flex gap-5'>
+		<div className='flex flex-col md:flex-row gap-5'>
 			<Card className='w-full max-w-2xl mx-auto'>
 				<CardHeader>
 					<CardTitle>Hindi Quotes</CardTitle>
@@ -84,7 +91,6 @@ export default function RamdomQuotes() {
 				</CardHeader>
 				<CardContent className='space-y-4'>
 					<div className='space-y-2'>
-						<Label>Current Quote</Label>
 						{isLoading ? (
 							<div className='flex items-center justify-center h-[600px] bg-muted rounded-lg'>
 								<Loader2 className='h-8 w-8 animate-spin text-muted-foreground' />
@@ -97,7 +103,7 @@ export default function RamdomQuotes() {
 							</div>
 						) : (
 							<div
-								ref={canvasRef}
+								ref={hindiCanvasRef}
 								className='relative w-full aspect-square max-w-2xl mx-auto overflow-hidden rounded-lg p-8 text-center'
 								style={{
 									backgroundImage: `url(${quote?.backgroundImage})`,
@@ -177,7 +183,9 @@ export default function RamdomQuotes() {
 								"Generate New Quote"
 							)}
 						</Button>
-						<Button onClick={handleDownload} className='flex-1'>
+						<Button
+							onClick={handleHindiDownload}
+							className='flex-1'>
 							Download
 						</Button>
 					</div>
@@ -192,7 +200,6 @@ export default function RamdomQuotes() {
 				</CardHeader>
 				<CardContent className='space-y-4'>
 					<div className='space-y-2'>
-						<Label>Current Quote</Label>
 						{isEnglishLoading ? (
 							<div className='flex items-center justify-center h-[600px] bg-muted rounded-lg'>
 								<Loader2 className='h-8 w-8 animate-spin text-muted-foreground' />
@@ -205,7 +212,7 @@ export default function RamdomQuotes() {
 							</div>
 						) : (
 							<div
-								ref={canvasRef}
+								ref={englishCanvasRef}
 								className='relative w-full aspect-square max-w-2xl mx-auto overflow-hidden rounded-lg p-8 text-center'
 								style={{
 									backgroundImage: `url(${englishQuote?.backgroundImage})`,
@@ -285,7 +292,9 @@ export default function RamdomQuotes() {
 								"Generate New Quote"
 							)}
 						</Button>
-						<Button onClick={handleDownload} className='flex-1'>
+						<Button
+							onClick={handleEnglishDownload}
+							className='flex-1'>
 							Download
 						</Button>
 					</div>

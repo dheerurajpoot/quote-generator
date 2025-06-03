@@ -8,6 +8,7 @@ import {
 	type ReactNode,
 } from "react";
 import { useAuth } from "./auth-context";
+import axios from "axios";
 
 export type SubscriptionTier = "free" | "premium";
 
@@ -101,32 +102,25 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
 				setLoading(true);
 				setWarning(null);
 
-				const response = await fetch(
+				const response = await axios.get(
 					`/api/subscriptions?userId=${user._id}`
 				);
-
-				if (!response.ok) {
-					const errorData = await response.json();
+				if (response.status !== 200) {
+					const errorData = response.data;
 					console.error("Subscription check failed:", errorData);
 
 					// Only create free subscription if user is completely new (404)
 					if (response.status === 404) {
-						const createResponse = await fetch(
+						const createResponse = await axios.post(
 							"/api/subscriptions",
 							{
-								method: "POST",
-								headers: {
-									"Content-Type": "application/json",
-								},
-								body: JSON.stringify({
-									userId: user._id,
-									planId: "free",
-								}),
+								userId: user._id,
+								planId: "free",
 							}
 						);
 
-						if (createResponse.ok) {
-							const newSubscription = await createResponse.json();
+						if (createResponse.status === 200) {
+							const newSubscription = createResponse.data;
 							setSubscription({
 								...newSubscription,
 								currentPeriodEnd: new Date(
@@ -140,7 +134,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
 					return;
 				}
 
-				const data = await response.json();
+				const data = response.data;
 
 				// Handle empty subscription array
 				if (!data || data.length === 0) {
@@ -159,23 +153,15 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
 							"Your premium subscription has expired. You have been moved to the free plan."
 						);
 						// Automatically convert to free plan
-						const convertResponse = await fetch(
+						const convertResponse = await axios.post(
 							"/api/subscriptions",
 							{
-								method: "POST",
-								headers: {
-									"Content-Type": "application/json",
-								},
-								body: JSON.stringify({
-									userId: user._id,
-									planId: "free",
-								}),
+								userId: user._id,
+								planId: "free",
 							}
 						);
-
-						if (convertResponse.ok) {
-							const freeSubscription =
-								await convertResponse.json();
+						if (convertResponse.status === 200) {
+							const freeSubscription = convertResponse.data;
 							setSubscription({
 								...freeSubscription,
 								currentPeriodEnd: new Date(
@@ -189,23 +175,16 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
 							"Your premium subscription has been canceled. You have been moved to the free plan."
 						);
 						// Automatically convert to free plan
-						const convertResponse = await fetch(
+						const convertResponse = await axios.post(
 							"/api/subscriptions",
 							{
-								method: "POST",
-								headers: {
-									"Content-Type": "application/json",
-								},
-								body: JSON.stringify({
-									userId: user._id,
-									planId: "free",
-								}),
+								userId: user._id,
+								planId: "free",
 							}
 						);
 
-						if (convertResponse.ok) {
-							const freeSubscription =
-								await convertResponse.json();
+						if (convertResponse.status === 200) {
+							const freeSubscription = convertResponse.data;
 							setSubscription({
 								...freeSubscription,
 								currentPeriodEnd: new Date(
@@ -244,24 +223,17 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
 			setLoading(true);
 			setWarning(null);
 
-			const response = await fetch("/api/subscriptions", {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json",
-				},
-				body: JSON.stringify({
-					userId: user._id,
-					planId,
-				}),
+			const response = await axios.post("/api/subscriptions", {
+				userId: user._id,
+				planId,
 			});
 
-			if (!response.ok) {
-				const errorData = await response.json();
-				setWarning(errorData.error || "Failed to create subscription");
+			if (response.status !== 200) {
+				setWarning("Failed to create subscription");
 				return false;
 			}
 
-			const data = await response.json();
+			const data = response.data;
 
 			// For free plan, update subscription state
 			if (planId === "free") {
@@ -291,23 +263,16 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
 			setLoading(true);
 			setWarning(null);
 
-			const response = await fetch("/api/subscriptions", {
-				method: "PUT",
-				headers: {
-					"Content-Type": "application/json",
-				},
-				body: JSON.stringify({
-					subscriptionId: subscription.id,
-				}),
+			const response = await axios.put("/api/subscriptions", {
+				subscriptionId: subscription.id,
 			});
 
-			if (!response.ok) {
-				const errorData = await response.json();
-				setWarning(errorData.error || "Failed to cancel subscription");
+			if (response.status !== 200) {
+				setWarning("Failed to cancel subscription");
 				return false;
 			}
 
-			const data = await response.json();
+			const data = response.data;
 
 			setSubscription({
 				...data,

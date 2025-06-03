@@ -103,44 +103,133 @@ export async function GET(request: Request) {
 	}
 }
 
+// Network request handler with circuit breaker
+const handleNetworkRequest = async <T>(
+	operation: () => Promise<T>,
+	name: string,
+	maxRetries = 3,
+	initialDelay = 1000
+): Promise<T> => {
+	let lastError: Error | null = null;
+	let consecutiveFailures = 0;
+
+	for (let i = 0; i < maxRetries; i++) {
+		try {
+			// Circuit breaker: if too many consecutive failures, wait longer
+			if (consecutiveFailures > 2) {
+				const circuitBreakerDelay = Math.min(
+					5000 * Math.pow(2, consecutiveFailures - 2),
+					30000
+				);
+				console.log(
+					`Circuit breaker activated: waiting ${circuitBreakerDelay}ms`
+				);
+				await new Promise((resolve) =>
+					setTimeout(resolve, circuitBreakerDelay)
+				);
+			}
+
+			// Add jitter to prevent thundering herd
+			const jitter = Math.random() * 1000;
+			const delay =
+				i === 0
+					? 0
+					: Math.min(
+							initialDelay * Math.pow(2, i - 1) + jitter,
+							30000
+					  );
+
+			if (delay > 0) {
+				console.log(
+					`${name}: Waiting ${delay}ms before attempt ${i + 1}`
+				);
+				await new Promise((resolve) => setTimeout(resolve, delay));
+			}
+
+			const result = await operation();
+			consecutiveFailures = 0; // Reset on success
+			return result;
+		} catch (err) {
+			const error = err as Error;
+			lastError = error;
+			consecutiveFailures++;
+
+			console.error(`${name} attempt ${i + 1} failed:`, {
+				error: error.message,
+				stack: error.stack,
+				consecutiveFailures,
+			});
+
+			// Check if the error has a response property (axios error)
+			if (error && typeof error === "object" && "response" in error) {
+				const axiosError = error as { response?: { status?: number } };
+				// Don't retry certain errors
+				if (
+					axiosError.response?.status === 404 ||
+					axiosError.response?.status === 401 ||
+					axiosError.response?.status === 403
+				) {
+					throw error;
+				}
+			}
+		}
+	}
+
+	throw new Error(
+		`${name}: All ${maxRetries} attempts failed. Last error: ${
+			lastError?.message || "Unknown error"
+		}`
+	);
+};
+
 // Helper function to process a single user's auto-posting
 async function processUserAutoPosting(setting: AutoPostingSettingsDocument) {
 	const userId = setting.userId.toString();
 
 	try {
-		// Get the user's social connections for the selected platforms
-		const connections = await SocialConnection.find({
-			userId: new mongoose.Types.ObjectId(userId),
-			platform: { $in: setting.platforms },
-		});
+		// Get the user's social connections with retry
+		const connections = await handleNetworkRequest(
+			async () => {
+				const result = await SocialConnection.find({
+					userId: new mongoose.Types.ObjectId(userId),
+					platform: { $in: setting.platforms },
+				});
+				if (!result || result.length === 0) {
+					throw new Error("No social connections found");
+				}
+				return result;
+			},
+			"Fetch social connections",
+			3
+		);
 
-		if (!connections || connections.length === 0) {
-			console.log(`No social connections found for user ${userId}`);
-			return {
-				userId,
-				success: false,
-				error: "No social connections found",
-			};
-		}
+		// Fetch quote with retry
+		const quote = await handleNetworkRequest(
+			() => getRandomHindiQuote(),
+			"Quote fetching",
+			3
+		);
 
-		// Fetch a random quote
-		const quote = await getRandomHindiQuote();
+		// Generate image with retry
+		const quoteImageBuffer = await handleNetworkRequest(
+			() => generateQuoteImage(quote),
+			"Image generation",
+			3
+		);
 
-		// Generate the quote image
-		const quoteImageBuffer = await generateQuoteImage(quote);
+		// Upload image with retry
+		const cloudinaryUrl = await handleNetworkRequest(
+			() => uploadImage(quoteImageBuffer),
+			"Image upload",
+			3
+		);
 
-		// Upload the generated image to Cloudinary
-		const cloudinaryUrl = await uploadImage(quoteImageBuffer);
-
-		// Generate a caption
 		const caption = `${quote.text}\n\n— ${quote.author}`;
-
 		const results = [];
 
 		// Post to each platform
 		for (const connection of connections) {
 			try {
-				// Initialize Meta API with the connection's access token
 				const metaApi = new MetaApi({
 					accessToken:
 						connection.platform === "instagram"
@@ -148,23 +237,32 @@ async function processUserAutoPosting(setting: AutoPostingSettingsDocument) {
 							: connection.accessToken,
 				});
 
-				// Post to the appropriate platform
-				let result;
-				if (connection.platform === "facebook") {
-					result = await metaApi.postToFacebook(
-						connection.profileId,
-						connection.accessToken,
-						cloudinaryUrl,
-						caption
-					);
-				} else if (connection.platform === "instagram") {
-					result = await metaApi.postToInstagram(
-						connection.instagramAccountId || connection.profileId,
-						connection.pageAccessToken || connection.accessToken,
-						cloudinaryUrl,
-						caption
-					);
-				}
+				const result = await handleNetworkRequest(
+					async () => {
+						if (connection.platform === "facebook") {
+							return await metaApi.postToFacebook(
+								connection.profileId,
+								connection.accessToken,
+								cloudinaryUrl,
+								caption
+							);
+						} else if (connection.platform === "instagram") {
+							return await metaApi.postToInstagram(
+								connection.instagramAccountId ||
+									connection.profileId,
+								connection.pageAccessToken ||
+									connection.accessToken,
+								cloudinaryUrl,
+								caption
+							);
+						}
+						throw new Error(
+							`Unsupported platform: ${connection.platform}`
+						);
+					},
+					`${connection.platform} posting`,
+					3
+				);
 
 				results.push({
 					platform: connection.platform,
