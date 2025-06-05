@@ -28,6 +28,7 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
+import axios from "axios";
 
 interface SocialConnection {
 	id: string;
@@ -87,13 +88,13 @@ export function SocialConnections({
 	const fetchConnections = async () => {
 		try {
 			setLoading(true);
-			const response = await fetch(`/api/social?userId=${user?._id}`);
+			const response = await axios.get(`/api/social?userId=${user?._id}`);
 
-			if (!response.ok) {
+			if (response.status !== 200) {
 				throw new Error("Failed to fetch social connections");
 			}
 
-			const data = await response.json();
+			const data = response.data;
 
 			// Transform the data to match our SocialConnection interface
 			const transformedConnections: SocialConnection[] = Array.isArray(

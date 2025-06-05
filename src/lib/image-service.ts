@@ -1,3 +1,5 @@
+// getting pixesl images for the quote image
+
 const PEXELS_API_KEY = process.env.NEXT_PUBLIC_PEXELS_API_KEY;
 
 export interface ImageSearchResult {

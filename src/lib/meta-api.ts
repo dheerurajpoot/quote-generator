@@ -2,6 +2,7 @@ import { uploadImage } from "./image-utils";
 import { SocialConnection } from "@/models/socialConnection.model";
 import { User } from "@/models/user.model";
 import { connectDb } from "./dbconfig";
+import axios from "axios";
 
 export interface MetaApiConfig {
 	accessToken: string;
@@ -178,20 +179,14 @@ export class MetaApi {
 			formData.append("access_token", pageAccessToken);
 
 			// Use the correct endpoint for page photos
-			const response = await fetch(
+			const response = await axios.post(
 				`${this.baseUrl}/${pageId}/photos?access_token=${pageAccessToken}`,
-				{
-					method: "POST",
-					headers: {
-						"Content-Type": "application/x-www-form-urlencoded",
-					},
-					body: formData.toString(),
-				}
+				formData.toString()
 			);
 
-			const responseData = await response.json();
+			const responseData = response.data;
 
-			if (!response.ok) {
+			if (response.status !== 200) {
 				const errorMessage =
 					responseData.error?.message || "Unknown error";
 				console.error("Facebook API Error:", errorMessage);

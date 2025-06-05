@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import mongoose from "mongoose";
-import { connectDb } from "@/lib/dbconfig";
 import { User } from "@/models/user.model";
 import { MetaApi } from "@/lib/meta-api";
 import { SocialConnection } from "@/models/socialConnection.model";
+import { connectDb } from "@/lib/dbconfig";
 
 export async function POST(request: Request) {
 	try {

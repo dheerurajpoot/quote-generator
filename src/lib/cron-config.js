@@ -1,8 +1,8 @@
 import cron from "node-cron";
 import axios from "axios";
 import https from "https";
-import { connectDb } from "./dbconfig.js";
-import { AutoPostingSettings } from "../models/autoPostingSettings.model.js";
+import { AutoPostingSettings } from "@/models/autoPostingSettings.model";
+import { connectDb } from "@/lib/dbconfig";
 
 // Configure axios with HTTPS agent
 const httpsAgent = new https.Agent({
