@@ -140,7 +140,7 @@ export default function AutoQuotePoster() {
 			// Save settings to database
 			if (user?._id) {
 				try {
-					await axios.post("/api/auto-posting", {
+					await axios.post("/api/auto-posting-settings", {
 						userId: user._id,
 						isEnabled: false,
 						interval: parseInt(postingInterval),
@@ -167,7 +167,7 @@ export default function AutoQuotePoster() {
 				// Save settings to database
 				if (user?._id) {
 					try {
-						await axios.post("/api/auto-posting", {
+						await axios.post("/api/auto-posting-settings", {
 							userId: user._id,
 							isEnabled: true,
 							interval: parseInt(postingInterval),
@@ -229,7 +229,7 @@ export default function AutoQuotePoster() {
 
 			try {
 				const response = await axios.get(
-					`/api/auto-posting?userId=${user._id}`
+					`/api/auto-posting-settings?userId=${user._id}`
 				);
 				const settings = response.data;
 
