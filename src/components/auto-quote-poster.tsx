@@ -103,8 +103,8 @@ export default function AutoQuotePoster() {
 				toast.success(
 					`Post successful. Next post in ${postingInterval} minutes.`
 				);
-				// Fetch new quote for next time
-				fetchNewQuote();
+				// // Fetch new quote for next time
+				// fetchNewQuote();
 				return hasSuccess;
 			} else {
 				toast.error("Failed to post to any platform.");

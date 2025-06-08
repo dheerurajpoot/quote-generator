@@ -169,12 +169,8 @@ export class MetaApi {
 		await this.checkTokenExpiration();
 
 		try {
-			// Upload image to Cloudinary first
-			const cloudinaryUrl = await uploadImage(imageUrl);
-
-			// First, try to upload the image
 			const formData = new URLSearchParams();
-			formData.append("url", cloudinaryUrl);
+			formData.append("url", imageUrl);
 			formData.append("caption", caption);
 			formData.append("access_token", pageAccessToken);
 
