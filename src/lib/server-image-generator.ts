@@ -19,9 +19,11 @@ const muktaBoldPath = path.join(process.cwd(), "public/fonts/Mukta-Bold.ttf");
 try {
 	if (existsSync(muktaRegularPath)) {
 		registerFont(muktaRegularPath, { family: "Mukta", weight: "400" });
+		console.log("Mukta Regular font registered successfully");
 	}
 	if (existsSync(muktaBoldPath)) {
 		registerFont(muktaBoldPath, { family: "Mukta", weight: "700" });
+		console.log("Mukta Bold font registered successfully");
 	}
 } catch (error) {
 	console.error("Error registering Mukta fonts:", error);

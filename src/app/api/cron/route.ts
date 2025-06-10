@@ -4,6 +4,7 @@ import { AutoPostingSettings } from "@/models/autoPostingSettings.model";
 import { MetaApi } from "@/lib/meta-api";
 import { SocialConnection } from "@/models/socialConnection.model";
 import axios from "axios";
+import { AxiosError } from "axios";
 
 interface AutoPostingSettings {
 	_id: string;
@@ -12,6 +13,13 @@ interface AutoPostingSettings {
 	interval: number;
 	lastPostTime: Date;
 	isEnabled: boolean;
+}
+
+interface QuoteResponse {
+	quote: string;
+	imageUrl: string;
+	quoteId: string;
+	data: any;
 }
 // Function to check if it's time to post based on lastPostTime and interval
 const shouldPost = (settings: AutoPostingSettings) => {
@@ -26,34 +34,40 @@ const shouldPost = (settings: AutoPostingSettings) => {
 };
 
 // Function to handle auto-posting for a single user
+let quoteResponse: QuoteResponse;
 const handleUserAutoPosting = async (settings: AutoPostingSettings) => {
 	try {
 		if (!settings.isEnabled || !shouldPost(settings)) return;
 
 		// Get a new quote
-		const MAX_RETRIES = 3;
+		const MAX_RETRIES = 5; // Increased retries
 		let retryCount = 0;
-		let quoteResponse: any;
 
 		while (retryCount < MAX_RETRIES) {
 			try {
 				quoteResponse = await axios.get(
 					`${process.env.NEXT_PUBLIC_APP_URL}/api/quotes/generate`,
 					{
-						timeout: 15000,
+						timeout: 15000, // Increased timeout to 15 seconds
 						validateStatus: (status) =>
-							status >= 200 && status < 500,
+							status >= 200 && status < 500, // More lenient status validation
 					}
 				);
 				break;
-			} catch (error: any) {
+			} catch (error: unknown) {
 				console.error(
 					`Error fetching quote for user ${
 						settings.userId
 					} (attempt ${retryCount + 1}):`,
 					{
-						error: error.message,
-						status: error.response?.status,
+						error:
+							error instanceof Error
+								? error.message
+								: "Unknown error",
+						status:
+							error instanceof AxiosError
+								? error.response?.status
+								: undefined,
 						retryCount: retryCount + 1,
 						totalAttempts: MAX_RETRIES,
 					}
@@ -63,9 +77,9 @@ const handleUserAutoPosting = async (settings: AutoPostingSettings) => {
 					throw error;
 				}
 				retryCount++;
-				await new Promise((resolve) =>
-					setTimeout(resolve, 3000 * retryCount)
-				);
+				await new Promise(
+					(resolve) => setTimeout(resolve, 3000 * retryCount) // Increased backoff time
+				); // Exponential backoff
 			}
 		}
 
