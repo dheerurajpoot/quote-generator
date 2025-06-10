@@ -4,11 +4,10 @@
 	"private": true,
 	"type": "module",
 	"scripts": {
-		"dev": "node server.js",
+		"dev": "next dev",
 		"build": "next build",
-		"start": "NODE_ENV=production node server.js",
-		"lint": "next lint",
-		"cron": "node server.js"
+		"start": "NODE_ENV=production next start",
+		"lint": "next lint"
 	},
 	"dependencies": {
 		"@fontsource/noto-sans-devanagari": "^5.2.5",

@@ -31,9 +31,48 @@ const handleUserAutoPosting = async (settings: AutoPostingSettings) => {
 		if (!settings.isEnabled || !shouldPost(settings)) return;
 
 		// Get a new quote
-		const quoteResponse = await axios.get(
-			`${process.env.NEXT_PUBLIC_APP_URL}/api/quotes/generate`
-		);
+		const MAX_RETRIES = 3;
+		let retryCount = 0;
+		let quoteResponse: any;
+
+		while (retryCount < MAX_RETRIES) {
+			try {
+				quoteResponse = await axios.get(
+					`${process.env.NEXT_PUBLIC_APP_URL}/api/quotes/generate`,
+					{
+						timeout: 15000,
+						validateStatus: (status) =>
+							status >= 200 && status < 500,
+					}
+				);
+				break;
+			} catch (error: any) {
+				console.error(
+					`Error fetching quote for user ${
+						settings.userId
+					} (attempt ${retryCount + 1}):`,
+					{
+						error: error.message,
+						status: error.response?.status,
+						retryCount: retryCount + 1,
+						totalAttempts: MAX_RETRIES,
+					}
+				);
+
+				if (retryCount === MAX_RETRIES - 1) {
+					throw error;
+				}
+				retryCount++;
+				await new Promise((resolve) =>
+					setTimeout(resolve, 3000 * retryCount)
+				);
+			}
+		}
+
+		if (!quoteResponse || !quoteResponse.data) {
+			console.error(`No quote data received for user ${settings.userId}`);
+			throw new Error("Failed to get quote response");
+		}
 		const { quote, imageUrl } = quoteResponse.data;
 
 		// Get user's social connections
@@ -97,7 +136,7 @@ const handleUserAutoPosting = async (settings: AutoPostingSettings) => {
 	}
 };
 
-export async function POST() {
+export async function GET() {
 	try {
 		await connectDb();
 
