@@ -31,7 +31,9 @@ const handleUserAutoPosting = async (settings: AutoPostingSettings) => {
 		if (!settings.isEnabled || !shouldPost(settings)) return;
 
 		// Get a new quote
-		const quoteResponse = await axios.get("/api/quotes/generate");
+		const quoteResponse = await axios.get(
+			`${process.env.NEXT_PUBLIC_APP_URL}/api/quotes/generate`
+		);
 		const { quote, imageUrl } = quoteResponse.data;
 
 		// Get user's social connections
