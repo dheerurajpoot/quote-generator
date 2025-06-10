@@ -5,8 +5,16 @@ import { MetaApi } from "@/lib/meta-api";
 import { SocialConnection } from "@/models/socialConnection.model";
 import axios from "axios";
 
+interface AutoPostingSettings {
+	_id: string;
+	userId: string;
+	platforms: string[];
+	interval: number;
+	lastPostTime: Date;
+	isEnabled: boolean;
+}
 // Function to check if it's time to post based on lastPostTime and interval
-const shouldPost = (settings: any) => {
+const shouldPost = (settings: AutoPostingSettings) => {
 	if (!settings.lastPostTime) return true;
 
 	const lastPost = new Date(settings.lastPostTime);
@@ -18,7 +26,7 @@ const shouldPost = (settings: any) => {
 };
 
 // Function to handle auto-posting for a single user
-const handleUserAutoPosting = async (settings: any) => {
+const handleUserAutoPosting = async (settings: AutoPostingSettings) => {
 	try {
 		if (!settings.isEnabled || !shouldPost(settings)) return;
 
@@ -70,7 +78,7 @@ const handleUserAutoPosting = async (settings: any) => {
 		return {
 			success: true,
 			message: `Successfully auto-posted for user ${settings.userId}`,
-			numPosts: connections.length
+			numPosts: connections.length,
 		};
 	} catch (error) {
 		console.error(
@@ -79,12 +87,15 @@ const handleUserAutoPosting = async (settings: any) => {
 		);
 		return {
 			success: false,
-			error: error instanceof Error ? error.message : 'Unknown error occurred'
+			error:
+				error instanceof Error
+					? error.message
+					: "Unknown error occurred",
 		};
 	}
 };
 
-export async function POST(request: Request) {
+export async function POST() {
 	try {
 		await connectDb();
 
@@ -103,14 +114,17 @@ export async function POST(request: Request) {
 		return NextResponse.json({
 			success: true,
 			results,
-			totalUsersProcessed: settings.length
+			totalUsersProcessed: settings.length,
 		});
 	} catch (error) {
 		console.error("Error in auto-posting endpoint:", error);
 		return NextResponse.json(
 			{
 				success: false,
-				error: error instanceof Error ? error.message : 'Unknown error occurred'
+				error:
+					error instanceof Error
+						? error.message
+						: "Unknown error occurred",
 			},
 			{ status: 500 }
 		);
