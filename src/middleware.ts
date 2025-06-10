@@ -16,7 +16,8 @@ export async function middleware(request: NextRequest) {
 		path === "/signup" ||
 		path === "/verifyemail" ||
 		path === "/blocked" ||
-		path === "/about";
+		path === "/about" ||
+		path === "/api/cron";
 
 	// Protected paths (require login)
 	const isProtectedPath =
@@ -78,5 +79,6 @@ export const config = {
 		"/dashboard/:path*",
 		"/api/subscriptions/:path*",
 		"/about",
+		"/api/cron",
 	],
 };
