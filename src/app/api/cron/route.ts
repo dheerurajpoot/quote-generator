@@ -1,12 +1,12 @@
-import cron from "node-cron";
-import { connectDb } from "./dbconfig.ts";
-import { AutoPostingSettings } from "../models/autoPostingSettings.model.ts";
-import { MetaApi } from "./meta-api.ts";
-import { SocialConnection } from "../models/socialConnection.model.ts";
+import { NextResponse } from "next/server";
+import { connectDb } from "@/lib/dbconfig";
+import { AutoPostingSettings } from "@/models/autoPostingSettings.model";
+import { MetaApi } from "@/lib/meta-api";
+import { SocialConnection } from "@/models/socialConnection.model";
 import axios from "axios";
 
 // Function to check if it's time to post based on lastPostTime and interval
-const shouldPost = (settings) => {
+const shouldPost = (settings: any) => {
 	if (!settings.lastPostTime) return true;
 
 	const lastPost = new Date(settings.lastPostTime);
@@ -18,7 +18,7 @@ const shouldPost = (settings) => {
 };
 
 // Function to handle auto-posting for a single user
-const handleUserAutoPosting = async (settings) => {
+const handleUserAutoPosting = async (settings: any) => {
 	try {
 		if (!settings.isEnabled || !shouldPost(settings)) return;
 
@@ -67,37 +67,52 @@ const handleUserAutoPosting = async (settings) => {
 			lastPostTime: new Date(),
 		});
 
-		console.log(`Successfully auto-posted for user ${settings.userId}`);
+		return {
+			success: true,
+			message: `Successfully auto-posted for user ${settings.userId}`,
+			numPosts: connections.length
+		};
 	} catch (error) {
 		console.error(
 			`Error in auto-posting for user ${settings.userId}:`,
 			error
 		);
+		return {
+			success: false,
+			error: error instanceof Error ? error.message : 'Unknown error occurred'
+		};
 	}
 };
 
-// Function to start all cron jobs
-const startCronJobs = async () => {
-	// Run every minute to check for auto-posting
-	cron.schedule("* * * * *", async () => {
-		try {
-			await connectDb();
-			console.log("Auto-posting cron job started successfully");
+export async function POST(request: Request) {
+	try {
+		await connectDb();
 
-			// Get all enabled auto-posting settings
-			const settings = await AutoPostingSettings.find({
-				isEnabled: true,
-			});
+		// Get all enabled auto-posting settings
+		const settings = await AutoPostingSettings.find({
+			isEnabled: true,
+		});
 
-			// Handle auto-posting for each user
-			for (const setting of settings) {
-				await handleUserAutoPosting(setting);
-			}
-		} catch (error) {
-			console.error("Error in auto-posting cron job:", error);
+		// Handle auto-posting for each user
+		const results = [];
+		for (const setting of settings) {
+			const result = await handleUserAutoPosting(setting);
+			results.push(result);
 		}
-	});
 
-	console.log("Auto-posting cron jobs started successfully");
-};
-export { startCronJobs };
+		return NextResponse.json({
+			success: true,
+			results,
+			totalUsersProcessed: settings.length
+		});
+	} catch (error) {
+		console.error("Error in auto-posting endpoint:", error);
+		return NextResponse.json(
+			{
+				success: false,
+				error: error instanceof Error ? error.message : 'Unknown error occurred'
+			},
+			{ status: 500 }
+		);
+	}
+}

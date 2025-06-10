@@ -1,6 +1,6 @@
 import express from "express";
 import next from "next";
-import { startCronJobs } from "./src/lib/cron-config.js";
+// import { startCronJobs } from "./src/lib/cron-config.js";
 import https from "https";
 import { certificateFor } from "devcert";
 
@@ -77,11 +77,11 @@ const setupServer = async () => {
 			});
 		}
 
-		// Start cron jobs after server is ready
-		if (!global.cronJobsStarted) {
-			startCronJobs();
-			global.cronJobsStarted = true;
-		}
+		// // Start cron jobs after server is ready
+		// if (!global.cronJobsStarted) {
+		// 	startCronJobs();
+		// 	global.cronJobsStarted = true;
+		// }
 	} catch (error) {
 		console.error("Error starting server:", error);
 		process.exit(1);
