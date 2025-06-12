@@ -17,9 +17,16 @@ interface AutoPostingSettings {
 
 interface QuoteResponse {
 	quote: string;
-	imageUrl: string;
 	quoteId: string;
-	data: any;
+	data: {
+		text: string;
+		author: string;
+		imageUrl: string;
+		quote: {
+			text: string;
+			author: string;
+		};
+	};
 }
 // Function to check if it's time to post based on lastPostTime and interval
 const shouldPost = (settings: AutoPostingSettings) => {
@@ -88,6 +95,7 @@ const handleUserAutoPosting = async (settings: AutoPostingSettings) => {
 			throw new Error("Failed to get quote response");
 		}
 		const { quote, imageUrl } = quoteResponse.data;
+		const { text, author } = quote;
 
 		// Get user's social connections
 		const connections = await SocialConnection.find({
@@ -106,7 +114,7 @@ const handleUserAutoPosting = async (settings: AutoPostingSettings) => {
 				platform: connection.platform,
 			});
 
-			const caption = `${quote.text}\n\n— ${quote.author}`;
+			const caption = `${text}\n\n— ${author}`;
 
 			if (connection.platform === "facebook") {
 				await metaApi.postToFacebook(
