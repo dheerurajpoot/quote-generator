@@ -158,8 +158,19 @@ const handleUserAutoPosting = async (settings: AutoPostingSettings) => {
 	}
 };
 
-export async function GET() {
+export async function GET(request: Request) {
 	try {
+		// Check for valid API key
+		const apiKey = request.headers.get("x-api-key");
+		if (!apiKey || apiKey !== process.env.CRON_API_KEY) {
+			return NextResponse.json(
+				{
+					success: false,
+					error: "Unauthorized access",
+				},
+				{ status: 401 }
+			);
+		}
 		await connectDb();
 
 		// Get all enabled auto-posting settings

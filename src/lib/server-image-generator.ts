@@ -11,22 +11,36 @@ import { existsSync } from "fs";
 
 // Register Mukta fonts for Hindi text
 const muktaRegularPath = path.join(
-	process.cwd(),
+	process.env.NEXT_PUBLIC_APP_URL || process.cwd(),
 	"public/fonts/Mukta-Regular.ttf"
 );
-const muktaBoldPath = path.join(process.cwd(), "public/fonts/Mukta-Bold.ttf");
+const muktaBoldPath = path.join(
+	process.env.NEXT_PUBLIC_APP_URL || process.cwd(),
+	"public/fonts/Mukta-Bold.ttf"
+);
 
 try {
 	if (existsSync(muktaRegularPath)) {
 		registerFont(muktaRegularPath, { family: "Mukta", weight: "400" });
 		console.log("Mukta Regular font registered successfully");
+	} else {
+		console.error("Mukta Regular font file not found at:", muktaRegularPath);
 	}
+
 	if (existsSync(muktaBoldPath)) {
 		registerFont(muktaBoldPath, { family: "Mukta", weight: "700" });
 		console.log("Mukta Bold font registered successfully");
+	} else {
+		console.error("Mukta Bold font file not found at:", muktaBoldPath);
 	}
 } catch (error) {
 	console.error("Error registering Mukta fonts:", error);
+	// Fallback to a default font
+	registerFont("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", {
+		family: "DejaVu Sans",
+		weight: "400"
+	});
+	console.log("Using fallback DejaVu Sans font");
 }
 
 interface Quote {
