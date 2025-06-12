@@ -34,8 +34,17 @@ const shouldPost = (settings: AutoPostingSettings) => {
 
 	const lastPost = new Date(settings.lastPostTime);
 	const now = new Date();
-	const minutesSinceLastPost =
-		(now.getTime() - lastPost.getTime()) / (1000 * 60);
+	const minutesSinceLastPost = Math.floor(
+		(now.getTime() - lastPost.getTime()) / (1000 * 60)
+	);
+
+	console.log(`Checking post timing for user ${settings.userId}:`, {
+		lastPostTime: lastPost.toISOString(),
+		currentTime: now.toISOString(),
+		minutesSinceLastPost,
+		requiredInterval: settings.interval,
+		shouldPost: minutesSinceLastPost >= settings.interval,
+	});
 
 	return minutesSinceLastPost >= settings.interval;
 };
