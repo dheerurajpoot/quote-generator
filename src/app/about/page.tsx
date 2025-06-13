@@ -39,9 +39,9 @@ export default function AboutPage() {
 							</h1>
 							<p className='mx-auto max-w-[700px] text-foreground/80 text-lg md:text-xl leading-relaxed'>
 								QuoteArt is more than just a quote generator -
-								it's a platform that helps you create beautiful,
-								shareable content that inspires and connects
-								with your audience.
+								it&apos;s a platform that helps you create
+								beautiful, shareable content that inspires and
+								connects with your audience.
 							</p>
 						</div>
 					</div>
@@ -111,7 +111,7 @@ export default function AboutPage() {
 									Passion
 								</h3>
 								<p className='text-foreground/80'>
-									We're passionate about helping people
+									We&apos;re passionate about helping people
 									express themselves through beautiful quote
 									images.
 								</p>

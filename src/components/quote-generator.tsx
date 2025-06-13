@@ -35,8 +35,6 @@ import {
 	MoveLeft,
 	MoveRight,
 	AlignCenter,
-	AlignLeft,
-	AlignRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { searchImages, type ImageSearchResult } from "@/lib/image-service";
