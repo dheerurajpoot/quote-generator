@@ -1,12 +1,43 @@
-import { NextResponse } from "next/server";
+import { NextResponse, NextRequest } from "next/server";
 import { getRandomHindiQuote } from "@/lib/quote-service";
 import { generateQuoteImage } from "@/lib/server-image-generator";
 import { uploadImage } from "@/lib/image-utils";
+import { connectDb } from "@/lib/dbconfig";
+import { User } from "@/models/user.model";
+import jwt from "jsonwebtoken";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
 	try {
+		const token = request.cookies.get("token")?.value;
+		if (!token) {
+			return NextResponse.json(
+				{
+					error: "Authentication required",
+				},
+				{ status: 401 }
+			);
+		}
+		const decodedToken = jwt.verify(token, process.env.TOKEN_SECRET!) as {
+			userId: string;
+		};
+		// Connect to MongoDB
+		await connectDb();
+
+		// Get user's author name
+		const user = await User.findById(decodedToken.userId);
+		if (!user) {
+			return NextResponse.json(
+				{
+					error: "User not found",
+				},
+				{ status: 404 }
+			);
+		}
+
 		// Get a random quote
-		const quote = await getRandomHindiQuote();
+		const newquote = await getRandomHindiQuote();
+		newquote.author = user.author;
+		const quote = newquote;
 
 		if (!quote || !quote.text) {
 			console.error("Failed to get a valid quote");
@@ -31,7 +62,7 @@ export async function GET() {
 		return NextResponse.json({
 			quote: {
 				text: quote.text,
-				author: quote.author,
+				author: user.author,
 			},
 			imageUrl,
 		});
