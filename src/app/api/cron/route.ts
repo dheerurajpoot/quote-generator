@@ -16,21 +16,18 @@ interface AutoPostingSettings {
 }
 
 interface QuoteResponse {
-	quote?: string;
-	quoteId?: string;
-	error?: string;
-	data?: {
-		text?: string;
-		author?: string;
-		imageUrl?: string;
-		quote?: {
+	quote: string;
+	quoteId: string;
+	data: {
+		text: string;
+		author: string;
+		imageUrl: string;
+		quote: {
 			text: string;
 			author: string;
 		};
-		error?: string;
 	};
 }
-
 // Function to check if it's time to post based on lastPostTime and interval
 const shouldPost = (settings: AutoPostingSettings) => {
 	if (!settings.lastPostTime) return true;
@@ -56,40 +53,14 @@ const handleUserAutoPosting = async (settings: AutoPostingSettings) => {
 
 		while (retryCount < MAX_RETRIES) {
 			try {
-				// Add authentication headers to the request
-				const response = await axios.get(
+				quoteResponse = await axios.get(
 					`${process.env.NEXT_PUBLIC_APP_URL}/api/quotes/generate`,
 					{
-						timeout: 15000,
+						timeout: 15000, // Increased timeout to 15 seconds
 						validateStatus: (status) =>
-							status >= 200 && status < 500,
-						headers: {
-							"x-api-key": process.env.CRON_API_KEY,
-							"Content-Type": "application/json",
-						},
+							status >= 200 && status < 500, // More lenient status validation
 					}
 				);
-
-				quoteResponse = response.data;
-
-				// Check if the response contains an error
-				if (quoteResponse?.error || quoteResponse?.data?.error) {
-					const errorMessage =
-						quoteResponse?.error || quoteResponse?.data?.error;
-					console.error(
-						`Quote generation error for user ${settings.userId}:`,
-						errorMessage
-					);
-					throw new Error(errorMessage);
-				}
-
-				// Validate the response structure
-				if (!quoteResponse || typeof quoteResponse !== "object") {
-					throw new Error(
-						"Invalid response format from quote generation"
-					);
-				}
-
 				break;
 			} catch (error: unknown) {
 				console.error(
@@ -105,10 +76,6 @@ const handleUserAutoPosting = async (settings: AutoPostingSettings) => {
 							error instanceof AxiosError
 								? error.response?.status
 								: undefined,
-						response:
-							error instanceof AxiosError
-								? error.response?.data
-								: undefined,
 						retryCount: retryCount + 1,
 						totalAttempts: MAX_RETRIES,
 					}
@@ -118,12 +85,8 @@ const handleUserAutoPosting = async (settings: AutoPostingSettings) => {
 					throw error;
 				}
 				retryCount++;
-				// Exponential backoff
 				await new Promise((resolve) =>
-					setTimeout(
-						resolve,
-						Math.min(1000 * Math.pow(2, retryCount), 10000)
-					)
+					setTimeout(resolve, 3000 * retryCount)
 				);
 			}
 		}
@@ -132,56 +95,14 @@ const handleUserAutoPosting = async (settings: AutoPostingSettings) => {
 			console.error(`No quote data received for user ${settings.userId}`);
 			throw new Error("Failed to get quote response");
 		}
-
-		// Safely extract quote data with proper error handling
-		const quoteData = quoteResponse.data;
-
-		// Log the quote data structure for debugging
-		console.log(`Quote data structure for user ${settings.userId}:`, {
-			hasQuote: !!quoteData.quote,
-			hasText: !!quoteData.quote?.text,
-			hasAuthor: !!quoteData.quote?.author,
-			hasImageUrl: !!quoteData.imageUrl,
-		});
-
-		if (
-			!quoteData.quote ||
-			!quoteData.quote.text ||
-			!quoteData.quote.author
-		) {
-			console.error(
-				`Invalid quote data structure for user ${settings.userId}:`,
-				quoteData
-			);
-			throw new Error("Invalid quote data structure");
-		}
-
-		const { text, author } = quoteData.quote;
-		const imageUrl = quoteData.imageUrl;
-
-		if (!imageUrl) {
-			console.error(
-				`No image URL in quote data for user ${settings.userId}`
-			);
-			throw new Error("Missing image URL in quote data");
-		}
+		const { quote, imageUrl } = quoteResponse.data;
+		const { text, author } = quote;
 
 		// Get user's social connections
 		const connections = await SocialConnection.find({
 			userId: settings.userId,
 			platform: { $in: settings.platforms },
 		});
-
-		if (!connections || connections.length === 0) {
-			console.log(
-				`No social connections found for user ${settings.userId}`
-			);
-			return {
-				success: true,
-				message: `No social connections found for user ${settings.userId}`,
-				numPosts: 0,
-			};
-		}
 
 		// Post to each connected platform
 		for (const connection of connections) {
@@ -196,29 +117,20 @@ const handleUserAutoPosting = async (settings: AutoPostingSettings) => {
 
 			const caption = `${text}\n\n— ${author}`;
 
-			try {
-				if (connection.platform === "facebook") {
-					await metaApi.postToFacebook(
-						connection.profileId,
-						connection.accessToken,
-						imageUrl,
-						caption
-					);
-				} else if (connection.platform === "instagram") {
-					await metaApi.postToInstagram(
-						connection.instagramAccountId || connection.profileId,
-						connection.pageAccessToken || connection.accessToken,
-						imageUrl,
-						caption
-					);
-				}
-			} catch (postError) {
-				console.error(
-					`Error posting to ${connection.platform} for user ${settings.userId}:`,
-					postError
+			if (connection.platform === "facebook") {
+				await metaApi.postToFacebook(
+					connection.profileId,
+					connection.accessToken,
+					imageUrl,
+					caption
 				);
-				// Continue with other platforms even if one fails
-				continue;
+			} else if (connection.platform === "instagram") {
+				await metaApi.postToInstagram(
+					connection.instagramAccountId || connection.profileId,
+					connection.pageAccessToken || connection.accessToken,
+					imageUrl,
+					caption
+				);
 			}
 		}
 
