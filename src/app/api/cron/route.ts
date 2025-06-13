@@ -31,13 +31,19 @@ interface QuoteResponse {
 // Function to check if it's time to post based on lastPostTime and interval
 const shouldPost = (settings: AutoPostingSettings) => {
 	if (!settings.isEnabled) {
-		console.log(`Auto-posting is disabled for user ${settings.userId}`);
-		return false;
+		return {
+			shouldPost: false,
+			message: `Auto-posting is disabled for user ${settings.userId}`,
+			nextPostTime: null,
+		};
 	}
 
 	if (!settings.lastPostTime) {
-		console.log(`First post for user ${settings.userId}`);
-		return true;
+		return {
+			shouldPost: true,
+			message: `First post for user ${settings.userId}`,
+			nextPostTime: new Date(),
+		};
 	}
 
 	const lastPost = new Date(settings.lastPostTime);
@@ -47,6 +53,9 @@ const shouldPost = (settings: AutoPostingSettings) => {
 	);
 
 	const shouldPostNow = minutesSinceLastPost >= settings.interval;
+	const nextPostTime = new Date(
+		lastPost.getTime() + settings.interval * 60 * 1000
+	);
 
 	console.log(`Posting check for user ${settings.userId}:`, {
 		lastPostTime: lastPost.toISOString(),
@@ -54,20 +63,31 @@ const shouldPost = (settings: AutoPostingSettings) => {
 		minutesSinceLastPost,
 		interval: settings.interval,
 		shouldPost: shouldPostNow,
+		nextPostTime: nextPostTime.toISOString(),
 	});
 
-	return shouldPostNow;
+	return {
+		shouldPost: shouldPostNow,
+		message: shouldPostNow
+			? `Time to post for user ${settings.userId}`
+			: `Not time to post yet for user ${settings.userId}`,
+		nextPostTime,
+	};
 };
 
 // Function to handle auto-posting for a single user
 let quoteResponse: QuoteResponse;
 const handleUserAutoPosting = async (settings: AutoPostingSettings) => {
 	try {
-		if (!shouldPost(settings)) {
+		// Check if it's time to post
+		const postingCheck = shouldPost(settings);
+		if (!postingCheck.shouldPost) {
 			return {
 				success: true,
-				message: `Not time to post yet for user ${settings.userId}`,
+				userId: settings.userId,
+				message: postingCheck.message,
 				numPosts: 0,
+				nextPostTime: postingCheck.nextPostTime,
 			};
 		}
 
@@ -165,8 +185,10 @@ const handleUserAutoPosting = async (settings: AutoPostingSettings) => {
 
 		return {
 			success: true,
+			userId: settings.userId,
 			message: `Successfully auto-posted for user ${settings.userId}`,
 			numPosts: connections.length,
+			nextPostTime: new Date(),
 		};
 	} catch (error) {
 		console.error(
@@ -175,6 +197,7 @@ const handleUserAutoPosting = async (settings: AutoPostingSettings) => {
 		);
 		return {
 			success: false,
+			userId: settings.userId,
 			error:
 				error instanceof Error
 					? error.message
@@ -196,27 +219,69 @@ export async function GET(request: Request) {
 				{ status: 401 }
 			);
 		}
-		await connectDb();
 
-		// Get all enabled auto-posting settings
-		const settings = await AutoPostingSettings.find({
-			isEnabled: true,
+		// Set a timeout for the entire operation
+		const timeoutPromise = new Promise((_, reject) => {
+			setTimeout(() => {
+				reject(new Error("Operation timed out"));
+			}, 25000); // 25 second timeout
 		});
 
-		// Handle auto-posting for each user
-		const results = [];
-		for (const setting of settings) {
-			const result = await handleUserAutoPosting(setting);
-			results.push(result);
-		}
+		const operationPromise = (async () => {
+			await connectDb();
 
-		return NextResponse.json({
-			success: true,
-			results,
-			totalUsersProcessed: settings.length,
-		});
+			// Get all enabled auto-posting settings
+			const settings = await AutoPostingSettings.find({
+				isEnabled: true,
+			});
+
+			// Handle auto-posting for each user
+			const results = [];
+			for (const setting of settings) {
+				try {
+					const result = await handleUserAutoPosting(setting);
+					results.push(result);
+				} catch (error) {
+					console.error(
+						`Error processing user ${setting.userId}:`,
+						error
+					);
+					results.push({
+						success: false,
+						userId: setting.userId,
+						error:
+							error instanceof Error
+								? error.message
+								: "Unknown error",
+					});
+				}
+			}
+
+			return NextResponse.json({
+				success: true,
+				results,
+				totalUsersProcessed: settings.length,
+				timestamp: new Date().toISOString(),
+			});
+		})();
+
+		// Race between the operation and the timeout
+		return await Promise.race([operationPromise, timeoutPromise]);
 	} catch (error) {
 		console.error("Error in auto-posting endpoint:", error);
+
+		// Check if it's a timeout error
+		if (error instanceof Error && error.message === "Operation timed out") {
+			return NextResponse.json(
+				{
+					success: false,
+					error: "Operation timed out",
+					message: "The operation took too long to complete",
+				},
+				{ status: 504 }
+			);
+		}
+
 		return NextResponse.json(
 			{
 				success: false,
