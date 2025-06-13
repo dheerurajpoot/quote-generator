@@ -30,7 +30,15 @@ interface QuoteResponse {
 }
 // Function to check if it's time to post based on lastPostTime and interval
 const shouldPost = (settings: AutoPostingSettings) => {
-	if (!settings.lastPostTime) return true;
+	if (!settings.isEnabled) {
+		console.log(`Auto-posting is disabled for user ${settings.userId}`);
+		return false;
+	}
+
+	if (!settings.lastPostTime) {
+		console.log(`First post for user ${settings.userId}`);
+		return true;
+	}
 
 	const lastPost = new Date(settings.lastPostTime);
 	const now = new Date();
@@ -38,17 +46,33 @@ const shouldPost = (settings: AutoPostingSettings) => {
 		(now.getTime() - lastPost.getTime()) / (1000 * 60)
 	);
 
-	return minutesSinceLastPost >= settings.interval;
+	const shouldPostNow = minutesSinceLastPost >= settings.interval;
+
+	console.log(`Posting check for user ${settings.userId}:`, {
+		lastPostTime: lastPost.toISOString(),
+		currentTime: now.toISOString(),
+		minutesSinceLastPost,
+		interval: settings.interval,
+		shouldPost: shouldPostNow,
+	});
+
+	return shouldPostNow;
 };
 
 // Function to handle auto-posting for a single user
 let quoteResponse: QuoteResponse;
 const handleUserAutoPosting = async (settings: AutoPostingSettings) => {
 	try {
-		if (!settings.isEnabled || !shouldPost(settings)) return;
+		if (!shouldPost(settings)) {
+			return {
+				success: true,
+				message: `Not time to post yet for user ${settings.userId}`,
+				numPosts: 0,
+			};
+		}
 
 		// Get a new quote
-		const MAX_RETRIES = 5; // Increased retries
+		const MAX_RETRIES = 5;
 		let retryCount = 0;
 
 		while (retryCount < MAX_RETRIES) {
