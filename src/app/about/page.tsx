@@ -1,10 +1,18 @@
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardHeader,
-	CardTitle,
-} from "@/components/ui/card";
+	ArrowRight,
+	Sparkles,
+	Heart,
+	Shield,
+	Zap,
+	Globe,
+	Github,
+	Linkedin,
+	Twitter,
+} from "lucide-react";
+import Link from "next/link";
+import Image from "next/image";
 
 export const metadata = {
 	title: "About Us - QuoteArt",
@@ -14,108 +22,248 @@ export const metadata = {
 
 export default function AboutPage() {
 	return (
-		<div className='container mx-auto py-12 md:py-16 lg:py-24'>
-			<div className='max-w-3xl mx-auto'>
-				<h1 className='text-4xl font-bold tracking-tight mb-6'>
-					About QuoteArt
-				</h1>
+		<div className='min-h-screen bg-gradient-to-b from-background via-background/95 to-muted/30'>
+			{/* Hero Section */}
+			<section className='relative w-full py-20 md:py-32 overflow-hidden'>
+				<div className='absolute inset-0 bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-primary/20 via-transparent to-transparent' />
+				<div className='absolute inset-0 bg-[radial-gradient(circle_at_bottom_left,_var(--tw-gradient-stops))] from-secondary/20 via-transparent to-transparent' />
+				<div className='container relative mx-auto px-4 md:px-6'>
+					<div className='flex flex-col items-center space-y-8 text-center'>
+						<div className='space-y-6 max-w-3xl'>
+							<div className='inline-flex items-center rounded-full border px-3 py-1 text-sm bg-primary/10 text-primary mb-4'>
+								<Sparkles className='w-4 h-4 mr-2' />
+								Our Story
+							</div>
+							<h1 className='text-4xl font-bold tracking-tighter sm:text-5xl md:text-6xl lg:text-7xl text-foreground'>
+								Transforming Words into Art
+							</h1>
+							<p className='mx-auto max-w-[700px] text-foreground/80 text-lg md:text-xl leading-relaxed'>
+								QuoteArt is more than just a quote generator -
+								it's a platform that helps you create beautiful,
+								shareable content that inspires and connects
+								with your audience.
+							</p>
+						</div>
+					</div>
+				</div>
+			</section>
 
-				<Card className='mb-8'>
-					<CardHeader>
-						<CardTitle>Our Mission</CardTitle>
-						<CardDescription>
-							Empowering creativity through words and images
-						</CardDescription>
-					</CardHeader>
-					<CardContent className='space-y-4'>
-						<p>
-							QuoteArt was founded with a simple mission: to make
-							it easy for anyone to create beautiful, shareable
-							quote images without needing design skills or
-							expensive software.
-						</p>
-						<p>
-							We believe that words have power, and when combined
-							with striking visuals, they can inspire, motivate,
-							and connect people across the world.
-						</p>
-					</CardContent>
-				</Card>
+			{/* Mission Section */}
+			<section className='w-full py-20 md:py-32 relative'>
+				<div className='container mx-auto px-4 md:px-6'>
+					<div className='grid grid-cols-1 md:grid-cols-2 gap-12 items-center'>
+						<div className='space-y-6'>
+							<h2 className='text-3xl font-bold tracking-tighter sm:text-4xl text-foreground'>
+								Our Mission
+							</h2>
+							<p className='text-foreground/80 text-lg leading-relaxed'>
+								We believe that words have the power to inspire,
+								motivate, and transform. Our mission is to make
+								it easy for everyone to create beautiful quote
+								images that capture the essence of meaningful
+								messages.
+							</p>
+							<div className='flex flex-col sm:flex-row gap-4'>
+								<Button
+									asChild
+									size='lg'
+									className='w-full sm:w-auto'>
+									<Link
+										href='/edit'
+										className='flex items-center'>
+										Start Creating{" "}
+										<ArrowRight className='ml-2 h-4 w-4' />
+									</Link>
+								</Button>
+							</div>
+						</div>
+						<div className='relative aspect-square rounded-2xl overflow-hidden shadow-2xl'>
+							<Image
+								src='/img3.jpg'
+								alt='Our Mission'
+								fill
+								className='object-cover'
+								priority
+							/>
+						</div>
+					</div>
+				</div>
+			</section>
 
-				<Card className='mb-8'>
-					<CardHeader>
-						<CardTitle>Our Story</CardTitle>
-						<CardDescription>
-							How QuoteArt came to be
-						</CardDescription>
-					</CardHeader>
-					<CardContent className='space-y-4'>
-						<p>
-							QuoteArt began as a passion project in 2023 when our
-							founder, a social media manager, was frustrated with
-							the lack of easy-to-use tools for creating quote
-							images for multiple platforms.
+			{/* Values Section */}
+			<section className='w-full py-20 md:py-32 relative'>
+				<div className='container mx-auto px-4 md:px-6'>
+					<div className='text-center mb-16'>
+						<h2 className='text-3xl font-bold tracking-tighter sm:text-4xl text-foreground mb-4'>
+							Our Values
+						</h2>
+						<p className='mx-auto max-w-[700px] text-foreground/80 text-lg'>
+							The principles that guide everything we do
 						</p>
-						<p>
-							What started as a simple tool for personal use
-							quickly grew into a platform used by content
-							creators, social media managers, educators, and
-							individuals who wanted to share meaningful quotes in
-							a visually appealing way.
-						</p>
-						<p>
-							Today, QuoteArt is used by thousands of people
-							around the world to create quote images for social
-							media, blogs, presentations, and personal projects.
-						</p>
-					</CardContent>
-				</Card>
+					</div>
+					<div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6'>
+						<Card className='border-none shadow-lg bg-gradient-to-br from-background to-muted/30 hover:shadow-xl transition-all duration-300'>
+							<CardContent className='p-6 space-y-4'>
+								<div className='w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center'>
+									<Heart className='w-6 h-6 text-primary' />
+								</div>
+								<h3 className='text-xl font-semibold'>
+									Passion
+								</h3>
+								<p className='text-foreground/80'>
+									We're passionate about helping people
+									express themselves through beautiful quote
+									images.
+								</p>
+							</CardContent>
+						</Card>
+						<Card className='border-none shadow-lg bg-gradient-to-br from-background to-muted/30 hover:shadow-xl transition-all duration-300'>
+							<CardContent className='p-6 space-y-4'>
+								<div className='w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center'>
+									<Shield className='w-6 h-6 text-primary' />
+								</div>
+								<h3 className='text-xl font-semibold'>Trust</h3>
+								<p className='text-foreground/80'>
+									We build trust through transparency,
+									security, and reliable service.
+								</p>
+							</CardContent>
+						</Card>
+						<Card className='border-none shadow-lg bg-gradient-to-br from-background to-muted/30 hover:shadow-xl transition-all duration-300'>
+							<CardContent className='p-6 space-y-4'>
+								<div className='w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center'>
+									<Zap className='w-6 h-6 text-primary' />
+								</div>
+								<h3 className='text-xl font-semibold'>
+									Innovation
+								</h3>
+								<p className='text-foreground/80'>
+									We constantly innovate to provide the best
+									tools for quote creation.
+								</p>
+							</CardContent>
+						</Card>
+						<Card className='border-none shadow-lg bg-gradient-to-br from-background to-muted/30 hover:shadow-xl transition-all duration-300'>
+							<CardContent className='p-6 space-y-4'>
+								<div className='w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center'>
+									<Globe className='w-6 h-6 text-primary' />
+								</div>
+								<h3 className='text-xl font-semibold'>
+									Community
+								</h3>
+								<p className='text-foreground/80'>
+									We foster a global community of creators and
+									inspiration seekers.
+								</p>
+							</CardContent>
+						</Card>
+					</div>
+				</div>
+			</section>
 
-				<Card>
-					<CardHeader>
-						<CardTitle>Our Values</CardTitle>
-						<CardDescription>
-							What drives us every day
-						</CardDescription>
-					</CardHeader>
-					<CardContent>
-						<ul className='space-y-4'>
-							<li className='flex flex-col'>
-								<strong className='text-lg'>
-									Accessibility
-								</strong>
-								<span>
-									Making design tools available to everyone,
-									regardless of technical skill.
-								</span>
-							</li>
-							<li className='flex flex-col'>
-								<strong className='text-lg'>Creativity</strong>
-								<span>
-									Empowering users to express themselves
-									through customization and flexibility.
-								</span>
-							</li>
-							<li className='flex flex-col'>
-								<strong className='text-lg'>Simplicity</strong>
-								<span>
-									Creating intuitive interfaces that
-									don&apos;t sacrifice functionality.
-								</span>
-							</li>
-							<li className='flex flex-col'>
-								<strong className='text-lg'>
-									Global Perspective
-								</strong>
-								<span>
-									Supporting multiple languages and cultural
-									expressions through our platform.
-								</span>
-							</li>
-						</ul>
-					</CardContent>
-				</Card>
-			</div>
+			{/* Team Section */}
+			<section className='w-full py-20 md:py-32 relative'>
+				<div className='container mx-auto px-4 md:px-6'>
+					<div className='text-center mb-16'>
+						<h2 className='text-3xl font-bold tracking-tighter sm:text-4xl text-foreground mb-4'>
+							Meet the Creator
+						</h2>
+						<p className='mx-auto max-w-[700px] text-foreground/80 text-lg'>
+							The passionate mind behind QuoteArt
+						</p>
+					</div>
+					<div className='max-w-2xl mx-auto'>
+						<Card className='border-none shadow-lg bg-gradient-to-br from-background to-muted/30 hover:shadow-xl transition-all duration-300'>
+							<CardContent className='p-8'>
+								<div className='flex flex-col md:flex-row items-center gap-8'>
+									<div className='relative w-48 h-48 rounded-full overflow-hidden border-4 border-primary/20'>
+										<Image
+											src='/quotearticon.png'
+											alt='Dheeru Rajpoot'
+											fill
+											className='object-cover'
+										/>
+									</div>
+									<div className='flex-1 text-center md:text-left space-y-4'>
+										<div>
+											<h3 className='text-2xl font-bold text-foreground'>
+												Dheeru Rajpoot
+											</h3>
+											<p className='text-primary text-lg'>
+												Founder & Developer
+											</p>
+										</div>
+										<p className='text-foreground/80'>
+											Passionate about creating tools that
+											help people express themselves
+											through beautiful designs. Building
+											QuoteArt to make quote creation
+											accessible to everyone.
+										</p>
+										<div className='flex justify-center md:justify-start gap-4 pt-4'>
+											<Link
+												href='https://github.com/yourusername'
+												target='_blank'
+												className='text-foreground/60 hover:text-primary transition-colors'>
+												<Github className='w-6 h-6' />
+											</Link>
+											<Link
+												href='https://www.linkedin.com/in/dheerurajpoot/'
+												target='_blank'
+												className='text-foreground/60 hover:text-primary transition-colors'>
+												<Linkedin className='w-6 h-6' />
+											</Link>
+											<Link
+												href='https://x.com/DheeruRajpoot3'
+												target='_blank'
+												className='text-foreground/60 hover:text-primary transition-colors'>
+												<Twitter className='w-6 h-6' />
+											</Link>
+										</div>
+									</div>
+								</div>
+							</CardContent>
+						</Card>
+					</div>
+				</div>
+			</section>
+
+			{/* CTA Section */}
+			<section className='w-full py-20 md:py-32 relative overflow-hidden'>
+				<div className='absolute inset-0 bg-gradient-to-br from-primary to-secondary opacity-90' />
+				<div className='container relative mx-auto px-4 md:px-6'>
+					<div className='flex flex-col items-center space-y-6 text-center'>
+						<h2 className='text-3xl font-bold tracking-tighter sm:text-4xl text-white'>
+							Ready to Create Beautiful Quotes?
+						</h2>
+						<p className='mx-auto max-w-[700px] text-white/90 text-lg'>
+							Join thousands of users creating stunning quote
+							images with QuoteArt
+						</p>
+						<div className='flex flex-col sm:flex-row gap-4 pt-4'>
+							<Button
+								asChild
+								size='lg'
+								variant='secondary'
+								className='px-8 py-6 text-lg bg-white text-primary hover:bg-white/90'>
+								<Link
+									href='/edit'
+									className='flex items-center'>
+									Start Creating{" "}
+									<ArrowRight className='ml-2 h-5 w-5' />
+								</Link>
+							</Button>
+							<Button
+								asChild
+								size='lg'
+								variant='outline'
+								className='px-8 py-6 text-lg border-2 border-white bg-primary text-white hover:bg-white/10'>
+								<Link href='/pricing'>View Pricing</Link>
+							</Button>
+						</div>
+					</div>
+				</div>
+			</section>
 		</div>
 	);
 }

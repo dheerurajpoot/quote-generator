@@ -30,6 +30,13 @@ import {
 	Search,
 	Loader2,
 	Palette,
+	MoveUp,
+	MoveDown,
+	MoveLeft,
+	MoveRight,
+	AlignCenter,
+	AlignLeft,
+	AlignRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { searchImages, type ImageSearchResult } from "@/lib/image-service";
@@ -97,6 +104,9 @@ export default function QuoteGenerator() {
 	const [hasSearched, setHasSearched] = useState(false);
 
 	const canvasRef = useRef<HTMLDivElement>(null);
+
+	const [quotePosition, setQuotePosition] = useState({ x: 0, y: 0 });
+	const [watermarkPosition, setWatermarkPosition] = useState({ x: 0, y: 0 });
 
 	// Update background opacity
 	useEffect(() => {
@@ -208,6 +218,9 @@ export default function QuoteGenerator() {
 													"antialiased",
 												MozOsxFontSmoothing:
 													"grayscale",
+												transform: `translate(${quotePosition.x}px, ${quotePosition.y}px)`,
+												transition:
+													"transform 0.2s ease-in-out",
 											}}>
 											{quote}
 										</p>
@@ -231,6 +244,9 @@ export default function QuoteGenerator() {
 														"antialiased",
 													MozOsxFontSmoothing:
 														"grayscale",
+													transform: `translate(${quotePosition.x}px, ${quotePosition.y}px)`,
+													transition:
+														"transform 0.2s ease-in-out",
 												}}>
 												— {author}
 											</p>
@@ -238,7 +254,7 @@ export default function QuoteGenerator() {
 
 										{watermark && (
 											<p
-												className='absolute bottom-4 right-4 text-sm opacity-70'
+												className='absolute text-sm opacity-70'
 												style={{
 													color: watermarkColor,
 													letterSpacing: "0.025em",
@@ -248,6 +264,14 @@ export default function QuoteGenerator() {
 														"antialiased",
 													MozOsxFontSmoothing:
 														"grayscale",
+													bottom: `${
+														20 + watermarkPosition.y
+													}px`,
+													right: `${
+														20 + watermarkPosition.x
+													}px`,
+													transition:
+														"all 0.2s ease-in-out",
 												}}>
 												{watermark}
 											</p>
@@ -278,18 +302,22 @@ export default function QuoteGenerator() {
 						</TabsList>
 
 						<TabsContent value='content' className='space-y-4 mt-4'>
-							<Card>
+							<Card className='border-none shadow-lg bg-gradient-to-br from-background to-muted/30'>
 								<CardHeader>
-									<CardTitle>Quote Text</CardTitle>
-									<CardDescription>
-										Enter your quote and customize
-										attribution
+									<CardTitle className='text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary'>
+										Quote Content
+									</CardTitle>
+									<CardDescription className='text-foreground/80'>
+										Enter your quote and customize its
+										appearance
 									</CardDescription>
 								</CardHeader>
-								<CardContent className='space-y-4'>
-									<div className='space-y-2'>
-										<Label htmlFor='quote'>
-											Quote (supports line breaks)
+								<CardContent className='space-y-6'>
+									<div className='space-y-4'>
+										<Label
+											htmlFor='quote'
+											className='text-lg font-semibold'>
+											Quote Text
 										</Label>
 										<Textarea
 											id='quote'
@@ -299,13 +327,15 @@ export default function QuoteGenerator() {
 												setQuote(e.target.value)
 											}
 											rows={4}
-											className='resize-y min-h-[100px]'
+											className='resize-y min-h-[100px] bg-muted/50 border-muted-foreground/20 focus:border-primary'
 										/>
 									</div>
 
-									<div className='space-y-2'>
-										<Label htmlFor='author'>
-											Author (optional)
+									<div className='space-y-4'>
+										<Label
+											htmlFor='author'
+											className='text-lg font-semibold'>
+											Author
 										</Label>
 										<Input
 											id='author'
@@ -314,11 +344,14 @@ export default function QuoteGenerator() {
 											onChange={(e) =>
 												setAuthor(e.target.value)
 											}
+											className='bg-muted/50 border-muted-foreground/20 focus:border-primary'
 										/>
 									</div>
 
-									<div className='space-y-2'>
-										<Label htmlFor='watermark'>
+									<div className='space-y-4'>
+										<Label
+											htmlFor='watermark'
+											className='text-lg font-semibold'>
 											Watermark
 										</Label>
 										<Input
@@ -328,7 +361,148 @@ export default function QuoteGenerator() {
 											onChange={(e) =>
 												setWatermark(e.target.value)
 											}
+											className='bg-muted/50 border-muted-foreground/20 focus:border-primary'
 										/>
+									</div>
+
+									<div className='space-y-4'>
+										<Label className='text-lg font-semibold'>
+											Quote Placement
+										</Label>
+										<div className='grid grid-cols-3 gap-2'>
+											<Button
+												variant='outline'
+												className='col-start-2'
+												onClick={() =>
+													setQuotePosition(
+														(prev) => ({
+															...prev,
+															y: prev.y - 10,
+														})
+													)
+												}>
+												<MoveUp className='h-4 w-4' />
+											</Button>
+											<div className='flex gap-2'>
+												<Button
+													variant='outline'
+													onClick={() =>
+														setQuotePosition(
+															(prev) => ({
+																...prev,
+																x: prev.x - 10,
+															})
+														)
+													}>
+													<MoveLeft className='h-4 w-4' />
+												</Button>
+												<Button
+													variant='outline'
+													onClick={() =>
+														setQuotePosition({
+															x: 0,
+															y: 0,
+														})
+													}>
+													<AlignCenter className='h-4 w-4' />
+												</Button>
+												<Button
+													variant='outline'
+													onClick={() =>
+														setQuotePosition(
+															(prev) => ({
+																...prev,
+																x: prev.x + 10,
+															})
+														)
+													}>
+													<MoveRight className='h-4 w-4' />
+												</Button>
+											</div>
+											<Button
+												variant='outline'
+												className='col-start-2'
+												onClick={() =>
+													setQuotePosition(
+														(prev) => ({
+															...prev,
+															y: prev.y + 10,
+														})
+													)
+												}>
+												<MoveDown className='h-4 w-4' />
+											</Button>
+										</div>
+									</div>
+
+									<div className='space-y-4'>
+										<Label className='text-lg font-semibold'>
+											Watermark Placement
+										</Label>
+										<div className='grid grid-cols-3 gap-2'>
+											<Button
+												variant='outline'
+												className='col-start-2'
+												onClick={() =>
+													setWatermarkPosition(
+														(prev) => ({
+															...prev,
+															y: prev.y - 10,
+														})
+													)
+												}>
+												<MoveUp className='h-4 w-4' />
+											</Button>
+											<div className='flex gap-2'>
+												<Button
+													variant='outline'
+													onClick={() =>
+														setWatermarkPosition(
+															(prev) => ({
+																...prev,
+																x: prev.x - 10,
+															})
+														)
+													}>
+													<MoveLeft className='h-4 w-4' />
+												</Button>
+												<Button
+													variant='outline'
+													onClick={() =>
+														setWatermarkPosition({
+															x: 0,
+															y: 0,
+														})
+													}>
+													<AlignCenter className='h-4 w-4' />
+												</Button>
+												<Button
+													variant='outline'
+													onClick={() =>
+														setWatermarkPosition(
+															(prev) => ({
+																...prev,
+																x: prev.x + 10,
+															})
+														)
+													}>
+													<MoveRight className='h-4 w-4' />
+												</Button>
+											</div>
+											<Button
+												variant='outline'
+												className='col-start-2'
+												onClick={() =>
+													setWatermarkPosition(
+														(prev) => ({
+															...prev,
+															y: prev.y + 10,
+														})
+													)
+												}>
+												<MoveDown className='h-4 w-4' />
+											</Button>
+										</div>
 									</div>
 								</CardContent>
 							</Card>

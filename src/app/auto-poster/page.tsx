@@ -4,7 +4,7 @@ export default function AutoPosterPage() {
 	return (
 		<main className='container mx-auto py-16'>
 			<div className='max-w-4xl mx-auto space-y-8'>
-				<div className='text-center space-y-4'>
+				{/* <div className='text-center space-y-4'>
 					<h1 className='text-4xl font-bold'>
 						Automatic Quote Poster
 					</h1>
@@ -12,7 +12,7 @@ export default function AutoPosterPage() {
 						Automatically generate and post Hindi quotes to your
 						social media accounts
 					</p>
-				</div>
+				</div> */}
 
 				<AutoQuotePoster />
 			</div>
