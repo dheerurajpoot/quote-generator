@@ -50,36 +50,83 @@ export class MetaApi {
 					throw new Error("Facebook app credentials not found");
 				}
 
-				// Exchange the token for a new long-lived token
-				const response = await fetch(
-					`https://graph.facebook.com/${this.apiVersion}/oauth/access_token?grant_type=fb_exchange_token&client_id=${user.facebookAppId}&client_secret=${user.facebookAppSecret}&fb_exchange_token=${this.accessToken}`
-				);
-
-				if (!response.ok) {
-					const error = await response.json();
-					throw new Error(
-						`Failed to refresh token: ${
-							error.error?.message || "Unknown error"
-						}`
-					);
-				}
-
-				const data = await response.json();
-
-				// Calculate new expiration date
-				const expiresAt = new Date();
-				expiresAt.setSeconds(expiresAt.getSeconds() + data.expires_in);
-
-				// Update the connection with the new token
-				connection.accessToken = data.access_token;
-				connection.expiresAt = expiresAt;
-				await connection.save();
-
-				// Update the instance token
-				this.accessToken = data.access_token;
-
-				// For Instagram, we need to get a new page access token
+				// For Instagram, we need to use a different endpoint to exchange tokens
 				if (this.platform === "instagram") {
+					// Get the Instagram Business Account ID
+					const igResponse = await fetch(
+						`https://graph.facebook.com/${this.apiVersion}/me?fields=instagram_business_account&access_token=${this.accessToken}`
+					);
+
+					if (!igResponse.ok) {
+						const error = await igResponse.json();
+						throw new Error(
+							`Failed to get Instagram account: ${
+								error.error?.message || "Unknown error"
+							}`
+						);
+					}
+
+					const igData = await igResponse.json();
+					if (!igData.instagram_business_account?.id) {
+						throw new Error("Instagram business account not found");
+					}
+
+					// Exchange the Instagram token for a long-lived token
+					const response = await fetch(
+						`https://graph.facebook.com/${this.apiVersion}/${igData.instagram_business_account.id}?fields=access_token&access_token=${this.accessToken}`
+					);
+
+					if (!response.ok) {
+						const error = await response.json();
+						throw new Error(
+							`Failed to refresh Instagram token: ${
+								error.error?.message || "Unknown error"
+							}`
+						);
+					}
+
+					const data = await response.json();
+					if (!data.access_token) {
+						throw new Error("No access token received from Instagram");
+					}
+
+					// Update the connection with the new Instagram token
+					connection.accessToken = data.access_token;
+					connection.expiresAt = new Date(now.getTime() + 60 * 24 * 60 * 60 * 1000); // 60 days
+					await connection.save();
+
+					// Update the instance token
+					this.accessToken = data.access_token;
+				} else {
+					// For Facebook, use the standard token exchange
+					const response = await fetch(
+						`https://graph.facebook.com/${this.apiVersion}/oauth/access_token?grant_type=fb_exchange_token&client_id=${user.facebookAppId}&client_secret=${user.facebookAppSecret}&fb_exchange_token=${this.accessToken}`
+					);
+
+					if (!response.ok) {
+						const error = await response.json();
+						throw new Error(
+							`Failed to refresh token: ${
+								error.error?.message || "Unknown error"
+							}`
+						);
+					}
+
+					const data = await response.json();
+
+					// Calculate new expiration date
+					const expiresAt = new Date();
+					expiresAt.setSeconds(expiresAt.getSeconds() + data.expires_in);
+
+					// Update the connection with the new token
+					connection.accessToken = data.access_token;
+					connection.expiresAt = expiresAt;
+					await connection.save();
+
+					// Update the instance token
+					this.accessToken = data.access_token;
+
+					// Get new page access token if needed
 					const pagesResponse = await fetch(
 						`${this.baseUrl}/me/accounts?access_token=${data.access_token}`
 					);

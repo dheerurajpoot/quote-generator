@@ -22,6 +22,7 @@ export async function middleware(request: NextRequest) {
 	// Protected paths (require login)
 	const isProtectedPath =
 		path.startsWith("/dashboard") ||
+		path.startsWith("/auto-poster") ||
 		path.startsWith("/api/subscriptions") ||
 		path.startsWith("/api/settings") ||
 		path.startsWith("/api/users/facebook-credentials");
@@ -80,5 +81,6 @@ export const config = {
 		"/api/subscriptions/:path*",
 		"/about",
 		"/api/cron",
+		"/auto-poster",
 	],
 };

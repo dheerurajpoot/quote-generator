@@ -1,14 +1,6 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-
-interface ApiErrorResponse {
-	response: {
-		data: {
-			error: string;
-		};
-	};
-}
 import { Button } from "@/components/ui/button";
 import {
 	Card,
@@ -20,20 +12,36 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { postToSocialMedia } from "@/lib/quote-service";
-import { Loader2 } from "lucide-react";
+import {
+	Loader2,
+	Clock,
+	Download,
+	RefreshCw,
+	AlertCircle,
+	Facebook,
+	Instagram,
+} from "lucide-react";
 import { useAuth } from "@/context/auth-context";
 import toast from "react-hot-toast";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Facebook, Instagram } from "lucide-react";
-import { AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import axios from "axios";
 import Image from "next/image";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 
 interface Quote {
 	text: string;
 	author: string;
 	imageUrl?: string;
+}
+
+interface ApiErrorResponse {
+	response: {
+		data: {
+			error: string;
+		};
+	};
 }
 
 export default function AutoQuotePoster() {
@@ -245,147 +253,206 @@ export default function AutoQuotePoster() {
 	}, [user?._id]);
 
 	return (
-		<Card className='w-full max-w-2xl mx-auto'>
-			<CardHeader>
-				<CardTitle>Automatic Quote Poster</CardTitle>
-				<CardDescription>
-					Automatically generate and post Hindi quotes to your social
-					media accounts
-				</CardDescription>
-				{isAutoPosting && (
-					<Alert className='mt-2 bg-green-50 border-green-200'>
-						<AlertCircle className='h-4 w-4 text-green-600' />
-						<AlertDescription className='text-green-600'>
-							Auto-posting is active for:{" "}
-							{selectedPlatforms
-								.map(
-									(p) =>
-										p.charAt(0).toUpperCase() + p.slice(1)
-								)
-								.join(", ")}
-							<br />
-							Next post in: {postingInterval} minutes
-						</AlertDescription>
-					</Alert>
-				)}
-			</CardHeader>
-			<CardContent className='space-y-4'>
-				<div className='space-y-2'>
-					<Label>Current Quote</Label>
-					{isLoading ? (
-						<div className='flex items-center justify-center h-[600px] bg-muted rounded-lg'>
-							<Loader2 className='h-8 w-8 animate-spin text-muted-foreground' />
+		<div className='w-full max-w-5xl mx-auto p-4'>
+			<Card className='w-full border-none shadow-lg bg-gradient-to-br from-background to-muted/30'>
+				<CardHeader className='space-y-4'>
+					<div className='flex items-center justify-between'>
+						<div>
+							<CardTitle className='text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary'>
+								Automatic Quote Poster
+							</CardTitle>
+							<CardDescription className='text-lg mt-2 text-foreground/80'>
+								Automatically generate and post inspiring quotes
+								to your social media accounts
+							</CardDescription>
 						</div>
-					) : !quote?.imageUrl ? (
-						<div className='flex items-center justify-center h-[600px] bg-muted rounded-lg'>
-							<p className='text-muted-foreground'>
-								No quote generated yet
-							</p>
-						</div>
-					) : (
-						<div className='relative w-full aspect-square max-w-2xl mx-auto overflow-hidden rounded-lg'>
-							<Image
-								src={quote.imageUrl}
-								alt={`Quote: ${quote.text}`}
-								fill
-								className='object-cover'
-								priority
-							/>
-						</div>
+						{isAutoPosting && (
+							<Badge
+								variant='secondary'
+								className='px-4 py-2 bg-green-500/10 text-green-600 border-green-500/20'>
+								<Clock className='w-4 h-4 mr-2' />
+								Active
+							</Badge>
+						)}
+					</div>
+					{isAutoPosting && (
+						<Alert className='bg-green-50/50 border-green-200'>
+							<AlertCircle className='h-4 w-4 text-green-600' />
+							<AlertDescription className='text-green-600'>
+								Auto-posting is active for:{" "}
+								{selectedPlatforms
+									.map(
+										(p) =>
+											p.charAt(0).toUpperCase() +
+											p.slice(1)
+									)
+									.join(", ")}
+								<br />
+								Next post in: {postingInterval} minutes
+							</AlertDescription>
+						</Alert>
 					)}
-				</div>
-
-				<div className='space-y-2'>
-					<Label>Posting Interval</Label>
-					<div className='flex gap-2'>
-						<Input
-							type='number'
-							min='1'
-							max='1440'
-							value={postingInterval}
-							onChange={(e) => setPostingInterval(e.target.value)}
-							className='w-24'
-						/>
-						<span className='self-center'>minutes</span>
-					</div>
-				</div>
-
-				<div className='space-y-2'>
-					<Label>Select Platforms</Label>
-					<div className='flex gap-4'>
-						<div className='flex items-center space-x-2'>
-							<Checkbox
-								id='facebook'
-								checked={selectedPlatforms.includes("facebook")}
-								onCheckedChange={() =>
-									handlePlatformToggle("facebook")
-								}
-							/>
-							<Label
-								htmlFor='facebook'
-								className='flex items-center'>
-								<Facebook className='h-4 w-4 text-blue-600 mr-2' />
-								Facebook
-							</Label>
+				</CardHeader>
+				<CardContent className='space-y-6'>
+					<div className='grid grid-cols-1 lg:grid-cols-2 gap-6'>
+						{/* Quote Preview Section */}
+						<div className='space-y-4'>
+							<div className='flex items-center justify-between'>
+								<Label className='text-lg font-semibold'>
+									Current Quote
+								</Label>
+								<Button
+									variant='ghost'
+									size='sm'
+									onClick={fetchNewQuote}
+									disabled={isLoading}
+									className='text-primary hover:text-primary/80'>
+									<RefreshCw className='w-4 h-4 mr-2' />
+									Refresh
+								</Button>
+							</div>
+							{isLoading ? (
+								<div className='flex items-center justify-center h-[400px] bg-muted/50 rounded-xl'>
+									<Loader2 className='h-8 w-8 animate-spin text-primary' />
+								</div>
+							) : !quote?.imageUrl ? (
+								<div className='flex items-center justify-center h-[400px] bg-muted/50 rounded-xl'>
+									<p className='text-muted-foreground'>
+										No quote generated yet
+									</p>
+								</div>
+							) : (
+								<div className='relative w-full aspect-square max-w-xl mx-auto overflow-hidden rounded-xl shadow-lg'>
+									<Image
+										src={quote.imageUrl}
+										alt={`Quote: ${quote.text}`}
+										fill
+										className='object-cover'
+										priority
+									/>
+								</div>
+							)}
 						</div>
-						<div className='flex items-center space-x-2'>
-							<Checkbox
-								id='instagram'
-								checked={selectedPlatforms.includes(
-									"instagram"
-								)}
-								onCheckedChange={() =>
-									handlePlatformToggle("instagram")
-								}
-							/>
-							<Label
-								htmlFor='instagram'
-								className='flex items-center'>
-								<Instagram className='h-4 w-4 text-pink-600 mr-2' />
-								Instagram
-							</Label>
+
+						{/* Controls Section */}
+						<div className='space-y-6'>
+							<div className='space-y-4'>
+								<Label className='text-lg font-semibold'>
+									Posting Settings
+								</Label>
+								<div className='space-y-4 p-4 rounded-lg bg-muted/30'>
+									<div className='space-y-2'>
+										<Label className='flex items-center'>
+											<Clock className='w-4 h-4 mr-2 text-primary' />
+											Posting Interval
+										</Label>
+										<div className='flex gap-2 items-center'>
+											<Input
+												type='number'
+												min='1'
+												max='1440'
+												value={postingInterval}
+												onChange={(e) =>
+													setPostingInterval(
+														e.target.value
+													)
+												}
+												className='w-24'
+											/>
+											<span className='text-foreground/80'>
+												minutes
+											</span>
+										</div>
+									</div>
+
+									<Separator className='my-4' />
+
+									<div className='space-y-2'>
+										<Label className='flex items-center'>
+											<Facebook className='w-4 h-4 mr-2 text-blue-600' />
+											Select Platforms
+										</Label>
+										<div className='flex flex-col gap-3'>
+											<div className='flex items-center space-x-2'>
+												<Checkbox
+													id='facebook'
+													checked={selectedPlatforms.includes(
+														"facebook"
+													)}
+													onCheckedChange={() =>
+														handlePlatformToggle(
+															"facebook"
+														)
+													}
+												/>
+												<Label
+													htmlFor='facebook'
+													className='flex items-center cursor-pointer'>
+													<Facebook className='h-4 w-4 text-blue-600 mr-2' />
+													Facebook
+												</Label>
+											</div>
+											<div className='flex items-center space-x-2'>
+												<Checkbox
+													id='instagram'
+													checked={selectedPlatforms.includes(
+														"instagram"
+													)}
+													onCheckedChange={() =>
+														handlePlatformToggle(
+															"instagram"
+														)
+													}
+												/>
+												<Label
+													htmlFor='instagram'
+													className='flex items-center cursor-pointer'>
+													<Instagram className='h-4 w-4 text-pink-600 mr-2' />
+													Instagram
+												</Label>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+
+							<div className='flex flex-col gap-3'>
+								<Button
+									onClick={handleAutoPostingToggle}
+									variant={
+										isAutoPosting
+											? "destructive"
+											: "default"
+									}
+									className='w-full py-6 text-lg'
+									disabled={
+										selectedPlatforms.length === 0 ||
+										isPosting
+									}>
+									{isPosting ? (
+										<>
+											<Loader2 className='mr-2 h-5 w-5 animate-spin' />
+											Posting...
+										</>
+									) : isAutoPosting ? (
+										"Stop Auto Posting"
+									) : (
+										"Start Auto Posting"
+									)}
+								</Button>
+								<Button
+									onClick={handleDownload}
+									variant='outline'
+									className='w-full py-6 text-lg'
+									disabled={!quote?.imageUrl}>
+									<Download className='w-5 h-5 mr-2' />
+									Download Quote
+								</Button>
+							</div>
 						</div>
 					</div>
-				</div>
-
-				<div className='flex gap-4'>
-					<Button
-						onClick={fetchNewQuote}
-						disabled={isLoading}
-						className='flex-1'>
-						{isLoading ? (
-							<>
-								<Loader2 className='mr-2 h-4 w-4 animate-spin' />
-								Loading...
-							</>
-						) : (
-							"Generate New Quote"
-						)}
-					</Button>
-					<Button
-						onClick={handleAutoPostingToggle}
-						variant={isAutoPosting ? "destructive" : "default"}
-						className='flex-1'
-						disabled={selectedPlatforms.length === 0 || isPosting}>
-						{isPosting ? (
-							<>
-								<Loader2 className='mr-2 h-4 w-4 animate-spin' />
-								Posting...
-							</>
-						) : isAutoPosting ? (
-							"Stop Auto Posting"
-						) : (
-							"Start Auto Posting"
-						)}
-					</Button>
-					<Button
-						onClick={handleDownload}
-						className='flex-1'
-						disabled={!quote?.imageUrl}>
-						Download
-					</Button>
-				</div>
-			</CardContent>
-		</Card>
+				</CardContent>
+			</Card>
+		</div>
 	);
 }
