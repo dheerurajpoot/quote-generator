@@ -38,14 +38,6 @@ const shouldPost = (settings: AutoPostingSettings) => {
 		(now.getTime() - lastPost.getTime()) / (1000 * 60)
 	);
 
-	console.log(`Checking post timing for user ${settings.userId}:`, {
-		lastPostTime: lastPost.toISOString(),
-		currentTime: now.toISOString(),
-		minutesSinceLastPost,
-		requiredInterval: settings.interval,
-		shouldPost: minutesSinceLastPost >= settings.interval,
-	});
-
 	return minutesSinceLastPost >= settings.interval;
 };
 
@@ -93,9 +85,9 @@ const handleUserAutoPosting = async (settings: AutoPostingSettings) => {
 					throw error;
 				}
 				retryCount++;
-				await new Promise(
-					(resolve) => setTimeout(resolve, 3000 * retryCount) // Increased backoff time
-				); // Exponential backoff
+				await new Promise((resolve) =>
+					setTimeout(resolve, 3000 * retryCount)
+				);
 			}
 		}
 
