@@ -76,7 +76,6 @@ const shouldPost = (settings: AutoPostingSettings) => {
 };
 
 // Function to handle auto-posting for a single user
-let quoteResponse: QuoteResponse;
 const handleUserAutoPosting = async (settings: AutoPostingSettings) => {
 	try {
 		// Check if it's time to post
@@ -94,17 +93,19 @@ const handleUserAutoPosting = async (settings: AutoPostingSettings) => {
 		// Get a new quote
 		const MAX_RETRIES = 5;
 		let retryCount = 0;
+		let quoteResponse: QuoteResponse | null = null;
 
 		while (retryCount < MAX_RETRIES) {
 			try {
-				quoteResponse = await axios.get(
+				const response = await axios.get(
 					`${process.env.NEXT_PUBLIC_APP_URL}/api/quotes/generate`,
 					{
-						timeout: 15000, // Increased timeout to 15 seconds
+						timeout: 15000,
 						validateStatus: (status) =>
-							status >= 200 && status < 500, // More lenient status validation
+							status >= 200 && status < 500,
 					}
 				);
+				quoteResponse = response.data;
 				break;
 			} catch (error: unknown) {
 				console.error(
@@ -139,6 +140,7 @@ const handleUserAutoPosting = async (settings: AutoPostingSettings) => {
 			console.error(`No quote data received for user ${settings.userId}`);
 			throw new Error("Failed to get quote response");
 		}
+
 		const { quote, imageUrl } = quoteResponse.data;
 		const { text, author } = quote;
 
@@ -148,48 +150,90 @@ const handleUserAutoPosting = async (settings: AutoPostingSettings) => {
 			platform: { $in: settings.platforms },
 		});
 
-		// Post to each connected platform
-		for (const connection of connections) {
-			const metaApi = new MetaApi({
-				accessToken:
-					connection.platform === "instagram"
-						? connection.pageAccessToken
-						: connection.accessToken,
+		if (!connections || connections.length === 0) {
+			return {
+				success: true,
 				userId: settings.userId,
-				platform: connection.platform,
-			});
+				message: `No social connections found for user ${settings.userId}`,
+				numPosts: 0,
+				nextPostTime: new Date(
+					Date.now() + settings.interval * 60 * 1000
+				),
+			};
+		}
 
-			const caption = `${text}\n\n— ${author}`;
+		// Post to each connected platform
+		let successfulPosts = 0;
+		for (const connection of connections) {
+			try {
+				const metaApi = new MetaApi({
+					accessToken:
+						connection.platform === "instagram"
+							? connection.pageAccessToken
+							: connection.accessToken,
+					userId: settings.userId,
+					platform: connection.platform,
+				});
 
-			if (connection.platform === "facebook") {
-				await metaApi.postToFacebook(
-					connection.profileId,
-					connection.accessToken,
-					imageUrl,
-					caption
+				const caption = `${text}\n\n— ${author}`;
+
+				if (connection.platform === "facebook") {
+					await metaApi.postToFacebook(
+						connection.profileId,
+						connection.accessToken,
+						imageUrl,
+						caption
+					);
+					successfulPosts++;
+				} else if (connection.platform === "instagram") {
+					await metaApi.postToInstagram(
+						connection.instagramAccountId || connection.profileId,
+						connection.pageAccessToken || connection.accessToken,
+						imageUrl,
+						caption
+					);
+					successfulPosts++;
+				}
+			} catch (error) {
+				console.error(
+					`Error posting to ${connection.platform} for user ${settings.userId}:`,
+					error
 				);
-			} else if (connection.platform === "instagram") {
-				await metaApi.postToInstagram(
-					connection.instagramAccountId || connection.profileId,
-					connection.pageAccessToken || connection.accessToken,
-					imageUrl,
-					caption
-				);
+				// Continue with other platforms even if one fails
 			}
 		}
 
-		// Update lastPostTime
-		await AutoPostingSettings.findByIdAndUpdate(settings._id, {
-			lastPostTime: new Date(),
-		});
+		// Only update lastPostTime if at least one post was successful
+		if (successfulPosts > 0) {
+			const newLastPostTime = new Date();
+			await AutoPostingSettings.findByIdAndUpdate(settings._id, {
+				lastPostTime: newLastPostTime,
+			});
 
-		return {
-			success: true,
-			userId: settings.userId,
-			message: `Successfully auto-posted for user ${settings.userId}`,
-			numPosts: connections.length,
-			nextPostTime: new Date(),
-		};
+			console.log(`Updated lastPostTime for user ${settings.userId}:`, {
+				oldLastPostTime: settings.lastPostTime,
+				newLastPostTime: newLastPostTime,
+				successfulPosts,
+			});
+
+			return {
+				success: true,
+				userId: settings.userId,
+				message: `Successfully auto-posted for user ${settings.userId}`,
+				numPosts: successfulPosts,
+				nextPostTime: new Date(
+					newLastPostTime.getTime() + settings.interval * 60 * 1000
+				),
+			};
+		} else {
+			return {
+				success: false,
+				userId: settings.userId,
+				message: `Failed to post to any platform for user ${settings.userId}`,
+				numPosts: 0,
+				nextPostTime: settings.lastPostTime, // Keep the same lastPostTime since no posts were successful
+			};
+		}
 	} catch (error) {
 		console.error(
 			`Error in auto-posting for user ${settings.userId}:`,
@@ -202,6 +246,7 @@ const handleUserAutoPosting = async (settings: AutoPostingSettings) => {
 				error instanceof Error
 					? error.message
 					: "Unknown error occurred",
+			nextPostTime: settings.lastPostTime, // Keep the same lastPostTime on error
 		};
 	}
 };
