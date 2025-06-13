@@ -95,14 +95,47 @@ const handleUserAutoPosting = async (settings: AutoPostingSettings) => {
 			console.error(`No quote data received for user ${settings.userId}`);
 			throw new Error("Failed to get quote response");
 		}
-		const { quote, imageUrl } = quoteResponse.data;
-		const { text, author } = quote;
+
+		// Safely extract quote data with proper error handling
+		const quoteData = quoteResponse.data;
+		if (
+			!quoteData.quote ||
+			!quoteData.quote.text ||
+			!quoteData.quote.author
+		) {
+			console.error(
+				`Invalid quote data structure for user ${settings.userId}:`,
+				quoteData
+			);
+			throw new Error("Invalid quote data structure");
+		}
+
+		const { text, author } = quoteData.quote;
+		const imageUrl = quoteData.imageUrl;
+
+		if (!imageUrl) {
+			console.error(
+				`No image URL in quote data for user ${settings.userId}`
+			);
+			throw new Error("Missing image URL in quote data");
+		}
 
 		// Get user's social connections
 		const connections = await SocialConnection.find({
 			userId: settings.userId,
 			platform: { $in: settings.platforms },
 		});
+
+		if (!connections || connections.length === 0) {
+			console.log(
+				`No social connections found for user ${settings.userId}`
+			);
+			return {
+				success: true,
+				message: `No social connections found for user ${settings.userId}`,
+				numPosts: 0,
+			};
+		}
 
 		// Post to each connected platform
 		for (const connection of connections) {
@@ -117,20 +150,29 @@ const handleUserAutoPosting = async (settings: AutoPostingSettings) => {
 
 			const caption = `${text}\n\n— ${author}`;
 
-			if (connection.platform === "facebook") {
-				await metaApi.postToFacebook(
-					connection.profileId,
-					connection.accessToken,
-					imageUrl,
-					caption
+			try {
+				if (connection.platform === "facebook") {
+					await metaApi.postToFacebook(
+						connection.profileId,
+						connection.accessToken,
+						imageUrl,
+						caption
+					);
+				} else if (connection.platform === "instagram") {
+					await metaApi.postToInstagram(
+						connection.instagramAccountId || connection.profileId,
+						connection.pageAccessToken || connection.accessToken,
+						imageUrl,
+						caption
+					);
+				}
+			} catch (postError) {
+				console.error(
+					`Error posting to ${connection.platform} for user ${settings.userId}:`,
+					postError
 				);
-			} else if (connection.platform === "instagram") {
-				await metaApi.postToInstagram(
-					connection.instagramAccountId || connection.profileId,
-					connection.pageAccessToken || connection.accessToken,
-					imageUrl,
-					caption
-				);
+				// Continue with other platforms even if one fails
+				continue;
 			}
 		}
 
