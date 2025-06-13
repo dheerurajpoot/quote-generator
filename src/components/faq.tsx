@@ -86,9 +86,9 @@ const Faq = () => {
 								<AccordionContent className='text-foreground/80'>
 									Yes, you can cancel your Premium
 									subscription at any time from your
-									dashboard. You'll continue to have access to
-									Premium features until the end of your
-									current billing period.
+									dashboard. You&apos;ll continue to have
+									access to Premium features until the end of
+									your current billing period.
 								</AccordionContent>
 							</AccordionItem>
 
@@ -100,9 +100,9 @@ const Faq = () => {
 								</AccordionTrigger>
 								<AccordionContent className='text-foreground/80'>
 									Premium users can share their quote images
-									directly to Facebook and Instagram. We're
-									working on adding more platforms in the
-									future.
+									directly to Facebook and Instagram.
+									We&apos;re working on adding more platforms
+									in the future.
 								</AccordionContent>
 							</AccordionItem>
 

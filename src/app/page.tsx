@@ -6,7 +6,7 @@ import TrendingQuotes from "@/components/trending-quotes";
 import FeaturesShowcase from "@/components/features-showcase";
 import StatsShowcase from "@/components/stats-showcase";
 import { Button } from "@/components/ui/button";
-import { ImageIcon, Type, Download, Sparkles } from "lucide-react";
+import { Sparkles } from "lucide-react";
 import Link from "next/link";
 
 export default function Home() {
