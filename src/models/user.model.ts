@@ -40,7 +40,9 @@ const userModel = new mongoose.Schema(
 		facebookAppSecret: { type: String },
 		author: {
 			type: String,
-			default: "QuoteArt",
+			default: function(this: mongoose.Document) {
+				return this.get('name');
+			},
 		},
 	},
 	{ timestamps: true }
