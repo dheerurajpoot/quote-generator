@@ -251,7 +251,7 @@ const handleUserAutoPosting = async (settings: AutoPostingSettings) => {
 	}
 };
 
-export async function GET(request: Request) {
+export async function GET(request: Request): Promise<Response> {
 	try {
 		// Check for valid API key
 		const apiKey = request.headers.get("x-api-key");
@@ -266,13 +266,13 @@ export async function GET(request: Request) {
 		}
 
 		// Set a timeout for the entire operation
-		const timeoutPromise = new Promise((_, reject) => {
+		const timeoutPromise = new Promise<Response>((_, reject) => {
 			setTimeout(() => {
 				reject(new Error("Operation timed out"));
 			}, 25000); // 25 second timeout
 		});
 
-		const operationPromise = (async () => {
+		const operationPromise = (async (): Promise<Response> => {
 			await connectDb();
 
 			// Get all enabled auto-posting settings
