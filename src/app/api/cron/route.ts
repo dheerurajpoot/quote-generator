@@ -16,18 +16,21 @@ interface AutoPostingSettings {
 }
 
 interface QuoteResponse {
-	quote: string;
-	quoteId: string;
-	data: {
-		text: string;
-		author: string;
-		imageUrl: string;
-		quote: {
+	quote?: string;
+	quoteId?: string;
+	error?: string;
+	data?: {
+		text?: string;
+		author?: string;
+		imageUrl?: string;
+		quote?: {
 			text: string;
 			author: string;
 		};
+		error?: string;
 	};
 }
+
 // Function to check if it's time to post based on lastPostTime and interval
 const shouldPost = (settings: AutoPostingSettings) => {
 	if (!settings.lastPostTime) return true;
@@ -53,14 +56,40 @@ const handleUserAutoPosting = async (settings: AutoPostingSettings) => {
 
 		while (retryCount < MAX_RETRIES) {
 			try {
-				quoteResponse = await axios.get(
+				// Add authentication headers to the request
+				const response = await axios.get(
 					`${process.env.NEXT_PUBLIC_APP_URL}/api/quotes/generate`,
 					{
-						timeout: 15000, // Increased timeout to 15 seconds
+						timeout: 15000,
 						validateStatus: (status) =>
-							status >= 200 && status < 500, // More lenient status validation
+							status >= 200 && status < 500,
+						headers: {
+							"x-api-key": process.env.CRON_API_KEY,
+							"Content-Type": "application/json",
+						},
 					}
 				);
+
+				quoteResponse = response.data;
+
+				// Check if the response contains an error
+				if (quoteResponse?.error || quoteResponse?.data?.error) {
+					const errorMessage =
+						quoteResponse?.error || quoteResponse?.data?.error;
+					console.error(
+						`Quote generation error for user ${settings.userId}:`,
+						errorMessage
+					);
+					throw new Error(errorMessage);
+				}
+
+				// Validate the response structure
+				if (!quoteResponse || typeof quoteResponse !== "object") {
+					throw new Error(
+						"Invalid response format from quote generation"
+					);
+				}
+
 				break;
 			} catch (error: unknown) {
 				console.error(
@@ -76,6 +105,10 @@ const handleUserAutoPosting = async (settings: AutoPostingSettings) => {
 							error instanceof AxiosError
 								? error.response?.status
 								: undefined,
+						response:
+							error instanceof AxiosError
+								? error.response?.data
+								: undefined,
 						retryCount: retryCount + 1,
 						totalAttempts: MAX_RETRIES,
 					}
@@ -85,8 +118,12 @@ const handleUserAutoPosting = async (settings: AutoPostingSettings) => {
 					throw error;
 				}
 				retryCount++;
+				// Exponential backoff
 				await new Promise((resolve) =>
-					setTimeout(resolve, 3000 * retryCount)
+					setTimeout(
+						resolve,
+						Math.min(1000 * Math.pow(2, retryCount), 10000)
+					)
 				);
 			}
 		}
@@ -98,6 +135,15 @@ const handleUserAutoPosting = async (settings: AutoPostingSettings) => {
 
 		// Safely extract quote data with proper error handling
 		const quoteData = quoteResponse.data;
+
+		// Log the quote data structure for debugging
+		console.log(`Quote data structure for user ${settings.userId}:`, {
+			hasQuote: !!quoteData.quote,
+			hasText: !!quoteData.quote?.text,
+			hasAuthor: !!quoteData.quote?.author,
+			hasImageUrl: !!quoteData.imageUrl,
+		});
+
 		if (
 			!quoteData.quote ||
 			!quoteData.quote.text ||
