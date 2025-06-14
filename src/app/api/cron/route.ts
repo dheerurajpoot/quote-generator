@@ -172,22 +172,17 @@ const handleUserAutoPosting = async (settings: AutoPostingSettings) => {
 		}
 
 		// Only update lastPostTime if at least one post was successful
-		if (successfulPosts > 0) {
-			const newLastPostTime = new Date();
-			const res = await AutoPostingSettings.findByIdAndUpdate(
-				settings._id,
-				{
-					lastPostTime: newLastPostTime,
-				}
-			);
-			console.log("setting response: ", res);
+		const newLastPostTime = new Date();
+		await AutoPostingSettings.findByIdAndUpdate(settings._id, {
+			lastPostTime: newLastPostTime,
+		});
 
+		if (successfulPosts > 0) {
 			console.log(`Updated lastPostTime for user ${settings.userId}:`, {
 				oldLastPostTime: settings.lastPostTime,
-				newLastPostTime: newLastPostTime,
+				newLastPostTime,
 				successfulPosts,
 			});
-
 			return {
 				success: true,
 				userId: settings.userId,
@@ -197,15 +192,20 @@ const handleUserAutoPosting = async (settings: AutoPostingSettings) => {
 					newLastPostTime.getTime() + settings.interval * 60 * 1000
 				),
 			};
+		} else {
+			console.warn(
+				`All post attempts failed for user ${settings.userId}, but lastPostTime updated to avoid repeat attempts.`
+			);
+			return {
+				success: false,
+				userId: settings.userId,
+				message: `Failed to post to any platform for user ${settings.userId}`,
+				numPosts: 0,
+				nextPostTime: new Date(
+					newLastPostTime.getTime() + settings.interval * 60 * 1000
+				),
+			};
 		}
-
-		return {
-			success: false,
-			userId: settings.userId,
-			message: `Failed to post to any platform for user ${settings.userId}`,
-			numPosts: 0,
-			nextPostTime: settings.lastPostTime,
-		};
 	} catch (error) {
 		console.error(
 			`Error in auto-posting for user ${settings.userId}:`,
