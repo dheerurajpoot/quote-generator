@@ -91,54 +91,17 @@ const handleUserAutoPosting = async (settings: AutoPostingSettings) => {
 		}
 
 		// Get a new quote
-		const MAX_RETRIES = 5;
-		let retryCount = 0;
-		let quoteResponse: QuoteResponse | null = null;
-
-		while (retryCount < MAX_RETRIES) {
-			try {
-				const response = await axios.get(
-					`${process.env.NEXT_PUBLIC_APP_URL}/api/quotes/generate`,
-					{
-						timeout: 15000,
-						validateStatus: (status) =>
-							status >= 200 && status < 500,
-					}
-				);
-				quoteResponse = response.data;
-				break;
-			} catch (error: unknown) {
-				console.error(
-					`Error fetching quote for user ${
-						settings.userId
-					} (attempt ${retryCount + 1}):`,
-					{
-						error:
-							error instanceof Error
-								? error.message
-								: "Unknown error",
-						status:
-							error instanceof AxiosError
-								? error.response?.status
-								: undefined,
-						retryCount: retryCount + 1,
-						totalAttempts: MAX_RETRIES,
-					}
-				);
-
-				if (retryCount === MAX_RETRIES - 1) {
-					throw error;
-				}
-				retryCount++;
-				await new Promise((resolve) =>
-					setTimeout(resolve, 3000 * retryCount)
-				);
+		const response = await axios.get(
+			`${process.env.NEXT_PUBLIC_APP_URL}/api/quotes/generate`,
+			{
+				timeout: 15000,
+				validateStatus: (status) => status >= 200 && status < 500,
 			}
-		}
+		);
 
-		if (!quoteResponse || !quoteResponse.data) {
-			console.error(`No quote data received for user ${settings.userId}`);
-			throw new Error("Failed to get quote response");
+		const quoteResponse = response.data;
+		if (!quoteResponse?.data) {
+			throw new Error("Invalid quote response format");
 		}
 
 		const { quote, imageUrl } = quoteResponse.data;
@@ -199,7 +162,6 @@ const handleUserAutoPosting = async (settings: AutoPostingSettings) => {
 					`Error posting to ${connection.platform} for user ${settings.userId}:`,
 					error
 				);
-				// Continue with other platforms even if one fails
 			}
 		}
 
@@ -225,15 +187,15 @@ const handleUserAutoPosting = async (settings: AutoPostingSettings) => {
 					newLastPostTime.getTime() + settings.interval * 60 * 1000
 				),
 			};
-		} else {
-			return {
-				success: false,
-				userId: settings.userId,
-				message: `Failed to post to any platform for user ${settings.userId}`,
-				numPosts: 0,
-				nextPostTime: settings.lastPostTime, // Keep the same lastPostTime since no posts were successful
-			};
 		}
+
+		return {
+			success: false,
+			userId: settings.userId,
+			message: `Failed to post to any platform for user ${settings.userId}`,
+			numPosts: 0,
+			nextPostTime: settings.lastPostTime,
+		};
 	} catch (error) {
 		console.error(
 			`Error in auto-posting for user ${settings.userId}:`,
@@ -246,7 +208,7 @@ const handleUserAutoPosting = async (settings: AutoPostingSettings) => {
 				error instanceof Error
 					? error.message
 					: "Unknown error occurred",
-			nextPostTime: settings.lastPostTime, // Keep the same lastPostTime on error
+			nextPostTime: settings.lastPostTime,
 		};
 	}
 };
@@ -257,76 +219,45 @@ export async function GET(request: Request): Promise<Response> {
 		const apiKey = request.headers.get("x-api-key");
 		if (!apiKey || apiKey !== process.env.CRON_API_KEY) {
 			return NextResponse.json(
-				{
-					success: false,
-					error: "Unauthorized access",
-				},
+				{ success: false, error: "Unauthorized access" },
 				{ status: 401 }
 			);
 		}
 
-		// Set a timeout for the entire operation
-		const timeoutPromise = new Promise<Response>((_, reject) => {
-			setTimeout(() => {
-				reject(new Error("Operation timed out"));
-			}, 25000); // 25 second timeout
-		});
+		await connectDb();
 
-		const operationPromise = (async (): Promise<Response> => {
-			await connectDb();
+		// Get all enabled auto-posting settings
+		const settings = await AutoPostingSettings.find({ isEnabled: true });
+		const results = [];
 
-			// Get all enabled auto-posting settings
-			const settings = await AutoPostingSettings.find({
-				isEnabled: true,
-			});
-
-			// Handle auto-posting for each user
-			const results = [];
-			for (const setting of settings) {
-				try {
-					const result = await handleUserAutoPosting(setting);
-					results.push(result);
-				} catch (error) {
-					console.error(
-						`Error processing user ${setting.userId}:`,
-						error
-					);
-					results.push({
-						success: false,
-						userId: setting.userId,
-						error:
-							error instanceof Error
-								? error.message
-								: "Unknown error",
-					});
-				}
-			}
-
-			return NextResponse.json({
-				success: true,
-				results,
-				totalUsersProcessed: settings.length,
-				timestamp: new Date().toISOString(),
-			});
-		})();
-
-		// Race between the operation and the timeout
-		return await Promise.race([operationPromise, timeoutPromise]);
-	} catch (error) {
-		console.error("Error in auto-posting endpoint:", error);
-
-		// Check if it's a timeout error
-		if (error instanceof Error && error.message === "Operation timed out") {
-			return NextResponse.json(
-				{
+		for (const setting of settings) {
+			try {
+				const result = await handleUserAutoPosting(setting);
+				results.push(result);
+			} catch (error) {
+				console.error(
+					`Error processing user ${setting.userId}:`,
+					error
+				);
+				results.push({
 					success: false,
-					error: "Operation timed out",
-					message: "The operation took too long to complete",
-				},
-				{ status: 504 }
-			);
+					userId: setting.userId,
+					error:
+						error instanceof Error
+							? error.message
+							: "Unknown error",
+				});
+			}
 		}
 
+		return NextResponse.json({
+			success: true,
+			results,
+			totalUsersProcessed: settings.length,
+			timestamp: new Date().toISOString(),
+		});
+	} catch (error) {
+		console.error("Error in auto-posting endpoint:", error);
 		return NextResponse.json(
 			{
 				success: false,
