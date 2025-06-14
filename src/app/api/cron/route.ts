@@ -174,9 +174,13 @@ const handleUserAutoPosting = async (settings: AutoPostingSettings) => {
 		// Only update lastPostTime if at least one post was successful
 		if (successfulPosts > 0) {
 			const newLastPostTime = new Date();
-			await AutoPostingSettings.findByIdAndUpdate(settings._id, {
-				lastPostTime: newLastPostTime,
-			});
+			const res = await AutoPostingSettings.findByIdAndUpdate(
+				settings._id,
+				{
+					lastPostTime: newLastPostTime,
+				}
+			);
+			console.log("setting response: ", res);
 
 			console.log(`Updated lastPostTime for user ${settings.userId}:`, {
 				oldLastPostTime: settings.lastPostTime,
