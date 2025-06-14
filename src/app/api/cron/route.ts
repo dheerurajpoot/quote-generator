@@ -147,21 +147,25 @@ const handleUserAutoPosting = async (settings: AutoPostingSettings) => {
 				const caption = `${text}\n\n— ${author}`;
 
 				if (connection.platform === "facebook") {
-					await metaApi.postToFacebook(
+					const postResponse = await metaApi.postToFacebook(
 						connection.profileId,
 						connection.accessToken,
 						imageUrl,
 						caption
 					);
-					successfulPosts++;
+					if (postResponse.success) {
+						successfulPosts++;
+					}
 				} else if (connection.platform === "instagram") {
-					await metaApi.postToInstagram(
+					const postResponse = await metaApi.postToInstagram(
 						connection.instagramAccountId || connection.profileId,
 						connection.pageAccessToken || connection.accessToken,
 						imageUrl,
 						caption
 					);
-					successfulPosts++;
+					if (postResponse.success) {
+						successfulPosts++;
+					}
 				}
 			} catch (error) {
 				console.error(
@@ -171,13 +175,20 @@ const handleUserAutoPosting = async (settings: AutoPostingSettings) => {
 			}
 		}
 
-		// Only update lastPostTime if at least one post was successful
 		const newLastPostTime = new Date();
-		await AutoPostingSettings.findByIdAndUpdate(settings._id, {
-			lastPostTime: newLastPostTime,
-		});
-
 		if (successfulPosts > 0) {
+			const updatedSettings = await AutoPostingSettings.findByIdAndUpdate(
+				settings._id,
+				{
+					lastPostTime: newLastPostTime,
+				},
+				{ new: true }
+			);
+			if (!updatedSettings) {
+				throw new Error(
+					`Failed to update lastPostTime for user ${settings.userId}`
+				);
+			}
 			console.log(`Updated lastPostTime for user ${settings.userId}:`, {
 				oldLastPostTime: settings.lastPostTime,
 				newLastPostTime,
