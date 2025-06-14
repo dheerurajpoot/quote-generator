@@ -80,7 +80,6 @@ const FONT_WEIGHTS = [
 
 export default function QuoteGenerator() {
 	const [quote, setQuote] = useState("Enter your quote text here...");
-	const [author, setAuthor] = useState("");
 	const [watermark, setWatermark] = useState("@quote_art");
 	const [backgroundColor, setBackgroundColor] =
 		useState("rgba(0, 0, 0, 0.5)");
@@ -223,36 +222,9 @@ export default function QuoteGenerator() {
 											{quote}
 										</p>
 
-										{author && (
-											<p
-												className={cn(
-													"mt-2 text-center",
-													fontFamily
-												)}
-												style={{
-													color: textColor,
-													fontSize: `${
-														fontSize * 0.5
-													}px`,
-													letterSpacing: "0.025em",
-													wordSpacing: "0.05em",
-													textRendering:
-														"optimizeLegibility",
-													WebkitFontSmoothing:
-														"antialiased",
-													MozOsxFontSmoothing:
-														"grayscale",
-													transform: `translate(${quotePosition.x}px, ${quotePosition.y}px)`,
-													transition:
-														"transform 0.2s ease-in-out",
-												}}>
-												— {author}
-											</p>
-										)}
-
 										{watermark && (
 											<p
-												className='absolute text-sm opacity-70'
+												className=' text-sm opacity-70'
 												style={{
 													color: watermarkColor,
 													letterSpacing: "0.025em",
@@ -268,6 +240,7 @@ export default function QuoteGenerator() {
 													right: `${
 														20 + watermarkPosition.x
 													}px`,
+													transform: `translate(${watermarkPosition.x}px, ${watermarkPosition.y}px)`,
 													transition:
 														"all 0.2s ease-in-out",
 												}}>
@@ -331,23 +304,6 @@ export default function QuoteGenerator() {
 
 									<div className='space-y-4'>
 										<Label
-											htmlFor='author'
-											className='text-lg font-semibold'>
-											Author
-										</Label>
-										<Input
-											id='author'
-											placeholder='Author name'
-											value={author}
-											onChange={(e) =>
-												setAuthor(e.target.value)
-											}
-											className='bg-muted/50 border-muted-foreground/20 focus:border-primary'
-										/>
-									</div>
-
-									<div className='space-y-4'>
-										<Label
 											htmlFor='watermark'
 											className='text-lg font-semibold'>
 											Watermark
@@ -367,7 +323,7 @@ export default function QuoteGenerator() {
 										<Label className='text-lg font-semibold'>
 											Quote Placement
 										</Label>
-										<div className='grid grid-cols-3 gap-2'>
+										<div className='flex flex-col items-center gap-2'>
 											<Button
 												variant='outline'
 												className='col-start-2'
@@ -437,7 +393,7 @@ export default function QuoteGenerator() {
 										<Label className='text-lg font-semibold'>
 											Watermark Placement
 										</Label>
-										<div className='grid grid-cols-3 gap-2'>
+										<div className='flex flex-col items-center gap-2'>
 											<Button
 												variant='outline'
 												className='col-start-2'

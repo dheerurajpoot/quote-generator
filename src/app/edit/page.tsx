@@ -7,7 +7,7 @@ export const metadata = {
 
 export default function Edit() {
 	return (
-		<div className='container mx-auto py-12 md:py-16 lg:py-24'>
+		<div className='container mx-auto py-10'>
 			<QuoteGenerator />
 		</div>
 	);
