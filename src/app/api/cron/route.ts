@@ -100,13 +100,18 @@ const handleUserAutoPosting = async (settings: AutoPostingSettings) => {
 			}
 		);
 
-		const quoteResponse = response.data;
-		if (!quoteResponse?.data) {
-			throw new Error("Invalid quote response format");
+		if (!response.data) {
+			throw new Error("Empty response from quote generation");
 		}
-
-		const { quote, imageUrl } = quoteResponse.data;
+		const { quote, imageUrl } = response.data;
 		const { text, author } = quote;
+
+		if (!text || !author || !imageUrl) {
+			console.error("Invalid quote data:", response.data);
+			throw new Error(
+				"Missing required quote data (text, author, or imageUrl)"
+			);
+		}
 
 		// Get user's social connections
 		const connections = await SocialConnection.find({
