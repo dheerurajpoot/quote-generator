@@ -1,15 +1,11 @@
 import express from "express";
 import next from "next";
-// import { startCronJobs } from "./src/lib/cron-config.js";
 import https from "https";
 import { certificateFor } from "devcert";
 
 const dev = process.env.NODE_ENV !== "production";
 const app = next({ dev });
 const handle = app.getRequestHandler();
-
-// Global flag to track if cron jobs are started
-global.cronJobsStarted = false;
 
 const setupServer = async () => {
 	try {
@@ -76,12 +72,6 @@ const setupServer = async () => {
 				console.log(`> Ready on http://localhost:${port}`);
 			});
 		}
-
-		// // Start cron jobs after server is ready
-		// if (!global.cronJobsStarted) {
-		// 	startCronJobs();
-		// 	global.cronJobsStarted = true;
-		// }
 	} catch (error) {
 		console.error("Error starting server:", error);
 		process.exit(1);

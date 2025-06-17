@@ -24,7 +24,7 @@ export default function AboutPage() {
 	return (
 		<div className='min-h-screen bg-gradient-to-b from-background via-background/95 to-muted/30'>
 			{/* Hero Section */}
-			<section className='relative w-full py-10 md:py-20 overflow-hidden'>
+			<section className='relative w-full py-20 md:py-32 overflow-hidden'>
 				<div className='absolute inset-0 bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-primary/20 via-transparent to-transparent' />
 				<div className='absolute inset-0 bg-[radial-gradient(circle_at_bottom_left,_var(--tw-gradient-stops))] from-secondary/20 via-transparent to-transparent' />
 				<div className='container relative mx-auto px-4 md:px-6'>
@@ -49,7 +49,7 @@ export default function AboutPage() {
 			</section>
 
 			{/* Mission Section */}
-			<section className='w-full py-10 md:py-16 relative'>
+			<section className='w-full py-20 md:py-32 relative'>
 				<div className='container mx-auto px-4 md:px-6'>
 					<div className='grid grid-cols-1 md:grid-cols-2 gap-12 items-center'>
 						<div className='space-y-6'>
@@ -91,7 +91,7 @@ export default function AboutPage() {
 			</section>
 
 			{/* Values Section */}
-			<section className='w-full py-10 md:py-16 relative'>
+			<section className='w-full py-20 md:py-32 relative'>
 				<div className='container mx-auto px-4 md:px-6'>
 					<div className='text-center mb-16'>
 						<h2 className='text-3xl font-bold tracking-tighter sm:text-4xl text-foreground mb-4'>
@@ -162,7 +162,7 @@ export default function AboutPage() {
 			</section>
 
 			{/* Team Section */}
-			<section className='w-full py-10 md:py-16 relative'>
+			<section className='w-full py-20 md:py-32 relative'>
 				<div className='container mx-auto px-4 md:px-6'>
 					<div className='text-center mb-16'>
 						<h2 className='text-3xl font-bold tracking-tighter sm:text-4xl text-foreground mb-4'>
@@ -229,7 +229,7 @@ export default function AboutPage() {
 			</section>
 
 			{/* CTA Section */}
-			<section className='w-full py-10 md:py-16 relative overflow-hidden'>
+			<section className='w-full py-20 md:py-32 relative overflow-hidden'>
 				<div className='absolute inset-0 bg-gradient-to-br from-primary to-secondary opacity-90' />
 				<div className='container relative mx-auto px-4 md:px-6'>
 					<div className='flex flex-col items-center space-y-6 text-center'>
