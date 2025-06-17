@@ -1,12 +1,12 @@
 "use client";
 import AutoQuotePoster from "@/components/auto-quote-poster";
-import { useSubscription } from "@/context/subscription-context";
-import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+// import { useSubscription } from "@/context/subscription-context";
+// import { useRouter } from "next/navigation";
+// import { useEffect } from "react";
 
 export default function AutoPosterPage() {
-	const { isSubscribed } = useSubscription();
-	const router = useRouter();
+	// const { isSubscribed } = useSubscription();
+	// const router = useRouter();
 
 	// useEffect(() => {
 	// 	if (!isSubscribed()) {

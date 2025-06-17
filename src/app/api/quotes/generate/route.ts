@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
 				{ status: 500 }
 			);
 		}
-		let user = await getUserById(userId);
+		const user = await getUserById(userId);
 
 		// Get a random quote
 		const quote = await getRandomHindiQuote();
