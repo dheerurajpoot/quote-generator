@@ -8,11 +8,11 @@ export default function AutoPosterPage() {
 	const { isSubscribed } = useSubscription();
 	const router = useRouter();
 
-	useEffect(() => {
-		if (!isSubscribed()) {
-			router.push("/pricing");
-		}
-	}, [isSubscribed, router]);
+	// useEffect(() => {
+	// 	if (!isSubscribed()) {
+	// 		router.push("/pricing");
+	// 	}
+	// }, [isSubscribed, router]);
 
 	return (
 		<main className='container mx-auto py-16'>

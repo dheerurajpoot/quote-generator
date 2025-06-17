@@ -79,7 +79,7 @@ const handleUserAutoPosting = async (settings: AutoPostingSettings) => {
 
 		// Get a new quote
 		const response = await axios.get(
-			`${process.env.NEXT_PUBLIC_APP_URL}/api/quotes/generate`,
+			`${process.env.NEXT_PUBLIC_APP_URL}/api/quotes/generate?userId=${settings.userId}`,
 			{
 				timeout: 15000,
 				validateStatus: (status) => status >= 200 && status < 500,
@@ -141,7 +141,6 @@ const handleUserAutoPosting = async (settings: AutoPostingSettings) => {
 					);
 					if (postResponse.success) {
 						successfulPosts++;
-						console.log("Success Posts", successfulPosts);
 					}
 				} else if (connection.platform === "instagram") {
 					const postResponse = await metaApi.postToInstagram(
@@ -163,9 +162,7 @@ const handleUserAutoPosting = async (settings: AutoPostingSettings) => {
 		}
 
 		const newLastPostTime = new Date();
-		console.log("Success Posts2", successfulPosts);
 		if (successfulPosts > 0) {
-			console.log("Success Posts3", successfulPosts);
 			const updatedSettings = await AutoPostingSettings.findByIdAndUpdate(
 				settings._id,
 				{

@@ -1,10 +1,36 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getRandomHindiQuote } from "@/lib/quote-service";
 import { generateQuoteImage } from "@/lib/server-image-generator";
 import { uploadImage } from "@/lib/image-utils";
+import { User } from "@/models/user.model";
+import { connectDb } from "@/lib/dbconfig";
 
-export async function GET() {
+async function getUserById(userId: string) {
 	try {
+		await connectDb();
+		const user = await User.findById(userId);
+		return user;
+	} catch (error) {
+		console.error("Error getting user by ID:", error);
+		return null;
+	}
+}
+
+export async function GET(request: NextRequest) {
+	try {
+		await connectDb();
+
+		const { searchParams } = new URL(request.url);
+		const userId = searchParams.get("userId");
+
+		if (!userId) {
+			return NextResponse.json(
+				{ error: "UserId not found" },
+				{ status: 500 }
+			);
+		}
+		let user = await getUserById(userId);
+
 		// Get a random quote
 		const quote = await getRandomHindiQuote();
 
@@ -19,7 +45,12 @@ export async function GET() {
 		// Generate the image on the server
 		let imageUrl;
 		try {
-			const imageBuffer = await generateQuoteImage(quote);
+			// Use user's author name if available, otherwise use quote's author
+			const authorName = user?.author || quote.author;
+			const imageBuffer = await generateQuoteImage({
+				...quote,
+				author: authorName,
+			});
 			// Upload the image to Cloudinary
 			imageUrl = await uploadImage(imageBuffer);
 		} catch (imageError) {
@@ -31,7 +62,7 @@ export async function GET() {
 		return NextResponse.json({
 			quote: {
 				text: quote.text,
-				author: quote.author,
+				author: user?.author || quote.author,
 			},
 			imageUrl,
 		});
