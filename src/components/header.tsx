@@ -70,12 +70,12 @@ export function Header() {
 									className='relative h-8 w-8 rounded-full'>
 									<Avatar className='h-8 w-8'>
 										<AvatarImage
-											src={user.image || ""}
-											alt={user.name || ""}
+											src={user?.image || ""}
+											alt={user?.name || ""}
 										/>
 										<AvatarFallback>
-											{user.name?.charAt(0) ||
-												user.email.charAt(0)}
+											{user?.name?.charAt(0) ||
+												user?.email?.charAt(0)}
 										</AvatarFallback>
 									</Avatar>
 									{isSubscribed() && (
@@ -97,13 +97,13 @@ export function Header() {
 							<DropdownMenuContent align='end'>
 								<div className='flex items-center justify-start gap-2 p-2'>
 									<div className='flex flex-col space-y-1 leading-none'>
-										{user.name && (
+										{user?.name && (
 											<p className='font-medium'>
-												{user.name}
+												{user?.name}
 											</p>
 										)}
 										<p className='w-[200px] truncate text-sm text-muted-foreground'>
-											{user.email}
+											{user?.email}
 										</p>
 									</div>
 								</div>

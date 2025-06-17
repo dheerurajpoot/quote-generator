@@ -36,10 +36,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 	const [loading, setLoading] = useState(true);
 
 	useEffect(() => {
-		// Check if user is logged in
 		const checkAuth = async () => {
 			try {
-				// In a real app, this would be an API call to check session
 				const storedUser = localStorage.getItem("user");
 				if (storedUser) {
 					const parsedUser = JSON.parse(storedUser);
@@ -171,6 +169,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 	const isAdmin = () => {
 		return user?.role === "admin";
 	};
+	if (!user) return;
 
 	return (
 		<AuthContext.Provider

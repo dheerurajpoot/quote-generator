@@ -101,6 +101,7 @@ export default function SignupPage() {
 								value={password}
 								onChange={(e) => setPassword(e.target.value)}
 								required
+								placeholder='Enter Password'
 							/>
 						</div>
 						<div className='space-y-2'>
@@ -115,6 +116,7 @@ export default function SignupPage() {
 									setConfirmPassword(e.target.value)
 								}
 								required
+								placeholder='Confirm Password'
 							/>
 						</div>
 						<Button
