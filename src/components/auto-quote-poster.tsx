@@ -58,7 +58,9 @@ export default function AutoQuotePoster() {
 		setIsLoading(true);
 		try {
 			// Fetch quote and server-generated image
-			const response = await axios.get("/api/quotes/generate");
+			const response = await axios.get(
+				`/api/quotes/generate?userId=${user?._id}`
+			);
 			const { quote: newQuote, imageUrl } = response.data;
 
 			setQuote({
