@@ -105,31 +105,20 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
 				const response = await axios.get(
 					`/api/subscriptions?userId=${user._id}`
 				);
+
+				// Ensure response.data exists before proceeding
+				if (!response.data) {
+					throw new Error(
+						"API returned no data for subscription check."
+					);
+				}
+
 				if (response.status !== 200) {
-					const errorData = response.data;
-					console.error("Subscription check failed:", errorData);
-
-					// Only create free subscription if user is completely new (404)
-					if (response.status === 404) {
-						const createResponse = await axios.post(
-							"/api/subscriptions",
-							{
-								userId: user._id,
-								planId: "free",
-							}
-						);
-
-						if (createResponse.status === 200) {
-							const newSubscription = createResponse.data;
-							setSubscription({
-								...newSubscription,
-								currentPeriodEnd: new Date(
-									newSubscription.currentPeriodEnd
-								),
-								createdAt: new Date(newSubscription.createdAt),
-							});
-						}
-					}
+					console.error(
+						"Subscription check failed with status",
+						response.status,
+						response.data
+					);
 					setLoading(false);
 					return;
 				}
@@ -160,7 +149,10 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
 								planId: "free",
 							}
 						);
-						if (convertResponse.status === 200) {
+						if (
+							convertResponse.status === 200 &&
+							convertResponse.data
+						) {
 							const freeSubscription = convertResponse.data;
 							setSubscription({
 								...freeSubscription,
@@ -183,7 +175,10 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
 							}
 						);
 
-						if (convertResponse.status === 200) {
+						if (
+							convertResponse.status === 200 &&
+							convertResponse.data
+						) {
 							const freeSubscription = convertResponse.data;
 							setSubscription({
 								...freeSubscription,
@@ -228,6 +223,11 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
 				planId,
 			});
 
+			// Ensure response.data exists
+			if (!response.data) {
+				throw new Error("API returned no data for subscription.");
+			}
+
 			if (response.status !== 200) {
 				setWarning("Failed to create subscription");
 				return false;
@@ -267,6 +267,13 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
 				subscriptionId: subscription.id,
 			});
 
+			// Ensure response.data exists
+			if (!response.data) {
+				throw new Error(
+					"API returned no data for subscription cancellation."
+				);
+			}
+
 			if (response.status !== 200) {
 				setWarning("Failed to cancel subscription");
 				return false;
@@ -294,11 +301,17 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
 	};
 
 	const isSubscribed = (): boolean => {
-		return (
-			!!subscription &&
-			subscription.status === "active" &&
-			subscription.tier === "premium"
-		);
+		if (!subscription) return false;
+		if (subscription.tier !== "premium") return false;
+		if (subscription.status === "active") return true;
+		// Allow access if canceled but still within the current period
+		if (
+			subscription.status === "canceled" &&
+			new Date() < new Date(subscription.currentPeriodEnd)
+		) {
+			return true;
+		}
+		return false;
 	};
 
 	const canPost = (): boolean => {

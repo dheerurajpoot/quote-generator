@@ -15,20 +15,6 @@ interface AutoPostingSettings {
 	isEnabled: boolean;
 }
 
-// interface QuoteResponse {
-// 	quote: string;
-// 	quoteId: string;
-// 	data: {
-// 		text: string;
-// 		author: string;
-// 		imageUrl: string;
-// 		quote: {
-// 			text: string;
-// 			author: string;
-// 		};
-// 	};
-// }
-
 // Function to check if it's time to post based on lastPostTime and interval
 const shouldPost = (settings: AutoPostingSettings) => {
 	if (!settings.isEnabled) {

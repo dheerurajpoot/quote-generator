@@ -18,7 +18,7 @@ import {
 	CardTitle,
 } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Loader2 } from "lucide-react";
+import { Loader2, CheckCircle2 } from "lucide-react";
 
 export default function SignupPage() {
 	const [name, setName] = useState("");
@@ -26,12 +26,14 @@ export default function SignupPage() {
 	const [password, setPassword] = useState("");
 	const [confirmPassword, setConfirmPassword] = useState("");
 	const [error, setError] = useState("");
+	const [success, setSuccess] = useState(false);
 	const { signUp, loading } = useAuth();
 	const router = useRouter();
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
 		setError("");
+		setSuccess(false);
 
 		if (!name || !email || !password || !confirmPassword) {
 			setError("Please fill in all fields");
@@ -45,9 +47,10 @@ export default function SignupPage() {
 
 		const success = await signUp(name, email, password);
 		if (success) {
+			setSuccess(true);
 			setTimeout(() => {
 				router.push("/login");
-			}, 3000);
+			}, 5000);
 		} else {
 			setError("Failed to create account");
 		}
@@ -68,6 +71,15 @@ export default function SignupPage() {
 					{error && (
 						<Alert variant='destructive'>
 							<AlertDescription>{error}</AlertDescription>
+						</Alert>
+					)}
+					{success && (
+						<Alert className='bg-green-50 border-green-200'>
+							<CheckCircle2 className='h-4 w-4 text-green-600' />
+							<AlertDescription className='text-green-600'>
+								Registration successful! Please check your email
+								for verification. Redirecting to login...
+							</AlertDescription>
 						</Alert>
 					)}
 
@@ -101,6 +113,7 @@ export default function SignupPage() {
 								value={password}
 								onChange={(e) => setPassword(e.target.value)}
 								required
+								placeholder='Enter Password'
 							/>
 						</div>
 						<div className='space-y-2'>
@@ -115,6 +128,7 @@ export default function SignupPage() {
 									setConfirmPassword(e.target.value)
 								}
 								required
+								placeholder='Confirm Password'
 							/>
 						</div>
 						<Button

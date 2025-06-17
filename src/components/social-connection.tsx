@@ -200,7 +200,7 @@ export function SocialConnections({
 							}
 						},
 						{
-							scope: "pages_manage_posts,pages_read_engagement,pages_show_list,pages_messaging,pages_manage_metadata,pages_read_user_content,pages_manage_ads",
+							scope: "pages_manage_posts,pages_read_engagement,pages_show_list,pages_manage_metadata",
 							return_scopes: true,
 						}
 					);
@@ -286,7 +286,7 @@ export function SocialConnections({
 						}
 					},
 					{
-						scope: "instagram_basic,instagram_content_publish,instagram_manage_insights,pages_show_list,pages_read_engagement,pages_manage_posts,pages_manage_metadata,business_management",
+						scope: "instagram_basic,instagram_content_publish,pages_show_list,pages_read_engagement,pages_manage_posts,pages_manage_metadata,business_management",
 						return_scopes: true,
 					}
 				);

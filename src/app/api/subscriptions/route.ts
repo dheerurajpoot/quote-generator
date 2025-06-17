@@ -88,7 +88,28 @@ export async function GET(request: Request) {
 			.sort({ createdAt: -1 });
 
 		if (!subscriptions || subscriptions.length === 0) {
-			return NextResponse.json([]);
+			// Automatically create a free subscription for new users
+			const newSubscription = await Subscription.create({
+				userId: new mongoose.Types.ObjectId(requestedUserId),
+				planId: "free",
+				tier: "free",
+				status: "active",
+				currentPeriodEnd: new Date(
+					Date.now() + 365 * 24 * 60 * 60 * 1000
+				), // 1 year from now
+			});
+
+			return NextResponse.json([
+				{
+					id: newSubscription._id,
+					userId: newSubscription.userId.toString(),
+					planId: newSubscription.planId,
+					tier: newSubscription.tier,
+					status: newSubscription.status,
+					currentPeriodEnd: newSubscription.currentPeriodEnd,
+					createdAt: newSubscription.createdAt,
+				},
+			]);
 		}
 
 		return NextResponse.json(subscriptions);
