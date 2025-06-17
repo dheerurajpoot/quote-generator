@@ -236,11 +236,14 @@ export function FacebookSettings() {
 							Verify details like phone number, email, etc. and
 							choose &quot;Developer&quot; in about section.
 						</li>
-						<li>Gave a name to your app &quot;QuoteArt&quot;</li>
+						<li>
+							Gave a name to your app &quot;QuoteArt&quot; and
+							Give a Contact Email.
+						</li>
 						<li>Fill in your app details and create the app</li>
 						<li>In use cases choose &quot;Other&quot;</li>
-						<li>Choose app type as &quot;Consumer&quot;</li>
-						<li>Once created, go to your app dashboard</li>
+						<li>Choose app type as &quot;Business&quot;</li>
+						<li>Once App is created, go to your app dashboard</li>
 						<li>Find your App ID in the app settings</li>
 						<li>
 							To get your App Secret:
