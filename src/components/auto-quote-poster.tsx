@@ -260,7 +260,7 @@ export default function AutoQuotePoster() {
 				<CardHeader className='space-y-4'>
 					<div className='flex items-center justify-between'>
 						<div>
-							<CardTitle className='text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary'>
+							<CardTitle className='text-2xl md:text-3xl font-bold'>
 								Automatic Quote Poster
 							</CardTitle>
 							<CardDescription className='text-lg mt-2 text-foreground/80'>

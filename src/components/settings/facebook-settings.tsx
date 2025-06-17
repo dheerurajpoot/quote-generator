@@ -213,52 +213,26 @@ export function FacebookSettings() {
 					<h3 className='font-semibold'>
 						How to get Facebook App ID and Secret
 					</h3>
-					<ol className='list-decimal list-inside space-y-2 text-sm'>
-						<li>
-							Go to{" "}
-							<Link
-								href='https://developers.facebook.com'
-								target='_blank'
-								rel='noopener noreferrer'
-								className='text-blue-600 hover:underline'>
-								Facebook Developers
-							</Link>
-						</li>
-						<li>
-							Click on &quot;Get Started&quot; or &quot;My
-							Apps&quot; and then &quot;Create App&quot;
-						</li>
-						<li>
-							Create a meta for developer account (if you
-							don&apos;t have one)
-						</li>
-						<li>
-							Verify details like phone number, email, etc. and
-							choose &quot;Developer&quot; in about section.
-						</li>
-						<li>
-							Gave a name to your app &quot;QuoteArt&quot; and
-							Give a Contact Email.
-						</li>
-						<li>Fill in your app details and create the app</li>
-						<li>In use cases choose &quot;Other&quot;</li>
-						<li>Choose app type as &quot;Business&quot;</li>
-						<li>Once App is created, go to your app dashboard</li>
-						<li>Find your App ID in the app settings</li>
-						<li>
-							To get your App Secret:
-							<ul className='list-disc list-inside ml-4 mt-1'>
-								<li>Go to Settings &gt; Basic</li>
-								<li>
-									Click &quot;Show&quot; next to App Secret
-								</li>
-								<li>
-									Enter your Facebook password to reveal the
-									secret
-								</li>
-							</ul>
-						</li>
-					</ol>
+					<p>
+						Go to{" "}
+						<Link
+							href='https://developers.facebook.com'
+							target='_blank'
+							rel='noopener noreferrer'
+							className='text-blue-600 hover:underline'>
+							Facebook Developers
+						</Link>
+					</p>
+					<div className='relative w-full pt-[56.25%]'>
+						<iframe
+							className='absolute top-0 left-0 w-full h-full rounded-lg'
+							src='https://www.youtube.com/embed/KqGGRVQNmtk?si=SFs9N9Yll1QG1_YA'
+							title='YouTube video player'
+							frameBorder='0'
+							allow='accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share'
+							referrerPolicy='strict-origin-when-cross-origin'
+							allowFullScreen></iframe>
+					</div>
 				</div>
 			</CardContent>
 		</Card>
