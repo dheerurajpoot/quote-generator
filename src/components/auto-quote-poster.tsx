@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
+import { AxiosError } from 'axios';
 import {
 	Card,
 	CardContent,
@@ -70,14 +71,19 @@ export default function AutoQuotePoster() {
 			});
 
 			return { text: newQuote.text, author: newQuote.author, imageUrl };
-		} catch (error: any) {
-			console.error(
-				"Error fetching quote:",
-				error.response?.data || error
-			);
-			toast.error(
-				error.response?.data?.message || "Failed to fetch quote"
-			);
+		} catch (error: unknown) {
+			if (error instanceof AxiosError) {
+				console.error(
+					"Error fetching quote:",
+					error.response?.data || error
+				);
+				toast.error(
+					error.response?.data?.message || "Failed to fetch quote"
+				);
+			} else {
+				console.error("Error fetching quote:", error);
+				toast.error("Failed to fetch quote");
+			}
 			return null;
 		} finally {
 			setIsLoading(false);
