@@ -55,11 +55,11 @@ export default function AutoQuotePoster() {
 
 	// Fetch a new quote and its server-generated image
 	const fetchNewQuote = useCallback(async () => {
+		if (!user?._id) return;
 		setIsLoading(true);
 		try {
-			// Fetch quote and server-generated image
 			const response = await axios.get(
-				`/api/quotes/generate?userId=${user?._id}`
+				`/api/quotes/generate?userId=${user._id}`
 			);
 			const { quote: newQuote, imageUrl } = response.data;
 
@@ -70,14 +70,19 @@ export default function AutoQuotePoster() {
 			});
 
 			return { text: newQuote.text, author: newQuote.author, imageUrl };
-		} catch (error) {
-			console.error("Error fetching quote:", error);
-			toast.error("Failed to fetch a new quote");
+		} catch (error: any) {
+			console.error(
+				"Error fetching quote:",
+				error.response?.data || error
+			);
+			toast.error(
+				error.response?.data?.message || "Failed to fetch quote"
+			);
 			return null;
 		} finally {
 			setIsLoading(false);
 		}
-	}, []);
+	}, [user?._id]);
 
 	// Post to social media
 	const handlePostToSocialMedia = useCallback(async () => {
@@ -229,8 +234,10 @@ export default function AutoQuotePoster() {
 
 	// Load initial quote
 	useEffect(() => {
-		fetchNewQuote();
-	}, [fetchNewQuote]);
+		if (user?._id) {
+			fetchNewQuote();
+		}
+	}, [user?._id, fetchNewQuote]);
 
 	// Load auto-posting settings when user is available
 	useEffect(() => {
@@ -251,8 +258,18 @@ export default function AutoQuotePoster() {
 			}
 		};
 
-		loadSettings();
+		if (user?._id) {
+			loadSettings();
+		}
 	}, [user?._id]);
+
+	if (!user) {
+		return (
+			<div className='flex items-center justify-center min-h-[300px]'>
+				<Loader2 className='w-8 h-8 animate-spin' />
+			</div>
+		);
+	}
 
 	return (
 		<div className='w-full max-w-5xl mx-auto p-4'>

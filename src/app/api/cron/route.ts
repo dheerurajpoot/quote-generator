@@ -141,6 +141,7 @@ const handleUserAutoPosting = async (settings: AutoPostingSettings) => {
 					);
 					if (postResponse.success) {
 						successfulPosts++;
+						console.log("Success Posts", successfulPosts);
 					}
 				} else if (connection.platform === "instagram") {
 					const postResponse = await metaApi.postToInstagram(
@@ -163,6 +164,7 @@ const handleUserAutoPosting = async (settings: AutoPostingSettings) => {
 
 		const newLastPostTime = new Date();
 		if (successfulPosts > 0) {
+			console.log("Success Posts2", successfulPosts);
 			const updatedSettings = await AutoPostingSettings.findByIdAndUpdate(
 				settings._id,
 				{
@@ -211,7 +213,7 @@ const handleUserAutoPosting = async (settings: AutoPostingSettings) => {
 		return {
 			success: false,
 			userId: settings.userId,
-			error:
+			message:
 				error instanceof Error
 					? error.message
 					: "Unknown error occurred",
@@ -249,7 +251,7 @@ export async function GET(request: Request): Promise<Response> {
 				results.push({
 					success: false,
 					userId: setting.userId,
-					error:
+					message:
 						error instanceof Error
 							? error.message
 							: "Unknown error",
@@ -268,7 +270,7 @@ export async function GET(request: Request): Promise<Response> {
 		return NextResponse.json(
 			{
 				success: false,
-				error:
+				message:
 					error instanceof Error
 						? error.message
 						: "Unknown error occurred",
