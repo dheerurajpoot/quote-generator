@@ -62,6 +62,27 @@ const shouldPost = (settings: AutoPostingSettings) => {
 	};
 };
 
+// Helper function to retry DB update
+async function retryUpdateLastPostTime(
+	id: string,
+	newLastPostTime: Date,
+	maxRetries = 3
+) {
+	let attempt = 0;
+	let updatedSettings = null;
+	while (attempt < maxRetries) {
+		updatedSettings = await AutoPostingSettings.findByIdAndUpdate(
+			id,
+			{ lastPostTime: newLastPostTime },
+			{ new: true }
+		);
+		if (updatedSettings) break;
+		attempt++;
+		await new Promise((res) => setTimeout(res, 500)); // wait 0.5s before retry
+	}
+	return updatedSettings;
+}
+
 // Function to handle auto-posting for a single user
 const handleUserAutoPosting = async (settings: AutoPostingSettings) => {
 	try {
@@ -141,7 +162,6 @@ const handleUserAutoPosting = async (settings: AutoPostingSettings) => {
 					);
 					if (postResponse.success) {
 						successfulPosts++;
-						console.log("Success Posts", successfulPosts);
 					}
 				} else if (connection.platform === "instagram") {
 					const postResponse = await metaApi.postToInstagram(
@@ -164,17 +184,13 @@ const handleUserAutoPosting = async (settings: AutoPostingSettings) => {
 
 		const newLastPostTime = new Date();
 		if (successfulPosts > 0) {
-			console.log("Success Posts2", successfulPosts);
-			const updatedSettings = await AutoPostingSettings.findByIdAndUpdate(
+			const updatedSettings = await retryUpdateLastPostTime(
 				settings._id,
-				{
-					lastPostTime: newLastPostTime,
-				},
-				{ new: true }
+				newLastPostTime
 			);
 			if (!updatedSettings) {
 				throw new Error(
-					`Failed to update lastPostTime for user ${settings.userId}`
+					`Failed to update lastPostTime for user ${settings.userId} after multiple attempts`
 				);
 			}
 			console.log(`Updated lastPostTime for user ${settings.userId}:`, {
