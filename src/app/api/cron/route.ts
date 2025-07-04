@@ -183,44 +183,33 @@ const handleUserAutoPosting = async (settings: AutoPostingSettings) => {
 		}
 
 		const newLastPostTime = new Date();
-		if (successfulPosts > 0) {
-			const updatedSettings = await retryUpdateLastPostTime(
-				settings._id,
-				newLastPostTime
+		// Always update lastPostTime after posting attempts (unless no connections)
+		const updatedSettings = await retryUpdateLastPostTime(
+			settings._id,
+			newLastPostTime
+		);
+		if (!updatedSettings) {
+			throw new Error(
+				`Failed to update lastPostTime for user ${settings.userId} after multiple attempts`
 			);
-			if (!updatedSettings) {
-				throw new Error(
-					`Failed to update lastPostTime for user ${settings.userId} after multiple attempts`
-				);
-			}
-			console.log(`Updated lastPostTime for user ${settings.userId}:`, {
-				oldLastPostTime: settings.lastPostTime,
-				newLastPostTime,
-				successfulPosts,
-			});
-			return {
-				success: true,
-				userId: settings.userId,
-				message: `Successfully auto-posted for user ${settings.userId}`,
-				numPosts: successfulPosts,
-				nextPostTime: new Date(
-					newLastPostTime.getTime() + settings.interval * 60 * 1000
-				),
-			};
-		} else {
-			console.warn(
-				`All post attempts failed for user ${settings.userId}, but lastPostTime updated to avoid repeat attempts.`
-			);
-			return {
-				success: false,
-				userId: settings.userId,
-				message: `Failed to post to any platform for user ${settings.userId}`,
-				numPosts: 0,
-				nextPostTime: new Date(
-					newLastPostTime.getTime() + settings.interval * 60 * 1000
-				),
-			};
 		}
+		console.log(`Updated lastPostTime for user ${settings.userId}:`, {
+			oldLastPostTime: settings.lastPostTime,
+			newLastPostTime,
+			successfulPosts,
+		});
+		return {
+			success: successfulPosts > 0,
+			userId: settings.userId,
+			message:
+				successfulPosts > 0
+					? `Successfully auto-posted for user ${settings.userId}`
+					: `Failed to post to any platform for user ${settings.userId}`,
+			numPosts: successfulPosts,
+			nextPostTime: new Date(
+				newLastPostTime.getTime() + settings.interval * 60 * 1000
+			),
+		};
 	} catch (error) {
 		console.error(
 			`Error in auto-posting for user ${settings.userId}:`,
