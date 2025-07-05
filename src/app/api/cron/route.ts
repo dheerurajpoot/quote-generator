@@ -126,25 +126,26 @@ const handleUserAutoPosting = async (settings: AutoPostingSettings) => {
 			platform: { $in: settings.platforms },
 		});
 
-		if (!connections || connections.length === 0) {
-			// Update lastPostTime to avoid repeated attempts
-			const newLastPostTime = new Date();
-			const updatedSettings = await retryUpdateLastPostTime(
-				settings._id,
-				newLastPostTime
+		// Declare these once for use in both branches
+		const newLastPostTime = new Date();
+		const updatedSettings = await retryUpdateLastPostTime(
+			settings._id,
+			newLastPostTime
+		);
+		if (!updatedSettings) {
+			throw new Error(
+				`Failed to update lastPostTime for user ${settings.userId} after multiple attempts`
 			);
-			if (!updatedSettings) {
-				throw new Error(
-					`Failed to update lastPostTime for user ${settings.userId} after multiple attempts`
-				);
+		}
+		console.log(
+			`Updated lastPostTime for user ${settings.userId} (pre-post):`,
+			{
+				oldLastPostTime: settings.lastPostTime,
+				newLastPostTime,
 			}
-			console.log(
-				`Updated lastPostTime for user ${settings.userId} (no connections):`,
-				{
-					oldLastPostTime: settings.lastPostTime,
-					newLastPostTime,
-				}
-			);
+		);
+
+		if (!connections || connections.length === 0) {
 			return {
 				success: true,
 				userId: settings.userId,
@@ -200,22 +201,6 @@ const handleUserAutoPosting = async (settings: AutoPostingSettings) => {
 			}
 		}
 
-		const newLastPostTime = new Date();
-		// Always update lastPostTime after posting attempts (unless no connections)
-		const updatedSettings = await retryUpdateLastPostTime(
-			settings._id,
-			newLastPostTime
-		);
-		if (!updatedSettings) {
-			throw new Error(
-				`Failed to update lastPostTime for user ${settings.userId} after multiple attempts`
-			);
-		}
-		console.log(`Updated lastPostTime for user ${settings.userId}:`, {
-			oldLastPostTime: settings.lastPostTime,
-			newLastPostTime,
-			successfulPosts,
-		});
 		return {
 			success: successfulPosts > 0,
 			userId: settings.userId,
