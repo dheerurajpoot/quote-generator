@@ -127,13 +127,31 @@ const handleUserAutoPosting = async (settings: AutoPostingSettings) => {
 		});
 
 		if (!connections || connections.length === 0) {
+			// Update lastPostTime to avoid repeated attempts
+			const newLastPostTime = new Date();
+			const updatedSettings = await retryUpdateLastPostTime(
+				settings._id,
+				newLastPostTime
+			);
+			if (!updatedSettings) {
+				throw new Error(
+					`Failed to update lastPostTime for user ${settings.userId} after multiple attempts`
+				);
+			}
+			console.log(
+				`Updated lastPostTime for user ${settings.userId} (no connections):`,
+				{
+					oldLastPostTime: settings.lastPostTime,
+					newLastPostTime,
+				}
+			);
 			return {
 				success: true,
 				userId: settings.userId,
 				message: `No social connections found for user ${settings.userId}`,
 				numPosts: 0,
 				nextPostTime: new Date(
-					Date.now() + settings.interval * 60 * 1000
+					newLastPostTime.getTime() + settings.interval * 60 * 1000
 				),
 			};
 		}
