@@ -1,4 +1,3 @@
-import { uploadImage } from "./image-utils";
 import { SocialConnection } from "@/models/socialConnection.model";
 import { User } from "@/models/user.model";
 import { connectDb } from "./dbconfig";
