@@ -87,12 +87,16 @@ export class MetaApi {
 
 					const data = await response.json();
 					if (!data.access_token) {
-						throw new Error("No access token received from Instagram");
+						throw new Error(
+							"No access token received from Instagram"
+						);
 					}
 
 					// Update the connection with the new Instagram token
 					connection.accessToken = data.access_token;
-					connection.expiresAt = new Date(now.getTime() + 60 * 24 * 60 * 60 * 1000); // 60 days
+					connection.expiresAt = new Date(
+						now.getTime() + 60 * 24 * 60 * 60 * 1000
+					); // 60 days
 					await connection.save();
 
 					// Update the instance token
@@ -116,7 +120,9 @@ export class MetaApi {
 
 					// Calculate new expiration date
 					const expiresAt = new Date();
-					expiresAt.setSeconds(expiresAt.getSeconds() + data.expires_in);
+					expiresAt.setSeconds(
+						expiresAt.getSeconds() + data.expires_in
+					);
 
 					// Update the connection with the new token
 					connection.accessToken = data.access_token;
@@ -263,11 +269,9 @@ export class MetaApi {
 		await this.checkTokenExpiration();
 
 		try {
-			const cloudinaryUrl = await uploadImage(imageUrl);
-
 			// Create a container for the media
 			const containerFormData = new URLSearchParams();
-			containerFormData.append("image_url", cloudinaryUrl);
+			containerFormData.append("image_url", imageUrl);
 			containerFormData.append("caption", caption);
 			containerFormData.append("access_token", pageAccessToken);
 
