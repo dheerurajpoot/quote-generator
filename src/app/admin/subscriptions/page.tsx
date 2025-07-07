@@ -384,6 +384,10 @@ export default function SubscriptionsPage() {
 										setCurrentSubscription({
 											...currentSubscription,
 											planId: value,
+											tier:
+												value === "premium"
+													? "premium"
+													: "free",
 										})
 									}>
 									<SelectTrigger className='col-span-3'>
@@ -455,9 +459,17 @@ export default function SubscriptionsPage() {
 							type='submit'
 							onClick={() => {
 								if (currentSubscription) {
+									const updates = {
+										planId: currentSubscription.planId,
+										tier: currentSubscription.tier,
+										status: currentSubscription.status,
+										currentPeriodEnd: new Date(
+											currentSubscription.currentPeriodEnd
+										).toISOString(),
+									};
 									handleUpdateSubscription(
 										currentSubscription._id,
-										currentSubscription
+										updates
 									);
 								}
 								setIsEditSubOpen(false);
