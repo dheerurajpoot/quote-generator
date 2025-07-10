@@ -235,10 +235,11 @@ export class MetaApi {
 			const responseData = response.data;
 
 			if (response.status !== 200) {
-				const errorMessage =
-					responseData.error?.message || "Unknown error";
-				console.error("Facebook API Error:", errorMessage);
-				throw new Error(`Failed to post to Facebook: ${errorMessage}`);
+				throw new Error(
+					`Failed to post to Facebook: ${
+						responseData.error?.message || "Unknown error"
+					} (code: ${responseData.error?.code || "n/a"})`
+				);
 			}
 
 			// Get the post ID from the response
@@ -253,6 +254,12 @@ export class MetaApi {
 				url: `https://facebook.com/${pageId}/posts/${postId}`,
 			};
 		} catch (error) {
+			if (axios.isAxiosError(error) && error.response) {
+				console.error(
+					"Facebook API Error Response:",
+					error.response.data
+				);
+			}
 			console.error("Error posting to Facebook:", error);
 			throw error;
 		}

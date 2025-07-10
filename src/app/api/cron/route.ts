@@ -102,7 +102,7 @@ const handleUserAutoPosting = async (settings: AutoPostingSettings) => {
 		const response = await axios.get(
 			`${process.env.NEXT_PUBLIC_APP_URL}/api/quotes/generate?userId=${settings.userId}`,
 			{
-				timeout: 15000,
+				timeout: 60000, // 60 seconds
 				validateStatus: (status) => status >= 200 && status < 500,
 			}
 		);
@@ -172,10 +172,23 @@ const handleUserAutoPosting = async (settings: AutoPostingSettings) => {
 
 				const caption = `${text}\n\n— ${author}`;
 
+				// Skip posting if imageUrl is a known placeholder or failed upload
+				if (
+					!imageUrl ||
+					imageUrl.includes("placeholder.com") ||
+					imageUrl.includes("Timeout")
+				) {
+					console.warn(
+						`Skipping ${connection.platform} post for user ${settings.userId} due to invalid or placeholder imageUrl:`,
+						imageUrl
+					);
+					continue;
+				}
+
 				if (connection.platform === "facebook") {
 					const postResponse = await metaApi.postToFacebook(
 						connection.profileId,
-						connection.accessToken,
+						connection.pageAccessToken,
 						imageUrl,
 						caption
 					);
@@ -245,9 +258,37 @@ export async function GET(request: Request): Promise<Response> {
 
 		// Get all enabled auto-posting settings
 		const settings = await AutoPostingSettings.find({ isEnabled: true });
+
+		// Merge jobs by userId: combine platforms for each user
+		const userJobMap = new Map();
+		for (const setting of settings) {
+			if (!userJobMap.has(setting.userId)) {
+				userJobMap.set(setting.userId, {
+					...setting.toObject(),
+					platforms: new Set(setting.platforms),
+				});
+			} else {
+				const merged = userJobMap.get(setting.userId);
+				for (const p of setting.platforms) {
+					merged.platforms.add(p);
+				}
+				// Use the latest lastPostTime and interval (pick the smallest interval)
+				if (setting.lastPostTime > merged.lastPostTime) {
+					merged.lastPostTime = setting.lastPostTime;
+				}
+				if (setting.interval < merged.interval) {
+					merged.interval = setting.interval;
+				}
+			}
+		}
+		const mergedSettings = Array.from(userJobMap.values()).map((s) => ({
+			...s,
+			platforms: Array.from(s.platforms),
+		}));
+
 		const results = [];
 
-		for (const setting of settings) {
+		for (const setting of mergedSettings) {
 			try {
 				const result = await handleUserAutoPosting(setting);
 				results.push(result);
@@ -270,7 +311,7 @@ export async function GET(request: Request): Promise<Response> {
 		return NextResponse.json({
 			success: true,
 			results,
-			totalUsersProcessed: settings.length,
+			totalUsersProcessed: mergedSettings.length,
 			timestamp: new Date().toISOString(),
 		});
 	} catch (error) {

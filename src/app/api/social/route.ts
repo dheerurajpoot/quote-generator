@@ -139,7 +139,8 @@ export async function POST(request: Request) {
 					if (platform === "facebook") {
 						result = await metaApi.postToFacebook(
 							connection.profileId,
-							connection.accessToken,
+							connection.pageAccessToken ||
+								connection.accessToken,
 							cleanImageUrl,
 							caption
 						);

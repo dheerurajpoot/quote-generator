@@ -136,6 +136,7 @@ export function SocialConnections({
 					userId: user?._id,
 					platform: "facebook",
 					accessToken: page.access_token,
+					pageAccessToken: page.access_token,
 					profileId: page.id,
 					profileName: page.name,
 				}),
@@ -274,29 +275,51 @@ export function SocialConnections({
 			await initializeFacebookSDK();
 
 			// Request Facebook login with Instagram permissions
-			await new Promise<FacebookLoginResponse>((resolve, reject) => {
-				window.FB.login(
-					(response: FacebookLoginResponse) => {
-						if (response.authResponse) {
-							resolve(response);
-						} else {
-							reject(
-								new Error("Facebook login cancelled or failed")
-							);
+			const loginResponse = await new Promise<FacebookLoginResponse>(
+				(resolve, reject) => {
+					window.FB.login(
+						(response: FacebookLoginResponse) => {
+							if (response.authResponse) {
+								resolve(response);
+							} else {
+								reject(
+									new Error(
+										"Facebook login cancelled or failed"
+									)
+								);
+							}
+						},
+						{
+							scope: "instagram_basic,instagram_content_publish,pages_show_list,pages_read_engagement,pages_manage_posts,pages_manage_metadata,business_management",
+							return_scopes: true,
 						}
-					},
-					{
-						scope: "instagram_basic,instagram_content_publish,pages_show_list,pages_read_engagement,pages_manage_posts,pages_manage_metadata,business_management",
-						return_scopes: true,
-					}
-				);
-			});
+					);
+				}
+			);
 
-			// Get user's Facebook pages with Instagram business accounts
+			const fbUserAccessToken = loginResponse.authResponse?.accessToken;
+			if (!fbUserAccessToken) {
+				throw new Error("Failed to get Facebook user access token");
+			}
+
+			// Exchange the Facebook User Access Token for a long-lived token
+			const exchangeRes = await fetch(
+				`/api/social/exchange-token?access_token=${fbUserAccessToken}`
+			);
+			if (!exchangeRes.ok) {
+				const errorData = await exchangeRes.json();
+				throw new Error(
+					errorData.error || "Failed to exchange Facebook token"
+				);
+			}
+			const exchangeData = await exchangeRes.json();
+			const longLivedUserAccessToken = exchangeData.longLivedToken;
+
+			// Get user's Facebook pages with Instagram business accounts using the long-lived user token
 			const pagesResponse = await new Promise<FacebookPagesResponse>(
 				(resolve, reject) => {
 					window.FB.api<FacebookPagesResponse>(
-						"/me/accounts?fields=id,name,access_token,instagram_business_account{id,name,username,profile_picture_url}",
+						`/me/accounts?fields=id,name,access_token,instagram_business_account{id,name,username,profile_picture_url}&access_token=${longLivedUserAccessToken}`,
 						(response) => {
 							if (response.error) {
 								reject(
@@ -345,7 +368,7 @@ export function SocialConnections({
 												pageId: page.id,
 												pageName: page.name,
 												pageAccessToken:
-													page.access_token,
+													page.access_token, // This is now long-lived
 												instagramAccountId:
 													response
 														.instagram_business_account
@@ -412,11 +435,12 @@ export function SocialConnections({
 		}
 	};
 
+	// Update saveInstagramConnection to no longer exchange the page access token
 	const saveInstagramConnection = async (
 		instagramAccount: InstagramAccount
 	) => {
 		try {
-			// Send the connection data to your backend
+			// Use the page access token (already long-lived) for Instagram connection
 			const apiResponse = await fetch("/api/social", {
 				method: "POST",
 				headers: {
@@ -520,7 +544,9 @@ export function SocialConnections({
 		}
 	};
 
-	const handleAccountSelection = (account: InstagramAccount) => {
+	const handleAccountSelection = (
+		account: InstagramAccount & { fbUserAccessToken?: string }
+	) => {
 		setShowAccountDialog(false);
 		saveInstagramConnection(account);
 	};
