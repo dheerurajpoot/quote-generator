@@ -195,7 +195,8 @@ const handleUserAutoPosting = async (settings: AutoPostingSettings) => {
 					if (postResponse.success) {
 						successfulPosts++;
 					}
-				} else if (connection.platform === "instagram") {
+				}
+				if (connection.platform === "instagram") {
 					const postResponse = await metaApi.postToInstagram(
 						connection.instagramAccountId || connection.profileId,
 						connection.pageAccessToken || connection.accessToken,
