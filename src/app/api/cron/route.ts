@@ -157,20 +157,21 @@ const handleUserAutoPosting = async (settings: AutoPostingSettings) => {
 			};
 		}
 
-		// Post to each connected platform
+		// Post to each connected platform (robust: always fetch fresh connection from DB)
 		let successfulPosts = 0;
-		for (const connection of connections) {
+		for (const platform of settings.platforms) {
 			try {
-				const metaApi = new MetaApi({
-					accessToken:
-						connection.platform === "instagram"
-							? connection.pageAccessToken
-							: connection.accessToken,
+				// Always fetch the latest connection for this user/platform
+				const connection = await SocialConnection.findOne({
 					userId: settings.userId,
-					platform: connection.platform,
+					platform,
 				});
-
-				const caption = `${text}\n\n— ${author}`;
+				if (!connection) {
+					console.warn(
+						`No connection found for user ${settings.userId} and platform ${platform}`
+					);
+					continue;
+				}
 
 				// Skip posting if imageUrl is a known placeholder or failed upload
 				if (
@@ -179,13 +180,21 @@ const handleUserAutoPosting = async (settings: AutoPostingSettings) => {
 					imageUrl.includes("Timeout")
 				) {
 					console.warn(
-						`Skipping ${connection.platform} post for user ${settings.userId} due to invalid or placeholder imageUrl:`,
+						`Skipping ${platform} post for user ${settings.userId} due to invalid or placeholder imageUrl:`,
 						imageUrl
 					);
 					continue;
 				}
 
-				if (connection.platform === "facebook") {
+				const metaApi = new MetaApi({
+					accessToken: connection.pageAccessToken,
+					userId: settings.userId,
+					platform,
+				});
+
+				const caption = `${text}\n\n— ${author}`;
+
+				if (platform === "facebook") {
 					const postResponse = await metaApi.postToFacebook(
 						connection.profileId,
 						connection.pageAccessToken,
@@ -195,11 +204,10 @@ const handleUserAutoPosting = async (settings: AutoPostingSettings) => {
 					if (postResponse.success) {
 						successfulPosts++;
 					}
-				}
-				if (connection.platform === "instagram") {
+				} else if (platform === "instagram") {
 					const postResponse = await metaApi.postToInstagram(
 						connection.instagramAccountId || connection.profileId,
-						connection.pageAccessToken || connection.accessToken,
+						connection.pageAccessToken,
 						imageUrl,
 						caption
 					);
@@ -209,7 +217,7 @@ const handleUserAutoPosting = async (settings: AutoPostingSettings) => {
 				}
 			} catch (error) {
 				console.error(
-					`Error posting to ${connection.platform} for user ${settings.userId}:`,
+					`Error posting to ${platform} for user ${settings.userId}:`,
 					error
 				);
 			}
