@@ -193,10 +193,6 @@ const handleUserAutoPosting = async (settings: AutoPostingSettings) => {
 				});
 
 				const caption = `${text}\n\n— ${author}`;
-
-				console.log(
-					`[CRON] Attempting to post to ${platform} for user ${settings.userId}`
-				);
 				if (platform === "facebook") {
 					const postResponse = await metaApi.postToFacebook(
 						connection.profileId,
@@ -205,16 +201,9 @@ const handleUserAutoPosting = async (settings: AutoPostingSettings) => {
 						caption
 					);
 					if (postResponse.success) {
-						// console.log(
-						// 	`[CRON] Successfully posted to Facebook for user ${settings.userId}`
-						// );
 						successfulPosts++;
 					}
 				} else if (platform === "instagram") {
-					console.log(
-						`[CRON] Instagram connection object for user ${settings.userId}:`,
-						connection
-					);
 					const postResponse = await metaApi.postToInstagram(
 						connection.instagramAccountId || connection.profileId,
 						connection.pageAccessToken,
@@ -222,15 +211,9 @@ const handleUserAutoPosting = async (settings: AutoPostingSettings) => {
 						caption
 					);
 					if (postResponse.success) {
-						console.log(
-							`[CRON] Successfully posted to Instagram for user ${settings.userId}`
-						);
 						successfulPosts++;
 					}
 				}
-				console.log(
-					`[CRON] Finished processing ${platform} for user ${settings.userId}`
-				);
 			} catch (error) {
 				console.error(
 					`[CRON] Error posting to ${platform} for user ${settings.userId}:`,
