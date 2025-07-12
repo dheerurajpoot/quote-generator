@@ -4,7 +4,7 @@ let isConnected: Connection | false = false;
 
 export const connectDb = async (): Promise<Connection> => {
 	if (isConnected) {
-		console.log("Database already connected!");
+		// console.log("Database already connected!");
 		return isConnected;
 	}
 	try {
@@ -16,7 +16,7 @@ export const connectDb = async (): Promise<Connection> => {
 
 		const res = await mongoose.connect(process.env.MONGO_URI);
 		isConnected = res.connection;
-		console.log("Database connected successfully");
+		// console.log("Database connected successfully");
 		return isConnected;
 	} catch (error) {
 		console.error("Error connecting to database:", error);

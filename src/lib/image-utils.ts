@@ -16,7 +16,7 @@ try {
 			api_secret: process.env.CLOUDINARY_API_SECRET,
 		});
 		cloudinaryConfigured = true;
-		console.log("Cloudinary configured successfully");
+		// console.log("Cloudinary configured successfully");
 	} else {
 		console.error("Missing Cloudinary configuration");
 	}

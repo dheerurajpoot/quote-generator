@@ -205,9 +205,9 @@ const handleUserAutoPosting = async (settings: AutoPostingSettings) => {
 						caption
 					);
 					if (postResponse.success) {
-						console.log(
-							`[CRON] Successfully posted to Facebook for user ${settings.userId}`
-						);
+						// console.log(
+						// 	`[CRON] Successfully posted to Facebook for user ${settings.userId}`
+						// );
 						successfulPosts++;
 					}
 				} else if (platform === "instagram") {
