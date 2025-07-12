@@ -168,7 +168,7 @@ const handleUserAutoPosting = async (settings: AutoPostingSettings) => {
 				});
 				if (!connection) {
 					console.warn(
-						`No connection found for user ${settings.userId} and platform ${platform}`
+						`[CRON] No connection found for user ${settings.userId} and platform ${platform}`
 					);
 					continue;
 				}
@@ -180,7 +180,7 @@ const handleUserAutoPosting = async (settings: AutoPostingSettings) => {
 					imageUrl.includes("Timeout")
 				) {
 					console.warn(
-						`Skipping ${platform} post for user ${settings.userId} due to invalid or placeholder imageUrl:`,
+						`[CRON] Skipping ${platform} post for user ${settings.userId} due to invalid or placeholder imageUrl:`,
 						imageUrl
 					);
 					continue;
@@ -194,6 +194,9 @@ const handleUserAutoPosting = async (settings: AutoPostingSettings) => {
 
 				const caption = `${text}\n\n— ${author}`;
 
+				console.log(
+					`[CRON] Attempting to post to ${platform} for user ${settings.userId}`
+				);
 				if (platform === "facebook") {
 					const postResponse = await metaApi.postToFacebook(
 						connection.profileId,
@@ -202,9 +205,16 @@ const handleUserAutoPosting = async (settings: AutoPostingSettings) => {
 						caption
 					);
 					if (postResponse.success) {
+						console.log(
+							`[CRON] Successfully posted to Facebook for user ${settings.userId}`
+						);
 						successfulPosts++;
 					}
 				} else if (platform === "instagram") {
+					console.log(
+						`[CRON] Instagram connection object for user ${settings.userId}:`,
+						connection
+					);
 					const postResponse = await metaApi.postToInstagram(
 						connection.instagramAccountId || connection.profileId,
 						connection.pageAccessToken,
@@ -212,12 +222,18 @@ const handleUserAutoPosting = async (settings: AutoPostingSettings) => {
 						caption
 					);
 					if (postResponse.success) {
+						console.log(
+							`[CRON] Successfully posted to Instagram for user ${settings.userId}`
+						);
 						successfulPosts++;
 					}
 				}
+				console.log(
+					`[CRON] Finished processing ${platform} for user ${settings.userId}`
+				);
 			} catch (error) {
 				console.error(
-					`Error posting to ${platform} for user ${settings.userId}:`,
+					`[CRON] Error posting to ${platform} for user ${settings.userId}:`,
 					error
 				);
 			}
