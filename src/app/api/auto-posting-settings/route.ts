@@ -23,7 +23,7 @@ export async function GET(request: Request) {
 
 		// If settings exist but don't have language or template field, add them
 		if (settings && (!settings.language || !settings.template)) {
-			const update: any = {};
+			const update: { language?: string; template?: string } = {};
 			if (!settings.language) update.language = "hindi";
 			if (!settings.template) update.template = "classic";
 			if (Object.keys(update).length > 0) {
