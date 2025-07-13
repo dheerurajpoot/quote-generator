@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getRandomHindiQuote } from "@/lib/quote-service";
+import { getRandomQuote } from "@/lib/quote-service";
 import { generateQuoteImage } from "@/lib/server-image-generator";
 import { uploadImage } from "@/lib/image-utils";
 import { User } from "@/models/user.model";
@@ -55,8 +55,12 @@ export async function GET(request: NextRequest) {
 			);
 		}
 
-		// Get a random quote
-		const quote = await getRandomHindiQuote();
+		// Get language parameter from query string
+		const language =
+			(searchParams.get("language") as "hindi" | "english") || "hindi";
+
+		// Get a random quote based on language
+		const quote = await getRandomQuote(language);
 
 		if (!quote || !quote.text) {
 			console.error("Failed to get a valid quote");

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { AxiosError } from 'axios';
+import { AxiosError } from "axios";
 import {
 	Card,
 	CardContent,
@@ -30,6 +30,13 @@ import axios from "axios";
 import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
 
 interface Quote {
 	text: string;
@@ -51,6 +58,9 @@ export default function AutoQuotePoster() {
 	const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([]);
 	const [isAutoPosting, setIsAutoPosting] = useState(false);
 	const [postingInterval, setPostingInterval] = useState("60");
+	const [selectedLanguage, setSelectedLanguage] = useState<
+		"hindi" | "english"
+	>("hindi");
 	const [isPosting, setIsPosting] = useState(false);
 	const { user } = useAuth();
 
@@ -60,7 +70,7 @@ export default function AutoQuotePoster() {
 		setIsLoading(true);
 		try {
 			const response = await axios.get(
-				`/api/quotes/generate?userId=${user._id}`
+				`/api/quotes/generate?userId=${user._id}&language=${selectedLanguage}`
 			);
 			const { quote: newQuote, imageUrl } = response.data;
 
@@ -88,7 +98,7 @@ export default function AutoQuotePoster() {
 		} finally {
 			setIsLoading(false);
 		}
-	}, [user?._id]);
+	}, [user?._id, selectedLanguage]);
 
 	// Post to social media
 	const handlePostToSocialMedia = useCallback(async () => {
@@ -166,6 +176,7 @@ export default function AutoQuotePoster() {
 						isEnabled: false,
 						interval: parseInt(postingInterval),
 						platforms: selectedPlatforms,
+						language: selectedLanguage,
 					});
 				} catch (error) {
 					console.error("Error saving auto-posting settings:", error);
@@ -188,12 +199,21 @@ export default function AutoQuotePoster() {
 				// Save settings to database
 				if (user?._id) {
 					try {
-						await axios.post("/api/auto-posting-settings", {
+						const settingsData = {
 							userId: user._id,
 							isEnabled: true,
 							interval: parseInt(postingInterval),
 							platforms: selectedPlatforms,
-						});
+							language: selectedLanguage,
+						};
+						console.log(
+							"Saving auto-posting settings:",
+							settingsData
+						);
+						await axios.post(
+							"/api/auto-posting-settings",
+							settingsData
+						);
 					} catch (error) {
 						console.error(
 							"Error saving auto-posting settings:",
@@ -245,6 +265,13 @@ export default function AutoQuotePoster() {
 		}
 	}, [user?._id, fetchNewQuote]);
 
+	// Refetch quote when language changes
+	useEffect(() => {
+		if (user?._id && quote) {
+			fetchNewQuote();
+		}
+	}, [selectedLanguage]);
+
 	// Load auto-posting settings when user is available
 	useEffect(() => {
 		const loadSettings = async () => {
@@ -256,9 +283,11 @@ export default function AutoQuotePoster() {
 				);
 				const settings = response.data;
 
+				console.log("Loaded auto-posting settings:", settings);
 				setIsAutoPosting(settings.isEnabled);
 				setPostingInterval(settings.interval.toString());
 				setSelectedPlatforms(settings.platforms);
+				setSelectedLanguage(settings.language || "hindi");
 			} catch (error) {
 				console.error("Error fetching auto-posting settings:", error);
 			}
@@ -388,6 +417,31 @@ export default function AutoQuotePoster() {
 												minutes
 											</span>
 										</div>
+									</div>
+
+									<Separator className='my-4' />
+
+									<div className='space-y-2'>
+										<Label className='flex items-center'>
+											🌐 Language Selection
+										</Label>
+										<Select
+											value={selectedLanguage}
+											onValueChange={(
+												value: "hindi" | "english"
+											) => setSelectedLanguage(value)}>
+											<SelectTrigger className='w-full'>
+												<SelectValue placeholder='Select language' />
+											</SelectTrigger>
+											<SelectContent>
+												<SelectItem value='hindi'>
+													🇮🇳 Hindi
+												</SelectItem>
+												<SelectItem value='english'>
+													🇺🇸 English
+												</SelectItem>
+											</SelectContent>
+										</Select>
 									</div>
 
 									<Separator className='my-4' />

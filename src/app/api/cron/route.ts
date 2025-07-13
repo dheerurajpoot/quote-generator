@@ -13,6 +13,7 @@ interface AutoPostingSettings {
 	interval: number;
 	lastPostTime: Date;
 	isEnabled: boolean;
+	language?: string;
 }
 
 // Function to check if it's time to post based on lastPostTime and interval
@@ -98,9 +99,17 @@ const handleUserAutoPosting = async (settings: AutoPostingSettings) => {
 			};
 		}
 
-		// Get a new quote
+		console.log(
+			`[CRON] Processing user ${settings.userId} with language: ${
+				settings.language || "hindi"
+			}`
+		);
+
+		// Get a new quote based on language setting
 		const response = await axios.get(
-			`${process.env.NEXT_PUBLIC_APP_URL}/api/quotes/generate?userId=${settings.userId}`,
+			`${process.env.NEXT_PUBLIC_APP_URL}/api/quotes/generate?userId=${
+				settings.userId
+			}&language=${settings.language || "hindi"}`,
 			{
 				timeout: 60000, // 60 seconds
 				validateStatus: (status) => status >= 200 && status < 500,

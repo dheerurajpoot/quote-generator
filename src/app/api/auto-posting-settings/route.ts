@@ -17,12 +17,31 @@ export async function GET(request: Request) {
 			);
 		}
 
-		const settings = await AutoPostingSettings.findOne({
+		let settings = await AutoPostingSettings.findOne({
 			userId: new mongoose.Types.ObjectId(userId),
 		});
 
+		// If settings exist but don't have language field, add it
+		if (settings && !settings.language) {
+			console.log(
+				"Migrating existing settings to include language field"
+			);
+			settings = await AutoPostingSettings.findOneAndUpdate(
+				{ userId: new mongoose.Types.ObjectId(userId) },
+				{ $set: { language: "hindi" } },
+				{ new: true }
+			);
+		}
+
+		console.log("Retrieved auto-posting settings:", settings);
+
 		return NextResponse.json(
-			settings || { isEnabled: false, platforms: [], interval: 1 }
+			settings || {
+				isEnabled: false,
+				platforms: [],
+				interval: 1,
+				language: "hindi",
+			}
 		);
 	} catch (error) {
 		console.error("Error fetching auto-posting settings:", error);
@@ -38,7 +57,15 @@ export async function POST(request: Request) {
 		await connectDb();
 
 		const body = await request.json();
-		const { userId, isEnabled, interval, platforms } = body;
+		const { userId, isEnabled, interval, platforms, language } = body;
+
+		console.log("Auto-posting settings update request:", {
+			userId,
+			isEnabled,
+			interval,
+			platforms,
+			language,
+		});
 
 		if (!userId) {
 			return NextResponse.json(
@@ -54,11 +81,14 @@ export async function POST(request: Request) {
 					isEnabled,
 					interval,
 					platforms,
+					language: language || "hindi",
 					lastPostTime: isEnabled ? new Date() : null,
 				},
 			},
 			{ upsert: true, new: true }
 		);
+
+		console.log("Saved auto-posting settings:", settings);
 
 		return NextResponse.json(settings);
 	} catch (error) {

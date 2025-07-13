@@ -115,6 +115,16 @@ export async function getRandomHindiQuote(): Promise<Quote> {
 	}
 }
 
+export async function getRandomQuote(
+	language: "hindi" | "english" = "hindi"
+): Promise<Quote> {
+	if (language === "english") {
+		return getRandomEnglishQuote();
+	} else {
+		return getRandomHindiQuote();
+	}
+}
+
 export async function getRandomEnglishQuote(): Promise<Quote> {
 	try {
 		// Using a free English quotes API
@@ -151,8 +161,8 @@ export async function getRandomEnglishQuote(): Promise<Quote> {
 		// Fallback quotes in case API fails
 		const fallbackQuotes: Quote[] = [
 			{
-				text: "जीवन में सफलता पाने के लिए सबसे पहले खुद पर विश्वास करना जरूरी है।",
-				author: "स्वामी विवेकानंद",
+				text: "Success is not final, failure is not fatal: it is the courage to continue that counts.",
+				author: "Winston Churchill",
 				backgroundImage: "/img1.jpg?height=600&width=600",
 				textColor: "#ffffff",
 				backgroundColor: "rgba(0, 0, 0, 0.5)",
@@ -161,8 +171,8 @@ export async function getRandomEnglishQuote(): Promise<Quote> {
 				watermark: "@quote_art",
 			},
 			{
-				text: "कर्म करो, फल की चिंता मत करो।",
-				author: "श्री कृष्ण",
+				text: "The only way to do great work is to love what you do.",
+				author: "Steve Jobs",
 				backgroundImage: "/img1.jpg?height=600&width=600",
 				textColor: "#ffffff",
 				backgroundColor: "rgba(0, 0, 0, 0.5)",
@@ -171,8 +181,8 @@ export async function getRandomEnglishQuote(): Promise<Quote> {
 				watermark: "@quote_art",
 			},
 			{
-				text: "जीवन में आगे बढ़ने के लिए साहस की जरूरत होती है।",
-				author: "चाणक्य",
+				text: "Life is what happens when you're busy making other plans.",
+				author: "John Lennon",
 				backgroundImage: "/img1.jpg?height=600&width=600",
 				textColor: "#ffffff",
 				backgroundColor: "rgba(0, 0, 0, 0.5)",
