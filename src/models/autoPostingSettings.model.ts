@@ -28,6 +28,11 @@ const autoPostingSettingsSchema = new mongoose.Schema(
 			enum: ["hindi", "english"],
 			default: "hindi",
 		},
+		template: {
+			type: String,
+			enum: ["classic", "minimal", "elegant", "bold"],
+			default: "classic",
+		},
 	},
 	{
 		timestamps: true,

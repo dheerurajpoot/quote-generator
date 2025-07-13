@@ -55,9 +55,10 @@ export async function GET(request: NextRequest) {
 			);
 		}
 
-		// Get language parameter from query string
+		// Get language and template parameter from query string
 		const language =
 			(searchParams.get("language") as "hindi" | "english") || "hindi";
+		const template = searchParams.get("template") || "classic";
 
 		// Get a random quote based on language
 		const quote = await getRandomQuote(language);
@@ -78,6 +79,7 @@ export async function GET(request: NextRequest) {
 			const imageBuffer = await generateQuoteImage({
 				...quote,
 				author: authorName,
+				template,
 			});
 			// Upload the image to Cloudinary
 			imageUrl = await uploadImage(imageBuffer);

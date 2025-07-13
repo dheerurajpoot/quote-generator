@@ -21,16 +21,21 @@ export async function GET(request: Request) {
 			userId: new mongoose.Types.ObjectId(userId),
 		});
 
-		// If settings exist but don't have language field, add it
-		if (settings && !settings.language) {
-			console.log(
-				"Migrating existing settings to include language field"
-			);
-			settings = await AutoPostingSettings.findOneAndUpdate(
-				{ userId: new mongoose.Types.ObjectId(userId) },
-				{ $set: { language: "hindi" } },
-				{ new: true }
-			);
+		// If settings exist but don't have language or template field, add them
+		if (settings && (!settings.language || !settings.template)) {
+			const update: any = {};
+			if (!settings.language) update.language = "hindi";
+			if (!settings.template) update.template = "classic";
+			if (Object.keys(update).length > 0) {
+				console.log(
+					"Migrating existing settings to include language/template field"
+				);
+				settings = await AutoPostingSettings.findOneAndUpdate(
+					{ userId: new mongoose.Types.ObjectId(userId) },
+					{ $set: update },
+					{ new: true }
+				);
+			}
 		}
 
 		console.log("Retrieved auto-posting settings:", settings);
@@ -41,6 +46,7 @@ export async function GET(request: Request) {
 				platforms: [],
 				interval: 1,
 				language: "hindi",
+				template: "classic",
 			}
 		);
 	} catch (error) {
@@ -57,7 +63,8 @@ export async function POST(request: Request) {
 		await connectDb();
 
 		const body = await request.json();
-		const { userId, isEnabled, interval, platforms, language } = body;
+		const { userId, isEnabled, interval, platforms, language, template } =
+			body;
 
 		console.log("Auto-posting settings update request:", {
 			userId,
@@ -82,13 +89,12 @@ export async function POST(request: Request) {
 					interval,
 					platforms,
 					language: language || "hindi",
+					template: template || "classic",
 					lastPostTime: isEnabled ? new Date() : null,
 				},
 			},
 			{ upsert: true, new: true }
 		);
-
-		console.log("Saved auto-posting settings:", settings);
 
 		return NextResponse.json(settings);
 	} catch (error) {

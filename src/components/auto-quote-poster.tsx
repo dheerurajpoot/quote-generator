@@ -61,16 +61,20 @@ export default function AutoQuotePoster() {
 	const [selectedLanguage, setSelectedLanguage] = useState<
 		"hindi" | "english"
 	>("hindi");
+	const [selectedTemplate, setSelectedTemplate] = useState<
+		"classic" | "minimal" | "elegant" | "bold"
+	>("classic");
 	const [isPosting, setIsPosting] = useState(false);
+	const [settingsLoaded, setSettingsLoaded] = useState(false);
 	const { user } = useAuth();
 
 	// Fetch a new quote and its server-generated image
 	const fetchNewQuote = useCallback(async () => {
-		if (!user?._id) return;
+		if (!user?._id || !settingsLoaded) return;
 		setIsLoading(true);
 		try {
 			const response = await axios.get(
-				`/api/quotes/generate?userId=${user._id}&language=${selectedLanguage}`
+				`/api/quotes/generate?userId=${user._id}&language=${selectedLanguage}&template=${selectedTemplate}`
 			);
 			const { quote: newQuote, imageUrl } = response.data;
 
@@ -98,7 +102,7 @@ export default function AutoQuotePoster() {
 		} finally {
 			setIsLoading(false);
 		}
-	}, [user?._id, selectedLanguage]);
+	}, [user?._id, selectedLanguage, selectedTemplate, settingsLoaded]);
 
 	// Post to social media
 	const handlePostToSocialMedia = useCallback(async () => {
@@ -177,6 +181,7 @@ export default function AutoQuotePoster() {
 						interval: parseInt(postingInterval),
 						platforms: selectedPlatforms,
 						language: selectedLanguage,
+						template: selectedTemplate,
 					});
 				} catch (error) {
 					console.error("Error saving auto-posting settings:", error);
@@ -205,6 +210,7 @@ export default function AutoQuotePoster() {
 							interval: parseInt(postingInterval),
 							platforms: selectedPlatforms,
 							language: selectedLanguage,
+							template: selectedTemplate,
 						};
 						console.log(
 							"Saving auto-posting settings:",
@@ -229,6 +235,8 @@ export default function AutoQuotePoster() {
 		postingInterval,
 		handlePostToSocialMedia,
 		user?._id,
+		selectedLanguage,
+		selectedTemplate,
 	]);
 
 	// Handle download
@@ -258,19 +266,17 @@ export default function AutoQuotePoster() {
 		[selectedPlatforms]
 	);
 
-	// Load initial quote
+	// Load initial quote - only after settings are loaded
 	useEffect(() => {
-		if (user?._id) {
+		if (
+			user?._id &&
+			selectedLanguage &&
+			selectedTemplate &&
+			settingsLoaded
+		) {
 			fetchNewQuote();
 		}
-	}, [user?._id, fetchNewQuote]);
-
-	// Refetch quote when language changes
-	useEffect(() => {
-		if (user?._id && quote) {
-			fetchNewQuote();
-		}
-	}, [selectedLanguage]);
+	}, [user?._id, selectedLanguage, selectedTemplate, settingsLoaded]);
 
 	// Load auto-posting settings when user is available
 	useEffect(() => {
@@ -283,13 +289,15 @@ export default function AutoQuotePoster() {
 				);
 				const settings = response.data;
 
-				console.log("Loaded auto-posting settings:", settings);
 				setIsAutoPosting(settings.isEnabled);
 				setPostingInterval(settings.interval.toString());
 				setSelectedPlatforms(settings.platforms);
 				setSelectedLanguage(settings.language || "hindi");
+				setSelectedTemplate(settings.template || "classic");
+				setSettingsLoaded(true);
 			} catch (error) {
 				console.error("Error fetching auto-posting settings:", error);
+				setSettingsLoaded(true); // Still mark as loaded to prevent infinite waiting
 			}
 		};
 
@@ -439,6 +447,41 @@ export default function AutoQuotePoster() {
 												</SelectItem>
 												<SelectItem value='english'>
 													🇺🇸 English
+												</SelectItem>
+											</SelectContent>
+										</Select>
+									</div>
+
+									<Separator className='my-4' />
+
+									<div className='space-y-2'>
+										<Label className='flex items-center'>
+											🎨 Template Selection
+										</Label>
+										<Select
+											value={selectedTemplate}
+											onValueChange={(
+												value:
+													| "classic"
+													| "minimal"
+													| "elegant"
+													| "bold"
+											) => setSelectedTemplate(value)}>
+											<SelectTrigger className='w-full'>
+												<SelectValue placeholder='Select template' />
+											</SelectTrigger>
+											<SelectContent>
+												<SelectItem value='classic'>
+													Classic
+												</SelectItem>
+												<SelectItem value='minimal'>
+													Minimal
+												</SelectItem>
+												<SelectItem value='elegant'>
+													Elegant
+												</SelectItem>
+												<SelectItem value='bold'>
+													Bold
 												</SelectItem>
 											</SelectContent>
 										</Select>
