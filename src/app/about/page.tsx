@@ -210,8 +210,8 @@ export default function AboutPage() {
 											</p>
 										</div>
 										<blockquote className='italic text-foreground/80 border-l-4 border-primary pl-4'>
-											"Design is the silent ambassador of
-											your brand."
+											&quot;Design is the silent
+											ambassador of your brand.&quot;
 										</blockquote>
 										<p className='text-foreground/80'>
 											Passionate about creating tools that

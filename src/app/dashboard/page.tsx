@@ -14,6 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Check, AlertCircle, Settings, Calendar } from "lucide-react";
 import { SocialConnections } from "@/components/social-connection";
 import { FacebookSettings } from "@/components/settings/facebook-settings";
+import { Button } from "@/components/ui/button";
 
 export default function DashboardPage() {
 	const { subscription, plans, cancelSubscription } = useSubscription();
@@ -176,6 +177,21 @@ export default function DashboardPage() {
 										</div>
 									)}
 								</div>
+								{/* Cancel Subscription Button */}
+								{subscription?.tier !== "free" &&
+									subscription?.status === "active" && (
+										<div className='mt-6 flex'>
+											<Button
+												className='cursor-pointer'
+												variant='destructive'
+												onClick={
+													handleCancelSubscription
+												}
+												disabled={!!success}>
+												Cancel Subscription
+											</Button>
+										</div>
+									)}
 							</CardContent>
 						</Card>
 
