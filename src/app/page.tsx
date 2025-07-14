@@ -93,7 +93,7 @@ export default function Home() {
 				<BackgroundBeamsWithCollision className='h-auto md:min-h-[90vh]'>
 					<div className='container flex flex-col md:flex-row items-center justify-between w-full h-full py-6 px-4 md:px-12'>
 						{/* Left Side: Text & Buttons */}
-						<div className='flex flex-col items-start justify-center text-left space-y-6 max-w-xl z-10'>
+						<div className='flex flex-col items-start justify-center my-16 text-left space-y-6 max-w-xl z-10'>
 							<span className='inline-flex items-center rounded-full border px-3 py-1 text-sm bg-primary/10 text-primary mb-2 font-semibold'>
 								<Sparkles /> Automate Your Social Media
 							</span>

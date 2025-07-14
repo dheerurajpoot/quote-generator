@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
+import { SparklesCore } from "@/components/ui/sparkles";
 
 export const metadata = {
 	title: "About Us - QuoteArt",
@@ -25,23 +26,31 @@ export default function AboutPage() {
 		<div className='min-h-screen bg-gradient-to-b from-background via-background/95 to-muted/30'>
 			{/* Hero Section */}
 			<section className='relative w-full py-10 md:py-20 overflow-hidden'>
+				<div className='absolute inset-0 z-0'>
+					<SparklesCore
+						background='transparent'
+						particleColor='#a78bfa'
+						particleDensity={80}
+						speed={2}
+						minSize={1}
+						maxSize={2}
+					/>
+				</div>
 				<div className='absolute inset-0 bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-primary/20 via-transparent to-transparent' />
 				<div className='absolute inset-0 bg-[radial-gradient(circle_at_bottom_left,_var(--tw-gradient-stops))] from-secondary/20 via-transparent to-transparent' />
-				<div className='container relative mx-auto px-4 md:px-6'>
+				<div className='container relative mx-auto px-4 md:px-6 z-10'>
 					<div className='flex flex-col items-center space-y-8 text-center'>
 						<div className='space-y-6 max-w-3xl'>
-							<div className='inline-flex items-center rounded-full border px-3 py-1 text-sm bg-primary/10 text-primary mb-4'>
+							<div className='inline-flex items-center rounded-full border px-3 py-1 text-sm bg-primary/10 text-primary mb-4 font-semibold shadow-sm'>
 								<Sparkles className='w-4 h-4 mr-2' />
 								Our Story
 							</div>
-							<h1 className='text-4xl font-bold tracking-tighter sm:text-5xl md:text-6xl lg:text-7xl text-foreground'>
+							<h1 className='text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tight text-foreground drop-shadow-xl'>
 								Transforming Words into Art
 							</h1>
-							<p className='mx-auto max-w-[700px] text-foreground/80 text-lg md:text-xl leading-relaxed'>
-								QuoteArt is more than just a quote generator -
-								it&apos;s a platform that helps you create
-								beautiful, shareable content that inspires and
-								connects with your audience.
+							<p className='mx-auto max-w-[700px] text-foreground/80 text-xl md:text-2xl leading-relaxed font-medium'>
+								QuoteArt empowers you to create, style, and
+								share beautiful quotes that inspire and connect.
 							</p>
 						</div>
 					</div>
@@ -52,37 +61,39 @@ export default function AboutPage() {
 			<section className='w-full py-10 md:py-16 relative'>
 				<div className='container mx-auto px-4 md:px-6'>
 					<div className='grid grid-cols-1 md:grid-cols-2 gap-12 items-center'>
-						<div className='space-y-6'>
-							<h2 className='text-3xl font-bold tracking-tighter sm:text-4xl text-foreground'>
-								Our Mission
-							</h2>
-							<p className='text-foreground/80 text-lg leading-relaxed'>
-								We believe that words have the power to inspire,
-								motivate, and transform. Our mission is to make
-								it easy for everyone to create beautiful quote
-								images that capture the essence of meaningful
-								messages.
-							</p>
-							<div className='flex flex-col sm:flex-row gap-4'>
-								<Button
-									asChild
-									size='lg'
-									className='w-full sm:w-auto'>
-									<Link
-										href='/edit'
-										className='flex items-center'>
-										Start Creating{" "}
-										<ArrowRight className='ml-2 h-4 w-4' />
-									</Link>
-								</Button>
+						<div className='space-y-6 relative z-10'>
+							<div className='bg-white/80 backdrop-blur-lg rounded-2xl shadow-2xl p-8 border border-primary/10'>
+								<h2 className='text-3xl font-bold tracking-tighter sm:text-4xl text-foreground mb-2'>
+									Our Mission
+								</h2>
+								<p className='text-foreground/80 text-lg leading-relaxed'>
+									We believe that words have the power to
+									inspire, motivate, and transform. Our
+									mission is to make it easy for everyone to
+									create beautiful quote images that capture
+									the essence of meaningful messages.
+								</p>
+								<div className='flex flex-col sm:flex-row gap-4 mt-6'>
+									<Button
+										asChild
+										size='lg'
+										className='w-full sm:w-auto font-semibold'>
+										<Link
+											href='/edit'
+											className='flex items-center'>
+											Start Creating{" "}
+											<ArrowRight className='ml-2 h-4 w-4' />
+										</Link>
+									</Button>
+								</div>
 							</div>
 						</div>
-						<div className='relative aspect-square rounded-2xl overflow-hidden shadow-2xl'>
+						<div className='relative aspect-square rounded-3xl overflow-hidden shadow-2xl border-4 border-primary/20'>
 							<Image
 								src='/img3.jpg'
 								alt='Our Mission'
 								fill
-								className='object-cover'
+								className='object-cover scale-105'
 								priority
 							/>
 						</div>
@@ -101,8 +112,8 @@ export default function AboutPage() {
 							The principles that guide everything we do
 						</p>
 					</div>
-					<div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6'>
-						<Card className='border-none shadow-lg bg-gradient-to-br from-background to-muted/30 hover:shadow-xl transition-all duration-300'>
+					<div className='flex gap-4 overflow-x-auto pb-4 md:grid md:grid-cols-4 md:gap-6 md:overflow-visible'>
+						<Card className='min-w-[250px] border-none shadow-lg bg-gradient-to-br from-background to-muted/30 hover:scale-105 hover:shadow-2xl hover:-translate-y-2 transition-all duration-300'>
 							<CardContent className='p-6 space-y-4'>
 								<div className='w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center'>
 									<Heart className='w-6 h-6 text-primary' />
@@ -117,7 +128,7 @@ export default function AboutPage() {
 								</p>
 							</CardContent>
 						</Card>
-						<Card className='border-none shadow-lg bg-gradient-to-br from-background to-muted/30 hover:shadow-xl transition-all duration-300'>
+						<Card className='min-w-[250px] border-none shadow-lg bg-gradient-to-br from-background to-muted/30 hover:scale-105 hover:shadow-2xl hover:-translate-y-2 transition-all duration-300'>
 							<CardContent className='p-6 space-y-4'>
 								<div className='w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center'>
 									<Shield className='w-6 h-6 text-primary' />
@@ -129,7 +140,7 @@ export default function AboutPage() {
 								</p>
 							</CardContent>
 						</Card>
-						<Card className='border-none shadow-lg bg-gradient-to-br from-background to-muted/30 hover:shadow-xl transition-all duration-300'>
+						<Card className='min-w-[250px] border-none shadow-lg bg-gradient-to-br from-background to-muted/30 hover:scale-105 hover:shadow-2xl hover:-translate-y-2 transition-all duration-300'>
 							<CardContent className='p-6 space-y-4'>
 								<div className='w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center'>
 									<Zap className='w-6 h-6 text-primary' />
@@ -143,7 +154,7 @@ export default function AboutPage() {
 								</p>
 							</CardContent>
 						</Card>
-						<Card className='border-none shadow-lg bg-gradient-to-br from-background to-muted/30 hover:shadow-xl transition-all duration-300'>
+						<Card className='min-w-[250px] border-none shadow-lg bg-gradient-to-br from-background to-muted/30 hover:scale-105 hover:shadow-2xl hover:-translate-y-2 transition-all duration-300'>
 							<CardContent className='p-6 space-y-4'>
 								<div className='w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center'>
 									<Globe className='w-6 h-6 text-primary' />
@@ -173,8 +184,13 @@ export default function AboutPage() {
 						</p>
 					</div>
 					<div className='max-w-2xl mx-auto'>
-						<Card className='border-none shadow-lg bg-gradient-to-br from-background to-muted/30 hover:shadow-xl transition-all duration-300'>
-							<CardContent className='p-8'>
+						<Card
+							className='border-none shadow-lg bg-gradient-to-br from-background to-muted/30 hover:shadow-2xl transition-all duration-300 p-1 bg-clip-padding rounded-3xl'
+							style={{
+								borderImage:
+									"linear-gradient(135deg, #a78bfa, #f472b6) 1",
+							}}>
+							<CardContent className='p-8 rounded-2xl bg-white/80 backdrop-blur-lg'>
 								<div className='flex flex-col md:flex-row items-center gap-8'>
 									<div className='relative w-48 h-48 rounded-full overflow-hidden border-4 border-primary/20'>
 										<Image
@@ -193,6 +209,10 @@ export default function AboutPage() {
 												Founder & Developer
 											</p>
 										</div>
+										<blockquote className='italic text-foreground/80 border-l-4 border-primary pl-4'>
+											"Design is the silent ambassador of
+											your brand."
+										</blockquote>
 										<p className='text-foreground/80'>
 											Passionate about creating tools that
 											help people express themselves
@@ -233,33 +253,30 @@ export default function AboutPage() {
 				<div className='absolute inset-0 bg-gradient-to-br from-primary to-secondary opacity-90' />
 				<div className='container relative mx-auto px-4 md:px-6'>
 					<div className='flex flex-col items-center space-y-6 text-center'>
-						<h2 className='text-3xl font-bold tracking-tighter sm:text-4xl text-white'>
-							Ready to Create Beautiful Quotes?
-						</h2>
-						<p className='mx-auto max-w-[700px] text-white/90 text-lg'>
-							Join thousands of users creating stunning quote
-							images with QuoteArt
-						</p>
-						<div className='flex flex-col sm:flex-row gap-4 pt-4'>
-							<Button
-								asChild
-								size='lg'
-								variant='secondary'
-								className='px-8 py-6 text-lg bg-white text-primary hover:bg-white/90'>
-								<Link
-									href='/edit'
-									className='flex items-center'>
-									Start Creating{" "}
-									<ArrowRight className='ml-2 h-5 w-5' />
-								</Link>
-							</Button>
-							<Button
-								asChild
-								size='lg'
-								variant='outline'
-								className='px-8 py-6 text-lg border-2 border-white bg-primary text-white hover:bg-white/10'>
-								<Link href='/pricing'>View Pricing</Link>
-							</Button>
+						<div className='backdrop-blur-xl bg-white/30 rounded-2xl p-8 shadow-2xl border border-white/20 max-w-2xl mx-auto'>
+							<h2 className='text-3xl font-bold tracking-tighter sm:text-4xl text-primary drop-shadow'>
+								Ready to Create Beautiful Quotes?
+							</h2>
+							<p className='mx-auto max-w-[700px] text-primary/90 text-lg'>
+								Join thousands of users creating stunning quote
+								images with QuoteArt
+							</p>
+							<div className='flex flex-col sm:flex-row gap-4 pt-4'>
+								<Button
+									asChild
+									size='lg'
+									variant='secondary'
+									className='px-8 py-6 text-lg bg-white text-primary hover:bg-white/90 font-semibold shadow-lg'>
+									<Link href='/edit'>Start Creating</Link>
+								</Button>
+								<Button
+									asChild
+									size='lg'
+									variant='outline'
+									className='px-8 py-6 text-lg border-2 border-white text-white hover:bg-white/10 font-semibold shadow-lg'>
+									<Link href='/'>Learn More</Link>
+								</Button>
+							</div>
 						</div>
 					</div>
 				</div>

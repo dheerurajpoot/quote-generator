@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useSubscription } from "@/context/subscription-context";
-import { Button } from "@/components/ui/button";
 import {
 	Card,
 	CardContent,
@@ -12,14 +11,12 @@ import {
 } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
 import { Check, AlertCircle, Settings, Calendar } from "lucide-react";
 import { SocialConnections } from "@/components/social-connection";
 import { FacebookSettings } from "@/components/settings/facebook-settings";
 
 export default function DashboardPage() {
-	const { subscription, plans, cancelSubscription, isSubscribed } =
-		useSubscription();
+	const { subscription, plans, cancelSubscription } = useSubscription();
 	const [error, setError] = useState("");
 	const [success, setSuccess] = useState("");
 
@@ -91,8 +88,8 @@ export default function DashboardPage() {
 					</Alert>
 				)}
 
-				<Tabs defaultValue='overview' className='space-y-6'>
-					<TabsList>
+				<Tabs defaultValue='overview'>
+					<TabsList className='w-full mb-4'>
 						<TabsTrigger value='overview'>Overview</TabsTrigger>
 						<TabsTrigger value='settings'>
 							<Settings className='h-4 w-4 mr-2' />
@@ -101,62 +98,6 @@ export default function DashboardPage() {
 					</TabsList>
 
 					<TabsContent value='overview'>
-						<div className='grid grid-cols-1 md:grid-cols-3 gap-6 mb-8'>
-							<Card>
-								<CardHeader className='pb-2'>
-									<CardTitle className='text-sm font-medium'>
-										Total Quotes Created
-									</CardTitle>
-								</CardHeader>
-								<CardContent>
-									<div className='text-2xl font-bold'>12</div>
-								</CardContent>
-							</Card>
-							<Card>
-								<CardHeader className='pb-2'>
-									<CardTitle className='text-sm font-medium'>
-										Social Media Posts
-									</CardTitle>
-								</CardHeader>
-								<CardContent>
-									<div className='text-2xl font-bold'>
-										{isSubscribed() ? "5" : "0"}
-									</div>
-								</CardContent>
-							</Card>
-							<Card>
-								<CardHeader className='pb-2'>
-									<CardTitle className='text-sm font-medium'>
-										Subscription Status
-									</CardTitle>
-								</CardHeader>
-								<CardContent>
-									<div className='flex items-center gap-2'>
-										<Badge
-											variant={
-												subscription?.tier === "free"
-													? "secondary"
-													: "default"
-											}>
-											{subscription?.tier === "free"
-												? "Free"
-												: "Premium"}
-										</Badge>
-										{subscription?.tier !== "free" && (
-											<Button
-												variant='outline'
-												size='sm'
-												onClick={
-													handleCancelSubscription
-												}>
-												Cancel
-											</Button>
-										)}
-									</div>
-								</CardContent>
-							</Card>
-						</div>
-
 						<Card className='mb-8'>
 							<CardHeader>
 								<CardTitle className='flex items-center'>

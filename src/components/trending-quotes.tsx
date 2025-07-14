@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Copy, Check } from "lucide-react";
+import { Copy, Check, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
 import axios from "axios";
 
@@ -64,7 +64,7 @@ export default function TrendingQuotes() {
 	if (loading) {
 		return (
 			<div className='flex justify-center items-center min-h-[400px]'>
-				<div className='animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary'></div>
+				<Loader2 className='animate-spin h-8 w-8' />
 			</div>
 		);
 	}
