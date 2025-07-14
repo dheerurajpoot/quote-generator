@@ -1,7 +1,6 @@
 import { cn } from "@/lib/utils";
 import {
 	CreditCard,
-	Heart,
 	HelpCircle,
 	IndianRupee,
 	Paintbrush,

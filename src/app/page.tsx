@@ -10,7 +10,6 @@ import {
 	Linkedin,
 	Quote,
 	Sparkles,
-	Twitter,
 	Zap,
 } from "lucide-react";
 import Link from "next/link";
@@ -152,9 +151,10 @@ export default function Home() {
 												<div className='w-2 h-2 bg-white/50 rounded-full animate-pulse'></div>
 											</div>
 											<p className='text-xs sm:text-sm font-medium mb-3 leading-relaxed'>
-												"Success is not final, failure
-												is not fatal: it is the courage
-												to continue that counts."
+												&quot;Success is not final,
+												failure is not fatal: it is the
+												courage to continue that
+												counts.&quot;
 											</p>
 											<div className='flex items-center justify-between'>
 												<span className='text-xs opacity-80'>
@@ -176,8 +176,9 @@ export default function Home() {
 												<Sparkles className='w-3 h-3 sm:w-4 sm:h-4 animate-spin-slow' />
 											</div>
 											<p className='text-xs sm:text-sm font-medium mb-3 leading-relaxed'>
-												"The only way to do great work
-												is to love what you do."
+												&quot;The only way to do great
+												work is to love what you
+												do.&quot;
 											</p>
 											<div className='flex items-center justify-between'>
 												<span className='text-xs opacity-80'>
@@ -196,9 +197,9 @@ export default function Home() {
 												<div className='w-2 h-2 bg-white/60 rounded-full animate-bounce'></div>
 											</div>
 											<p className='text-xs font-medium mb-2 leading-relaxed'>
-												"Innovation distinguishes
+												&quot;Innovation distinguishes
 												between a leader and a
-												follower."
+												follower.&quot;
 											</p>
 											<div className='flex items-center justify-between'>
 												<span className='text-xs opacity-80'>
@@ -257,7 +258,7 @@ export default function Home() {
 													next: "3h 30m",
 													bg: "bg-blue-50",
 												},
-											].map((platform, index) => (
+											].map((platform) => (
 												<div
 													key={platform.name}
 													className='flex items-center justify-between p-2 rounded-lg hover:bg-gray-50 transition-colors'>
