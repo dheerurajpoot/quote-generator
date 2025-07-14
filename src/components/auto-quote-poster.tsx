@@ -53,7 +53,39 @@ interface ApiErrorResponse {
 }
 
 // Helper to generate hashtags from quote text and author
-function generateHashtags(text: string, author: string, count = 9): string[] {
+function generateHashtags(text: string, author: string, count = 15): string[] {
+	const trending = [
+		"#motivation",
+		"#inspiration",
+		"#quotes",
+		"#success",
+		"#life",
+		"#viral",
+		"#trending",
+		"#positivity",
+		"#quoteoftheday",
+		"#mindset",
+		"#wisdom",
+		"#selfgrowth",
+		"#hindi",
+		"#hindiquotes",
+		"#anmolvachan",
+		"#zindagi",
+		"#soch",
+		"#jeevan",
+		"#suvichar",
+		"#hindikavita",
+		"#hindistatus",
+		"#hindimotivation",
+	];
+	// Detect Hindi (Devanagari) characters
+	const isHindi = /[\u0900-\u097F]/.test(text);
+	if (isHindi) {
+		// Shuffle trending and pick 'count' tags
+		const shuffled = trending.sort(() => 0.5 - Math.random());
+		return shuffled.slice(0, count);
+	}
+	// English/other: use keyword extraction + trending
 	const stopwords = new Set([
 		"the",
 		"is",
@@ -200,22 +232,9 @@ function generateHashtags(text: string, author: string, count = 9): string[] {
 	) {
 		hashtags.push(`#${author.replace(/\s+/g, "").toLowerCase()}`);
 	}
-	const trending = [
-		"#motivation",
-		"#inspiration",
-		"#quotes",
-		"#success",
-		"#life",
-		"#viral",
-		"#trending",
-		"#positivity",
-		"#quoteoftheday",
-		"#mindset",
-		"#wisdom",
-		"#selfgrowth",
-	];
-	while (hashtags.length < count && trending.length > 0) {
-		hashtags.push(trending.shift()!);
+	let trendingCopy = [...trending];
+	while (hashtags.length < count && trendingCopy.length > 0) {
+		hashtags.push(trendingCopy.shift()!);
 	}
 	return hashtags.slice(0, count);
 }

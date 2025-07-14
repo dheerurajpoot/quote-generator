@@ -323,9 +323,6 @@ export async function generateQuoteImage(quote: Quote): Promise<Buffer> {
 				const y = startY + i * lineHeight;
 				for (let j = 0; j < words.length; j++) {
 					const word = words[j];
-					const isBold =
-						/^\*\*[^*]+\*\*$/.test(word) ||
-						/<b>[^<]+<\/b>/.test(word);
 					const cleanWord = word
 						.replace(/^\*\*|\*\*$/g, "")
 						.replace(/<b>|<\/b>/g, "");
