@@ -196,7 +196,7 @@ function generateHashtags(text: string, author: string, count = 15): string[] {
 	) {
 		hashtags.push(`#${author.replace(/\s+/g, "").toLowerCase()}`);
 	}
-	let trendingCopy = [...trending];
+	const trendingCopy = [...trending];
 	while (hashtags.length < count && trendingCopy.length > 0) {
 		hashtags.push(trendingCopy.shift()!);
 	}
