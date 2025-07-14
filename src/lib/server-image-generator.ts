@@ -279,7 +279,7 @@ export async function generateQuoteImage(quote: Quote): Promise<Buffer> {
 				wordsPerLine: number
 			): string[] {
 				const words = text.split(/(\s+)/); // keep spaces
-				let lines: string[] = [];
+				const lines: string[] = [];
 				let line = "";
 				let wordCount = 0;
 				for (let i = 0; i < words.length; i++) {
