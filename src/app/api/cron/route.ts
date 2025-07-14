@@ -4,7 +4,6 @@ import { AutoPostingSettings } from "@/models/autoPostingSettings.model";
 import { MetaApi } from "@/lib/meta-api";
 import { SocialConnection } from "@/models/socialConnection.model";
 import axios from "axios";
-// import { AxiosError } from "axios";
 
 interface AutoPostingSettings {
 	_id: string;

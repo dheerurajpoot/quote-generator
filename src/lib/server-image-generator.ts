@@ -162,15 +162,6 @@ export async function generateQuoteImage(quote: Quote): Promise<Buffer> {
 			const lineHeight = fontSize * 1.6;
 			const totalHeight = lines.length * lineHeight;
 			const startY = (canvas.height - totalHeight) / 2 - 50;
-
-			// Add decorative line above text
-			// ctx.strokeStyle = "#ffffff";
-			// ctx.lineWidth = 2;
-			// ctx.globalAlpha = 0.8;
-			// ctx.beginPath();
-			// ctx.moveTo(canvas.width * 0.2, startY - 30);
-			// ctx.lineTo(canvas.width * 0.8, startY - 30);
-			// ctx.stroke();
 			ctx.globalAlpha = 1;
 
 			lines.forEach((line, i) => {
@@ -190,20 +181,6 @@ export async function generateQuoteImage(quote: Quote): Promise<Buffer> {
 				canvas.width / 2,
 				startY + totalHeight + lineHeight + 20
 			);
-
-			// Add decorative line below text
-			// ctx.strokeStyle = "#ffffff";
-			// ctx.lineWidth = 1;
-			// ctx.globalAlpha = 0.6;
-			// ctx.beginPath();
-			// ctx.moveTo(
-			// 	canvas.width * 0.3,
-			// 	startY + totalHeight + lineHeight + 50
-			// );
-			// ctx.lineTo(
-			// 	canvas.width * 0.7,
-			// 	startY + totalHeight + lineHeight + 50
-			// );
 			ctx.stroke();
 			ctx.globalAlpha = 1;
 
@@ -211,8 +188,6 @@ export async function generateQuoteImage(quote: Quote): Promise<Buffer> {
 		}
 
 		if (template === "bold") {
-			// Bold: high contrast, strong typography, dramatic shadows
-			// Create dark overlay
 			ctx.fillStyle = "#000";
 			ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -232,16 +207,6 @@ export async function generateQuoteImage(quote: Quote): Promise<Buffer> {
 			const totalHeight = lines.length * lineHeight;
 			const startY = (canvas.height - totalHeight) / 2;
 
-			// Add bold border around text area
-			// ctx.strokeStyle = "#ffffff";
-			// ctx.lineWidth = 4;
-			// ctx.globalAlpha = 0.3;
-			// ctx.strokeRect(
-			// 	canvas.width * 0.1,
-			// 	startY - 40,
-			// 	canvas.width * 0.8,
-			// 	totalHeight + 80
-			// );
 			ctx.globalAlpha = 1;
 
 			lines.forEach((line, i) => {
@@ -261,6 +226,121 @@ export async function generateQuoteImage(quote: Quote): Promise<Buffer> {
 				canvas.width / 2,
 				startY + totalHeight + lineHeight + 30
 			);
+
+			return canvas.toBuffer("image/png");
+		}
+		if (template === "iconic") {
+			// 1. Background: solid black
+			ctx.fillStyle = "rgba(0, 0, 0, 0.8)";
+			ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+			// 2. Top-left label: red bar + white text
+			const label = quote.author.toUpperCase();
+			ctx.save();
+			ctx.font = `bold ${Math.floor(canvas.width * 0.018)}px Mukta`;
+			ctx.textAlign = "left";
+			ctx.textBaseline = "top";
+			// Red bar
+			ctx.fillStyle = "#e53935";
+			ctx.fillRect(
+				canvas.width * 0.065,
+				canvas.height * 0.06,
+				6,
+				Math.floor(canvas.height * 0.035)
+			);
+			// Label text
+			ctx.fillStyle = "#fff";
+			ctx.globalAlpha = 0.85;
+			ctx.fillText(label, canvas.width * 0.075, canvas.height * 0.06);
+			ctx.globalAlpha = 1;
+			ctx.restore();
+
+			// 3. Large quote marks (centered above quote)
+			ctx.save();
+			ctx.font = `bold ${Math.floor(canvas.width * 0.06)}px Mukta`;
+			ctx.textAlign = "center";
+			ctx.textBaseline = "middle";
+			ctx.fillStyle = "#fff";
+			ctx.globalAlpha = 0.95;
+			ctx.fillText("\u201C", canvas.width / 2, canvas.height * 0.32);
+			ctx.restore();
+
+			// 4. Quote text (centered, white, with bolded words)
+			const fontSize = Math.floor(canvas.width * 0.032);
+			ctx.font = `400 ${fontSize}px Mukta`;
+			ctx.textAlign = "center";
+			ctx.textBaseline = "middle";
+			ctx.fillStyle = "#fff";
+			ctx.shadowColor = "rgba(0,0,0,0.7)";
+			ctx.shadowBlur = 6;
+			// Split quote into lines of 7 words each (preserving bold markers)
+			function splitByWords(
+				text: string,
+				wordsPerLine: number
+			): string[] {
+				const words = text.split(/(\s+)/); // keep spaces
+				let lines: string[] = [];
+				let line = "";
+				let wordCount = 0;
+				for (let i = 0; i < words.length; i++) {
+					if (words[i].trim() === "") {
+						line += words[i];
+						continue;
+					}
+					line += words[i];
+					wordCount++;
+					if (wordCount === wordsPerLine) {
+						lines.push(line.trim());
+						line = "";
+						wordCount = 0;
+					}
+				}
+				if (line.trim()) lines.push(line.trim());
+				return lines;
+			}
+			let lines = splitByWords(`"${quote.text}"`, 7);
+			const lineHeight = fontSize * 1.6;
+			const totalHeight = lines.length * lineHeight;
+			const startY = canvas.height * 0.38;
+			// Draw each line, bolding words wrapped in ** or <b></b>
+			for (let i = 0; i < lines.length; i++) {
+				let words = lines[i].split(/(\*\*[^*]+\*\*|<b>[^<]+<\/b>)/g);
+				let x = canvas.width / 2 - ctx.measureText(lines[i]).width / 2;
+				let y = startY + i * lineHeight;
+				for (let word of words) {
+					let isBold =
+						/^\*\*[^*]+\*\*$/.test(word) ||
+						/<b>[^<]+<\/b>/.test(word);
+					let cleanWord = word
+						.replace(/^\*\*|\*\*$/g, "")
+						.replace(/<b>|<\/b>/g, "");
+					ctx.font = `${isBold ? "700" : "400"} ${fontSize}px Mukta`;
+					let wordWidth = ctx.measureText(cleanWord).width;
+					ctx.fillStyle = "#fff";
+					ctx.fillText(cleanWord, x + wordWidth / 2, y);
+					x += wordWidth;
+				}
+			}
+			ctx.shadowBlur = 0;
+
+			// 5. Author (small, uppercase, spaced, centered below quote)
+			ctx.save();
+			const authorFontSize = Math.floor(fontSize * 0.7);
+			ctx.font = `400 ${authorFontSize}px Mukta`;
+			ctx.textAlign = "center";
+			ctx.textBaseline = "top";
+			ctx.fillStyle = "#fff";
+			ctx.globalAlpha = 0.7;
+			let authorText = (quote.author || "Unknown")
+				.toUpperCase()
+				.split("")
+				.join(" ");
+			ctx.fillText(
+				authorText,
+				canvas.width / 2,
+				startY + totalHeight + lineHeight * 0.7
+			);
+			ctx.restore();
 
 			return canvas.toBuffer("image/png");
 		}
