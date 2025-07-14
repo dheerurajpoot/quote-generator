@@ -298,24 +298,24 @@ export async function generateQuoteImage(quote: Quote): Promise<Buffer> {
 				if (line.trim()) lines.push(line.trim());
 				return lines;
 			}
-			let lines = splitByWords(`"${quote.text}"`, 7);
+			const lines = splitByWords(`"${quote.text}"`, 7);
 			const lineHeight = fontSize * 1.6;
 			const totalHeight = lines.length * lineHeight;
 			const startY = canvas.height * 0.38;
 			// Draw each line, bolding words wrapped in ** or <b></b>
 			for (let i = 0; i < lines.length; i++) {
-				let words = lines[i].split(/(\*\*[^*]+\*\*|<b>[^<]+<\/b>)/g);
+				const words = lines[i].split(/(\*\*[^*]+\*\*|<b>[^<]+<\/b>)/g);
 				let x = canvas.width / 2 - ctx.measureText(lines[i]).width / 2;
-				let y = startY + i * lineHeight;
-				for (let word of words) {
-					let isBold =
+				const y = startY + i * lineHeight;
+				for (const word of words) {
+					const isBold =
 						/^\*\*[^*]+\*\*$/.test(word) ||
 						/<b>[^<]+<\/b>/.test(word);
-					let cleanWord = word
+					const cleanWord = word
 						.replace(/^\*\*|\*\*$/g, "")
 						.replace(/<b>|<\/b>/g, "");
 					ctx.font = `${isBold ? "700" : "400"} ${fontSize}px Mukta`;
-					let wordWidth = ctx.measureText(cleanWord).width;
+					const wordWidth = ctx.measureText(cleanWord).width;
 					ctx.fillStyle = "#fff";
 					ctx.fillText(cleanWord, x + wordWidth / 2, y);
 					x += wordWidth;
@@ -331,7 +331,7 @@ export async function generateQuoteImage(quote: Quote): Promise<Buffer> {
 			ctx.textBaseline = "top";
 			ctx.fillStyle = "#fff";
 			ctx.globalAlpha = 0.7;
-			let authorText = (quote.author || "Unknown")
+			const authorText = (quote.author || "Unknown")
 				.toUpperCase()
 				.split("")
 				.join(" ");
