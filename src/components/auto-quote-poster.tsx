@@ -52,6 +52,174 @@ interface ApiErrorResponse {
 	};
 }
 
+// Helper to generate hashtags from quote text and author
+function generateHashtags(text: string, author: string, count = 9): string[] {
+	const stopwords = new Set([
+		"the",
+		"is",
+		"and",
+		"a",
+		"to",
+		"of",
+		"in",
+		"that",
+		"it",
+		"on",
+		"for",
+		"with",
+		"as",
+		"was",
+		"at",
+		"by",
+		"an",
+		"be",
+		"this",
+		"have",
+		"from",
+		"or",
+		"but",
+		"not",
+		"are",
+		"your",
+		"just",
+		"they",
+		"want",
+		"know",
+		"you",
+		"their",
+		"all",
+		"has",
+		"will",
+		"can",
+		"we",
+		"our",
+		"so",
+		"if",
+		"do",
+		"does",
+		"had",
+		"been",
+		"more",
+		"no",
+		"out",
+		"up",
+		"who",
+		"what",
+		"when",
+		"how",
+		"why",
+		"which",
+		"about",
+		"into",
+		"than",
+		"then",
+		"them",
+		"he",
+		"she",
+		"his",
+		"her",
+		"him",
+		"i",
+		"me",
+		"my",
+		"mine",
+		"it's",
+		"its",
+		"too",
+		"also",
+		"get",
+		"got",
+		"let",
+		"let's",
+		"us",
+		"because",
+		"over",
+		"under",
+		"off",
+		"this",
+		"that",
+		"these",
+		"those",
+		"such",
+		"only",
+		"even",
+		"very",
+		"much",
+		"some",
+		"any",
+		"each",
+		"every",
+		"either",
+		"neither",
+		"both",
+		"few",
+		"many",
+		"most",
+		"other",
+		"another",
+		"again",
+		"once",
+		"here",
+		"there",
+		"where",
+		"when",
+		"why",
+		"how",
+		"all",
+		"any",
+		"both",
+		"each",
+		"few",
+		"more",
+		"most",
+		"other",
+		"some",
+		"such",
+		"no",
+		"nor",
+		"not",
+		"only",
+		"own",
+		"same",
+		"so",
+		"than",
+		"too",
+		"very",
+	]);
+	const words = text
+		.replace(/[.,!?"'’]/g, "")
+		.split(/\s+/)
+		.map((w) => w.toLowerCase())
+		.filter((w) => w.length > 3 && !stopwords.has(w));
+	const unique = Array.from(new Set(words));
+	const hashtags = unique.slice(0, count).map((w) => `#${w}`);
+	if (
+		author &&
+		author.toLowerCase() !== "unknown" &&
+		hashtags.length < count
+	) {
+		hashtags.push(`#${author.replace(/\s+/g, "").toLowerCase()}`);
+	}
+	const trending = [
+		"#motivation",
+		"#inspiration",
+		"#quotes",
+		"#success",
+		"#life",
+		"#viral",
+		"#trending",
+		"#positivity",
+		"#quoteoftheday",
+		"#mindset",
+		"#wisdom",
+		"#selfgrowth",
+	];
+	while (hashtags.length < count && trending.length > 0) {
+		hashtags.push(trending.shift()!);
+	}
+	return hashtags.slice(0, count);
+}
+
 export default function AutoQuotePoster() {
 	const [quote, setQuote] = useState<Quote | null>(null);
 	const [isLoading, setIsLoading] = useState(false);
@@ -115,7 +283,10 @@ export default function AutoQuotePoster() {
 			return;
 
 		try {
-			const caption = `${quote.text}\n\n— ${quote.author}`;
+			const hashtags = generateHashtags(quote.text, quote.author, 15);
+			const caption = `${quote.text}\n\n— ${
+				quote.author
+			}\n\n${hashtags.join(" ")}`;
 
 			// Post to selected platforms
 			setIsPosting(true);
@@ -138,8 +309,6 @@ export default function AutoQuotePoster() {
 				toast.success(
 					`Post successful. Next post in ${postingInterval} minutes.`
 				);
-				// // Fetch new quote for next time
-				// fetchNewQuote();
 				return hasSuccess;
 			} else {
 				toast.error("Failed to post to any platform.");
@@ -212,10 +381,6 @@ export default function AutoQuotePoster() {
 							language: selectedLanguage,
 							template: selectedTemplate,
 						};
-						console.log(
-							"Saving auto-posting settings:",
-							settingsData
-						);
 						await axios.post(
 							"/api/auto-posting-settings",
 							settingsData

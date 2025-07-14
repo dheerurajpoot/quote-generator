@@ -257,7 +257,7 @@ export async function generateQuoteImage(quote: Quote): Promise<Buffer> {
 
 			// 3. Large quote marks (centered above quote)
 			ctx.save();
-			ctx.font = `bold ${Math.floor(canvas.width * 0.06)}px Mukta`;
+			ctx.font = `bold ${Math.floor(canvas.width * 0.1)}px Mukta`;
 			ctx.textAlign = "center";
 			ctx.textBaseline = "middle";
 			ctx.fillStyle = "#fff";
@@ -265,9 +265,9 @@ export async function generateQuoteImage(quote: Quote): Promise<Buffer> {
 			ctx.fillText("\u201C", canvas.width / 2, canvas.height * 0.32);
 			ctx.restore();
 
-			// 4. Quote text (centered, white, with bolded words)
-			const fontSize = Math.floor(canvas.width * 0.032);
-			ctx.font = `400 ${fontSize}px Mukta`;
+			// 4. Quote text (centered, white, with bolded/yellow words)
+			const fontSize = Math.floor(canvas.width * 0.03);
+			ctx.font = `700 ${fontSize}px Mukta`;
 			ctx.textAlign = "center";
 			ctx.textBaseline = "middle";
 			ctx.fillStyle = "#fff";
@@ -302,21 +302,42 @@ export async function generateQuoteImage(quote: Quote): Promise<Buffer> {
 			const lineHeight = fontSize * 1.6;
 			const totalHeight = lines.length * lineHeight;
 			const startY = canvas.height * 0.38;
-			// Draw each line, bolding words wrapped in ** or <b></b>
+			// Draw each line, one random word in yellow, rest in white, all bold
 			for (let i = 0; i < lines.length; i++) {
-				const words = lines[i].split(/(\*\*[^*]+\*\*|<b>[^<]+<\/b>)/g);
+				const words = lines[i]
+					.split(/(\*\*[^*]+\*\*|<b>[^<]+<\/b>|\s+)/g)
+					.filter(Boolean);
+				// Pick a random word index (not a space)
+				const wordIndices = words
+					.map((w, idx) =>
+						w.trim().length > 0 && !/^\s+$/.test(w) ? idx : -1
+					)
+					.filter((idx) => idx !== -1);
+				const yellowIdx =
+					wordIndices.length > 0
+						? wordIndices[
+								Math.floor(Math.random() * wordIndices.length)
+						  ]
+						: -1;
 				let x = canvas.width / 2 - ctx.measureText(lines[i]).width / 2;
 				const y = startY + i * lineHeight;
-				for (const word of words) {
+				for (let j = 0; j < words.length; j++) {
+					const word = words[j];
 					const isBold =
 						/^\*\*[^*]+\*\*$/.test(word) ||
 						/<b>[^<]+<\/b>/.test(word);
 					const cleanWord = word
 						.replace(/^\*\*|\*\*$/g, "")
 						.replace(/<b>|<\/b>/g, "");
-					ctx.font = `${isBold ? "700" : "400"} ${fontSize}px Mukta`;
+					const isYellow =
+						j === yellowIdx &&
+						cleanWord.trim().length > 0 &&
+						!/^\s+$/.test(cleanWord);
+					ctx.font = `${
+						isYellow ? "800" : "700"
+					} ${fontSize}px Mukta`;
+					ctx.fillStyle = isYellow ? "#ffd700" : "#fff";
 					const wordWidth = ctx.measureText(cleanWord).width;
-					ctx.fillStyle = "#fff";
 					ctx.fillText(cleanWord, x + wordWidth / 2, y);
 					x += wordWidth;
 				}

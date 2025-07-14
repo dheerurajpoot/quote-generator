@@ -81,7 +81,7 @@ export function Header() {
 									{isSubscribed() && (
 										<Badge
 											variant='outline'
-											className='absolute -top-2 -right-2 h-4 px-1 text-[10px] bg-primary text-primary-foreground border-none'>
+											className='absolute -top-2 -right-2 h-4 px-1 text-[10px] bg-yellow-500 text-primary-foreground border-none'>
 											PRO
 										</Badge>
 									)}

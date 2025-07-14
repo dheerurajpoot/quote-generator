@@ -38,8 +38,6 @@ export async function GET(request: Request) {
 			}
 		}
 
-		console.log("Retrieved auto-posting settings:", settings);
-
 		return NextResponse.json(
 			settings || {
 				isEnabled: false,
@@ -65,14 +63,6 @@ export async function POST(request: Request) {
 		const body = await request.json();
 		const { userId, isEnabled, interval, platforms, language, template } =
 			body;
-
-		console.log("Auto-posting settings update request:", {
-			userId,
-			isEnabled,
-			interval,
-			platforms,
-			language,
-		});
 
 		if (!userId) {
 			return NextResponse.json(
