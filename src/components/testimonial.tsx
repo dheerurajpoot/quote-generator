@@ -1,29 +1,37 @@
 import React from "react";
-import { Card, CardContent } from "./ui/card";
-import { Quote } from "lucide-react";
+import { AnimatedTestimonials } from "./ui/animated-testimonials";
 
 const Testimonial = () => {
 	const testimonials = [
 		{
-			initial: "S",
-			name: "Sarah J.",
-			role: "Social Media Manager",
 			quote: "QuoteArt has revolutionized my content creation process. I can create stunning quote images in seconds that get amazing engagement on Instagram.",
-			gradient: "from-blue-500/20 to-cyan-500/20",
+			name: "Rahun Jain",
+			designation: "Social Media Manager",
+			src: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=3560&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
 		},
 		{
-			initial: "R",
-			name: "Rahul M.",
-			role: "Content Creator",
 			quote: "I love that I can create quotes in Hindi with beautiful typography. The image search feature saves me so much time finding the perfect background.",
-			gradient: "from-purple-500/20 to-pink-500/20",
+			name: "Jessica",
+			designation: "Content Creator",
+			src: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?q=80&w=3540&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
 		},
 		{
-			initial: "J",
-			name: "Jessica T.",
-			role: "Blogger",
-			quote: "The direct social sharing feature is a game-changer. I can create and post to both Facebook and Instagram with just a few clicks. Highly recommended!",
-			gradient: "from-orange-500/20 to-red-500/20",
+			quote: "The direct social sharing feature is a game-changer. I can create and post to both Facebook and Instagram with just a few clicks. Highly recommended.",
+			name: "Dheeru Rajpoot",
+			designation: "Social Media Manager",
+			src: "https://images.unsplash.com/photo-1623582854588-d60de57fa33f?q=80&w=3540&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+		},
+		{
+			quote: "Outstanding support and robust features. It's rare to find a product that delivers on all its promises.",
+			name: "James Kim",
+			designation: "Social Media Influencer",
+			src: "https://images.unsplash.com/photo-1636041293178-808a6762ab39?q=80&w=3464&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+		},
+		{
+			quote: "The scalability and performance have been game-changing for our organization. Highly recommend to any growing business.",
+			name: "Anjum Gupta",
+			designation: "Entrepreneur",
+			src: "https://images.unsplash.com/photo-1624561172888-ac93c696e10c?q=80&w=2592&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
 		},
 	];
 
@@ -31,7 +39,7 @@ const Testimonial = () => {
 		<section className='w-full py-16 md:py-20 relative overflow-hidden'>
 			<div className='absolute inset-0 bg-gradient-to-b from-transparent via-secondary/5 to-transparent' />
 			<div className='container relative mx-auto px-4 md:px-6'>
-				<div className='flex flex-col items-center space-y-6 text-center mb-16'>
+				<div className='flex flex-col items-center space-y-6 text-center'>
 					<div className='inline-flex items-center rounded-full border bg-gray-200 px-3 py-1 text-sm mb-4'>
 						User Stories
 					</div>
@@ -44,35 +52,7 @@ const Testimonial = () => {
 					</p>
 				</div>
 
-				<div className='grid gap-8 md:grid-cols-3'>
-					{testimonials.map((testimonial, index) => (
-						<Card
-							key={index}
-							className={`group hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 bg-gradient-to-br ${testimonial.gradient} backdrop-blur-sm border-secondary/20`}>
-							<CardContent className='pt-8 pb-6 px-6'>
-								<Quote className='w-8 h-8 text-secondary/60 mb-4' />
-								<div className='flex items-center mb-6'>
-									<div className='mr-4 h-14 w-14 rounded-full bg-gradient-to-br from-secondary to-primary flex items-center justify-center group-hover:scale-110 transition-transform duration-300'>
-										<span className='text-xl font-bold text-white'>
-											{testimonial.initial}
-										</span>
-									</div>
-									<div>
-										<h4 className='font-semibold text-lg text-foreground'>
-											{testimonial.name}
-										</h4>
-										<p className='text-sm text-foreground/70'>
-											{testimonial.role}
-										</p>
-									</div>
-								</div>
-								<p className='text-lg italic text-foreground/90'>
-									&quot;{testimonial.quote}&quot;
-								</p>
-							</CardContent>
-						</Card>
-					))}
-				</div>
+				<AnimatedTestimonials testimonials={testimonials} />
 			</div>
 		</section>
 	);

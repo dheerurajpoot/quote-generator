@@ -1,9 +1,11 @@
+import React from "react";
 import Link from "next/link";
 import { QuoteIcon } from "lucide-react";
+import { TextHoverEffect } from "./ui/text-hover-effect";
 
 export function Footer() {
 	return (
-		<footer className='border-t py-6 md:py-8'>
+		<footer className='border-t pt-10'>
 			<div className='container mx-auto flex flex-col md:flex-row items-center justify-between gap-4 md:gap-8'>
 				<div className='flex items-center gap-2'>
 					<QuoteIcon className='h-5 w-5' />
@@ -54,6 +56,9 @@ export function Footer() {
 				<div className='text-sm text-muted-foreground'>
 					© {new Date().getFullYear()} QuoteArt. All rights reserved.
 				</div>
+			</div>
+			<div className='h-[5rem] md:h-[18rem] flex items-center justify-center'>
+				<TextHoverEffect text='QUOTEART' />
 			</div>
 		</footer>
 	);
