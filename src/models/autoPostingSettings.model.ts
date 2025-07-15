@@ -30,7 +30,14 @@ const autoPostingSettingsSchema = new mongoose.Schema(
 		},
 		template: {
 			type: String,
-			enum: ["classic", "minimal", "elegant", "bold", "iconic"],
+			enum: [
+				"classic",
+				"minimal",
+				"elegant",
+				"bold",
+				"iconic",
+				"neutral",
+			],
 			default: "classic",
 		},
 	},

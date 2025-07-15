@@ -362,6 +362,139 @@ export async function generateQuoteImage(quote: Quote): Promise<Buffer> {
 
 			return canvas.toBuffer("image/png");
 		}
+		if (template === "neutral") {
+			// 1. Background: solid black
+			ctx.fillStyle = "#1d1e21";
+			ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+			// 2. Top-left label: red bar + white text
+			const label = quote.author.toUpperCase();
+			ctx.save();
+			ctx.font = `bold ${Math.floor(canvas.width * 0.018)}px Mukta`;
+			ctx.textAlign = "left";
+			ctx.textBaseline = "top";
+			// Red bar
+			ctx.fillStyle = "#e53935";
+			ctx.fillRect(
+				canvas.width * 0.065,
+				canvas.height * 0.06,
+				6,
+				Math.floor(canvas.height * 0.035)
+			);
+			// Label text
+			ctx.fillStyle = "#fff";
+			ctx.globalAlpha = 0.85;
+			ctx.fillText(label, canvas.width * 0.075, canvas.height * 0.06);
+			ctx.globalAlpha = 1;
+			ctx.restore();
+
+			// 3. Large quote marks (centered above quote)
+			ctx.save();
+			ctx.font = `bold ${Math.floor(canvas.width * 0.1)}px Mukta`;
+			ctx.textAlign = "center";
+			ctx.textBaseline = "middle";
+			ctx.fillStyle = "#fff";
+			ctx.globalAlpha = 0.95;
+			ctx.fillText("\u201C", canvas.width / 2, canvas.height * 0.32);
+			ctx.restore();
+
+			// 4. Quote text (centered, white, with bolded/yellow words)
+			const fontSize = Math.floor(canvas.width * 0.03);
+			ctx.font = `700 ${fontSize}px Mukta`;
+			ctx.textAlign = "center";
+			ctx.textBaseline = "middle";
+			ctx.fillStyle = "#fff";
+			ctx.shadowColor = "rgba(0,0,0,0.7)";
+			ctx.shadowBlur = 6;
+			// Split quote into lines of 7 words each (preserving bold markers)
+			function splitByWords(
+				text: string,
+				wordsPerLine: number
+			): string[] {
+				const words = text.split(/(\s+)/); // keep spaces
+				const lines: string[] = [];
+				let line = "";
+				let wordCount = 0;
+				for (let i = 0; i < words.length; i++) {
+					if (words[i].trim() === "") {
+						line += words[i];
+						continue;
+					}
+					line += words[i];
+					wordCount++;
+					if (wordCount === wordsPerLine) {
+						lines.push(line.trim());
+						line = "";
+						wordCount = 0;
+					}
+				}
+				if (line.trim()) lines.push(line.trim());
+				return lines;
+			}
+			const lines = splitByWords(`"${quote.text}"`, 7);
+			const lineHeight = fontSize * 1.6;
+			const totalHeight = lines.length * lineHeight;
+			const startY = canvas.height * 0.38;
+			// Draw each line, one random word in yellow, rest in white, all bold
+			for (let i = 0; i < lines.length; i++) {
+				const words = lines[i]
+					.split(/(\*\*[^*]+\*\*|<b>[^<]+<\/b>|\s+)/g)
+					.filter(Boolean);
+				// Pick a random word index (not a space)
+				const wordIndices = words
+					.map((w, idx) =>
+						w.trim().length > 0 && !/^\s+$/.test(w) ? idx : -1
+					)
+					.filter((idx) => idx !== -1);
+				const yellowIdx =
+					wordIndices.length > 0
+						? wordIndices[
+								Math.floor(Math.random() * wordIndices.length)
+						  ]
+						: -1;
+				let x = canvas.width / 2 - ctx.measureText(lines[i]).width / 2;
+				const y = startY + i * lineHeight;
+				for (let j = 0; j < words.length; j++) {
+					const word = words[j];
+					const cleanWord = word
+						.replace(/^\*\*|\*\*$/g, "")
+						.replace(/<b>|<\/b>/g, "");
+					const isYellow =
+						j === yellowIdx &&
+						cleanWord.trim().length > 0 &&
+						!/^\s+$/.test(cleanWord);
+					ctx.font = `${
+						isYellow ? "800" : "700"
+					} ${fontSize}px Mukta`;
+					ctx.fillStyle = isYellow ? "#ffd700" : "#fff";
+					const wordWidth = ctx.measureText(cleanWord).width;
+					ctx.fillText(cleanWord, x + wordWidth / 2, y);
+					x += wordWidth;
+				}
+			}
+			ctx.shadowBlur = 0;
+
+			// 5. Author (small, uppercase, spaced, centered below quote)
+			ctx.save();
+			const authorFontSize = Math.floor(fontSize * 0.7);
+			ctx.font = `400 ${authorFontSize}px Mukta`;
+			ctx.textAlign = "center";
+			ctx.textBaseline = "top";
+			ctx.fillStyle = "#fff";
+			ctx.globalAlpha = 0.7;
+			const authorText = (quote.author || "Unknown")
+				.toUpperCase()
+				.split("")
+				.join(" ");
+			ctx.fillText(
+				authorText,
+				canvas.width / 2,
+				startY + totalHeight + lineHeight * 0.7
+			);
+			ctx.restore();
+
+			return canvas.toBuffer("image/png");
+		}
 
 		// Classic: current style (default)
 		ctx.fillStyle = "rgba(0, 0, 0, 0.6)";

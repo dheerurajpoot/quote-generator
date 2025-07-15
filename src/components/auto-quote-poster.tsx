@@ -249,7 +249,7 @@ export default function AutoQuotePoster() {
 		"hindi" | "english"
 	>("hindi");
 	const [selectedTemplate, setSelectedTemplate] = useState<
-		"classic" | "minimal" | "elegant" | "bold" | "iconic"
+		"classic" | "minimal" | "elegant" | "bold" | "iconic" | "neutral"
 	>("classic");
 	const [isPosting, setIsPosting] = useState(false);
 	const [settingsLoaded, setSettingsLoaded] = useState(false);
@@ -651,6 +651,7 @@ export default function AutoQuotePoster() {
 													| "elegant"
 													| "bold"
 													| "iconic"
+													| "neutral"
 											) => setSelectedTemplate(value)}>
 											<SelectTrigger className='w-full'>
 												<SelectValue placeholder='Select template' />
@@ -670,6 +671,9 @@ export default function AutoQuotePoster() {
 												</SelectItem>
 												<SelectItem value='iconic'>
 													Iconic
+												</SelectItem>
+												<SelectItem value='neutral'>
+													Neutral
 												</SelectItem>
 											</SelectContent>
 										</Select>
