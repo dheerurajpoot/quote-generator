@@ -55,7 +55,7 @@ export function verifyPaymentSignature(
 export async function createRazorpaySubscription(
 	planId: string,
 	customerId: string,
-	totalCount = 12 // 12 months by default
+	totalCount = 1 // 1 months by default
 ) {
 	const response = await fetch("https://api.razorpay.com/v1/subscriptions", {
 		method: "POST",
