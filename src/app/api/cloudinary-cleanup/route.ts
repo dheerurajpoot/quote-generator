@@ -17,7 +17,7 @@ if (
 // Cloudinary resource type (partial, for our use)
 type CloudinaryResource = {
 	public_id: string;
-	[key: string]: any; // allow extra fields, but we only use public_id
+	[key: string]: unknown; // allow extra fields, but we only use public_id
 };
 
 // Cloudinary search response type (partial, for our use)
