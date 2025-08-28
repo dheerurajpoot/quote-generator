@@ -112,10 +112,12 @@ export function AutoPosterDashboard() {
 				setShowCreateDialog(false);
 				resetForm();
 			}
-		} catch (error: any) {
-			toast.error(
-				error.response?.data?.error || "Failed to start auto posting"
-			);
+		} catch (error: unknown) {
+			if (error instanceof Error) {
+				toast.error(error.message);
+			} else {
+				toast.error("Failed to start auto posting");
+			}
 		} finally {
 			setIsPosting(false);
 		}
@@ -140,10 +142,12 @@ export function AutoPosterDashboard() {
 					fetchCampaigns();
 					setIsPostingActive(!campaign.isEnabled);
 				}
-			} catch (error: any) {
-				toast.error(
-					error.response?.data?.error || "Failed to update campaign"
-				);
+			} catch (error: unknown) {
+				if (error instanceof Error) {
+					toast.error(error.message);
+				} else {
+					toast.error("Failed to update campaign");
+				}
 			}
 		},
 		[campaigns, postingInterval]
@@ -181,10 +185,12 @@ export function AutoPosterDashboard() {
 				toast.success("Campaign deleted successfully!");
 				fetchCampaigns();
 			}
-		} catch (error: any) {
-			toast.error(
-				error.response?.data?.error || "Failed to delete campaign"
-			);
+		} catch (error: unknown) {
+			if (error instanceof Error) {
+				toast.error(error.message || "Failed to delete campaign");
+			} else {
+				toast.error("Failed to delete campaign");
+			}
 		}
 	};
 

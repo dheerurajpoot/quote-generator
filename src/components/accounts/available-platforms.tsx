@@ -13,7 +13,6 @@ import {
 	MessageCircle,
 	CheckCircle,
 	Plus,
-	ExternalLink,
 	Facebook,
 	Instagram,
 	Twitter,
@@ -245,7 +244,7 @@ export function AvailablePlatforms() {
 			{/* Integration Request */}
 			<Card>
 				<CardHeader>
-					<CardTitle>Don't see your platform?</CardTitle>
+					<CardTitle>Don&apos;t see your platform?</CardTitle>
 					<CardDescription>
 						Request integration for additional social media
 						platforms or business tools.

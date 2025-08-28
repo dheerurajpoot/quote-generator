@@ -111,14 +111,8 @@ export async function POST(request: NextRequest) {
 			subscription: pendingSubscription,
 			transaction: transaction,
 		});
-	} catch (error: any) {
+	} catch (error) {
 		console.error("Payment verification error:", error);
-		if (error.errors) {
-			console.error(
-				"Validation errors:",
-				JSON.stringify(error.errors, null, 2)
-			);
-		}
 		return NextResponse.json(
 			{ message: "Internal server error" },
 			{ status: 500 }
@@ -156,11 +150,10 @@ export async function GET(request: NextRequest) {
 				pages: Math.ceil(total / limit),
 			},
 		});
-	} catch (error: any) {
+	} catch (error: unknown) {
 		console.error("Get pending payments error:", error);
-		return NextResponse.json(
-			{ message: "Internal server error" },
-			{ status: 500 }
-		);
+		const errorMessage =
+			(error as Error)?.message || "Failed to fetch payments";
+		return NextResponse.json({ message: errorMessage }, { status: 500 });
 	}
 }

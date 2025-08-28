@@ -48,7 +48,9 @@ export async function GET(
 		await connectDb();
 
 		// Build query based on filters
-		const query: any = { userId: new mongoose.Types.ObjectId(userId) };
+		const query: any = {
+			userId: new mongoose.Types.ObjectId(userId),
+		};
 
 		const status = searchParams.get("status");
 		const platform = searchParams.get("platform");
@@ -90,7 +92,7 @@ export async function GET(
 			success: true,
 			posts,
 		});
-	} catch (error) {
+	} catch (error: unknown) {
 		console.error("Error fetching scheduled posts:", error);
 		return NextResponse.json(
 			{ message: "Failed to fetch posts", success: false },
@@ -175,23 +177,34 @@ export async function POST(
 			try {
 				// Upload each file to Cloudinary based on post type
 				const uploadPromises = body.mediaFiles.map(
-					async (file: any) => {
-						if (file.startsWith("data:")) {
-							// Base64 data URL - use appropriate upload function
-							if (body.postType === "video") {
-								return await uploadVideo(file);
+					async (file: string | File) => {
+						if (typeof file === "string") {
+							if (file.startsWith("data:")) {
+								// Base64 data URL - use appropriate upload function
+								if (body.postType === "video") {
+									return await uploadVideo(file);
+								} else {
+									return await uploadImage(file);
+								}
+							} else if (file.startsWith("http")) {
+								// Already a URL, return as is
+								return file;
 							} else {
-								return await uploadImage(file);
+								// File path or other string format
+								if (body.postType === "video") {
+									return await uploadVideo(file);
+								} else {
+									return await uploadImage(file);
+								}
 							}
-						} else if (file.startsWith("http")) {
-							// Already a URL, return as is
-							return file;
 						} else {
-							// File object or other format
+							// File object - convert to Buffer
+							const arrayBuffer = await file.arrayBuffer();
+							const buffer = Buffer.from(arrayBuffer);
 							if (body.postType === "video") {
-								return await uploadVideo(file);
+								return await uploadVideo(buffer);
 							} else {
-								return await uploadImage(file);
+								return await uploadImage(buffer);
 							}
 						}
 					}
@@ -265,7 +278,7 @@ export async function POST(
 			},
 			{ status: 201 }
 		);
-	} catch (error) {
+	} catch (error: unknown) {
 		console.error("Error creating scheduled post:", error);
 		return NextResponse.json(
 			{ message: "Failed to create post", success: false },

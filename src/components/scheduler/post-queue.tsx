@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useAuth } from "@/context/auth-context";
+import { useAuth, User } from "@/context/auth-context";
 import axios from "axios";
 import toast from "react-hot-toast";
 import {
@@ -293,7 +293,7 @@ function PostList({
 }: {
 	posts: ScheduledPost[];
 	onRefresh: () => void;
-	user: any;
+	user: User | null;
 }) {
 	if (posts.length === 0) {
 		return (
@@ -341,7 +341,11 @@ function PostList({
 											</h3>
 											<Badge
 												variant={
-													statusConfig_.color as any
+													statusConfig_.color as
+														| "secondary"
+														| "default"
+														| "destructive"
+														| "outline"
 												}
 												className='flex items-center gap-1'>
 												<StatusIcon className='h-3 w-3' />

@@ -73,11 +73,7 @@ const pricingPlans: PricingPlan[] = [
 export default function PricingPage() {
 	const router = useRouter();
 	const { user } = useAuth();
-	const {
-		subscription,
-		loading: subscriptionLoading,
-		subscribe,
-	} = useSubscription();
+	const { subscription, subscribe } = useSubscription();
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState("");
 	const [success, setSuccess] = useState("");
@@ -134,6 +130,7 @@ export default function PricingPage() {
 					throw new Error("Failed to switch to free plan");
 				}
 			} catch (err) {
+				console.log("switch to free plan failed:", err);
 				setError("Failed to switch to free plan. Please try again.");
 			} finally {
 				setLoading(false);
@@ -171,10 +168,13 @@ export default function PricingPage() {
 			} else {
 				throw new Error("Failed to submit payment");
 			}
-		} catch (err: any) {
-			setError(
-				err.message || "Failed to submit payment. Please try again."
-			);
+		} catch (err: unknown) {
+			console.log("subscribe failed:", err);
+			if (err instanceof Error) {
+				setError(err.message);
+			} else {
+				setError("Failed to submit payment. Please try again.");
+			}
 		} finally {
 			setLoading(false);
 		}
@@ -414,8 +414,8 @@ export default function PricingPage() {
 							</h3>
 							<p className='text-gray-600'>
 								Yes, you can cancel your subscription at any
-								time. You'll continue to have access until the
-								end of your current billing period.
+								time. You&apos;ll continue to have access until
+								the end of your current billing period.
 							</p>
 						</div>
 						<div>
@@ -444,9 +444,9 @@ export default function PricingPage() {
 								Do you offer refunds?
 							</h3>
 							<p className='text-gray-600'>
-								We offer a 7-day money-back guarantee. If you're
-								not satisfied, contact us within 7 days for a
-								full refund.
+								We offer a 7-day money-back guarantee. If
+								you&apos;re not satisfied, contact us within 7
+								days for a full refund.
 							</p>
 						</div>
 					</div>

@@ -29,6 +29,7 @@ import {
 	Shield,
 	Loader2,
 	Check,
+	LucideIcon,
 } from "lucide-react";
 import { useAuth } from "@/context/auth-context";
 import { initializeFacebookSDK } from "@/lib/facebook-sdk";
@@ -84,7 +85,7 @@ interface InstagramAccount {
 interface AvailablePlatform {
 	id: string;
 	name: string;
-	icon: any;
+	icon: LucideIcon;
 	color: string;
 	description: string;
 	features: string[];
@@ -164,9 +165,8 @@ export function SocialAccounts() {
 	const [isConnecting, setIsConnecting] = useState<{
 		[key: string]: boolean;
 	}>({});
-	const [availablePages, setAvailablePages] = useState<any[]>([]);
+	const [availablePages, setAvailablePages] = useState<FacebookPage[]>([]);
 	const [showPageDialog, setShowPageDialog] = useState(false);
-	const [selectedPlatform, setSelectedPlatform] = useState<string>("");
 	const [platformMetrics, setPlatformMetrics] = useState<{
 		[key: string]: any;
 	}>({});
@@ -280,18 +280,22 @@ export function SocialAccounts() {
 			const { longLivedToken } = await longLivedTokenResponse.json();
 
 			// Get user's Facebook pages
-			const pagesResponse = await new Promise<any>((resolve, reject) => {
-				window.FB.api(
-					`/me/accounts?access_token=${longLivedToken}`,
-					(response: any) => {
-						if (response && response.data) {
-							resolve(response);
-						} else {
-							reject(new Error("Failed to get Facebook pages"));
+			const pagesResponse = await new Promise<FacebookPagesResponse>(
+				(resolve, reject) => {
+					window.FB.api(
+						`/me/accounts?access_token=${longLivedToken}`,
+						(response: FacebookPagesResponse) => {
+							if (response && response.data) {
+								resolve(response);
+							} else {
+								reject(
+									new Error("Failed to get Facebook pages")
+								);
+							}
 						}
-					}
-				);
-			});
+					);
+				}
+			);
 
 			if (!pagesResponse.data || pagesResponse.data.length === 0) {
 				throw new Error(
@@ -301,10 +305,13 @@ export function SocialAccounts() {
 
 			// Show dialog with available pages
 			setAvailablePages(pagesResponse.data);
-			setSelectedPlatform("facebook");
 			setShowPageDialog(true);
-		} catch (error: any) {
-			setError(error.message || "Failed to connect Facebook");
+		} catch (error: unknown) {
+			if (error instanceof Error) {
+				setError(error.message || "Failed to connect Facebook");
+			} else {
+				setError("Failed to connect Facebook");
+			}
 		} finally {
 			setIsConnecting((prev) => ({ ...prev, facebook: false }));
 		}
@@ -360,7 +367,7 @@ export function SocialAccounts() {
 				(resolve, reject) => {
 					window.FB.api(
 						`/me/accounts?fields=id,name,access_token,instagram_business_account{id,name,username,profile_picture_url}&access_token=${longLivedUserAccessToken}`,
-						(response: any) => {
+						(response: FacebookPagesResponse) => {
 							if (response.error) {
 								reject(
 									new Error(
@@ -461,9 +468,13 @@ export function SocialAccounts() {
 			// If there are multiple accounts, show the dialog
 			setAvailableAccounts(validAccounts);
 			setShowAccountDialog(true);
-		} catch (error: any) {
+		} catch (error: unknown) {
 			console.error("Instagram connection error:", error);
-			setError(error.message || "Failed to connect Instagram");
+			if (error instanceof Error) {
+				setError(error.message || "Failed to connect Instagram");
+			} else {
+				setError("Failed to connect Instagram");
+			}
 		} finally {
 			setIsConnecting((prev) => ({ ...prev, instagram: false }));
 		}
@@ -508,12 +519,18 @@ export function SocialAccounts() {
 			} else {
 				setError("Failed to save Instagram connection");
 			}
-		} catch (error: any) {
-			setError(error.message || "Failed to save Instagram connection");
+		} catch (error: unknown) {
+			if (error instanceof Error) {
+				setError(
+					error.message || "Failed to save Instagram connection"
+				);
+			} else {
+				setError("Failed to save Instagram connection");
+			}
 		}
 	};
 
-	const handlePageSelection = async (page: any) => {
+	const handlePageSelection = async (page: FacebookPage) => {
 		try {
 			setError("");
 			setSuccess("");
@@ -534,8 +551,12 @@ export function SocialAccounts() {
 			} else {
 				setError("Failed to save Facebook connection");
 			}
-		} catch (error: any) {
-			setError(error.message || "Failed to save Facebook connection");
+		} catch (error: unknown) {
+			if (error instanceof Error) {
+				setError(error.message || "Failed to save Facebook connection");
+			} else {
+				setError("Failed to save Facebook connection");
+			}
 		}
 	};
 
@@ -564,10 +585,12 @@ export function SocialAccounts() {
 			} else {
 				setError("Failed to disconnect account");
 			}
-		} catch (error: any) {
-			setError(
-				error.response?.data?.error || "Failed to disconnect account"
-			);
+		} catch (error: unknown) {
+			if (error instanceof Error) {
+				setError(error.message);
+			} else {
+				setError("Failed to disconnect account");
+			}
 		}
 	};
 
@@ -1454,7 +1477,7 @@ export function SocialAccounts() {
 
 					<Card>
 						<CardHeader>
-							<CardTitle>Don't see your platform?</CardTitle>
+							<CardTitle>Don&apos;t see your platform?</CardTitle>
 							<CardDescription>
 								Request integration for additional social media
 								platforms or business tools.

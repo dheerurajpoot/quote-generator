@@ -112,14 +112,6 @@ export function DashboardOverview() {
 		router.push("/dashboard/schedule");
 	};
 
-	if (loading) {
-		return (
-			<div className='flex items-center justify-center h-64'>
-				<Loader2 className='h-8 w-8 animate-spin' />
-			</div>
-		);
-	}
-
 	return (
 		<div className='space-y-6'>
 			{/* Header */}
@@ -129,8 +121,8 @@ export function DashboardOverview() {
 						Dashboard
 					</h1>
 					<p className='text-muted-foreground'>
-						Welcome back! Here's what's happening with your social
-						media.
+						Welcome back! Here&apos;s what&apos;s happening with
+						your social media.
 					</p>
 				</div>
 				<Button
@@ -296,6 +288,11 @@ export function DashboardOverview() {
 						</CardDescription>
 					</CardHeader>
 					<CardContent>
+						{loading && (
+							<div className='flex items-center justify-center h-64'>
+								<Loader2 className='h-8 w-8 animate-spin' />
+							</div>
+						)}
 						{upcomingPosts.length === 0 ? (
 							<div className='text-center py-8 text-muted-foreground'>
 								No upcoming posts found. Create your first post

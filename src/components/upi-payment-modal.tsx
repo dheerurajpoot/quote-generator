@@ -50,10 +50,14 @@ export function UPIPaymentModal({
 				setSuccess(false);
 				setTransactionId("");
 			}, 2000);
-		} catch (err: any) {
-			setError(
-				err.message || "Failed to submit payment. Please try again."
-			);
+		} catch (err: unknown) {
+			if (err instanceof Error) {
+				setError(
+					err.message || "Failed to submit payment. Please try again."
+				);
+			} else {
+				setError("Failed to submit payment. Please try again.");
+			}
 		} finally {
 			setIsSubmitting(false);
 		}

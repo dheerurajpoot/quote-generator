@@ -41,22 +41,6 @@ interface ChartData {
 	total: number;
 }
 
-interface Subscription {
-	_id: string;
-	userId: string;
-	tier: "free" | "premium";
-	status:
-		| "active"
-		| "inactive"
-		| "pending"
-		| "cancelled"
-		| "canceled"
-		| "expired";
-	currentPeriodEnd: string;
-	createdAt: string;
-	updatedAt: string;
-}
-
 export default function AdminDashboardPage() {
 	const [stats, setStats] = useState<DashboardStats>({
 		totalUsers: 0,
@@ -95,12 +79,10 @@ export default function AdminDashboardPage() {
 			// Set chart data
 			setUserStats(data.userStats);
 			setRevenueStats(data.revenueStats);
-		} catch (error: any) {
+		} catch (error: unknown) {
 			console.error("Error fetching dashboard data:", error);
 			const errorMessage =
-				error.response?.data?.message ||
-				error.message ||
-				"Failed to load dashboard data";
+				(error as Error)?.message || "Failed to load dashboard data";
 			toast.error(errorMessage);
 		} finally {
 			setIsLoading(false);

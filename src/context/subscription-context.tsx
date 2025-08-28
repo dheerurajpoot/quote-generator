@@ -106,8 +106,9 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
 
 			// Get the most recent active subscription
 			const latestSubscription =
-				subscriptions.find((sub: any) => sub.status === "active") ||
-				subscriptions[0];
+				subscriptions.find(
+					(sub: Subscription) => sub.status === "active"
+				) || subscriptions[0];
 
 			if (latestSubscription) {
 				// Check subscription status and show warnings

@@ -27,6 +27,7 @@ import {
 	RefreshCw,
 } from "lucide-react";
 import { format } from "date-fns";
+import { LucideIcon } from "lucide-react";
 
 interface Transaction {
 	id: string;
@@ -47,7 +48,7 @@ interface PlanDetails {
 	name: string;
 	price: number;
 	features: string[];
-	icon: any;
+	icon: LucideIcon;
 	color: string;
 }
 
@@ -83,7 +84,6 @@ export function SubscriptionDashboard() {
 	const { user } = useAuth();
 	const {
 		subscription,
-		loading: subscriptionLoading,
 		cancelSubscription: contextCancelSubscription,
 		refreshSubscription,
 	} = useSubscription();

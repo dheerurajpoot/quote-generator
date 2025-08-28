@@ -10,7 +10,6 @@ import {
 	CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, Users, Crown, Zap } from "lucide-react";
 
@@ -32,6 +31,28 @@ interface Subscription {
 	createdAt: string;
 }
 
+interface PaymentType {
+	_id: string;
+	userId: {
+		_id: string;
+		name: string;
+		email: string;
+	};
+
+	planId: string;
+	planName: string;
+	tier: "free" | "premium";
+	status: "active" | "pending" | "canceled" | "expired";
+	amount: number;
+	billingCycle: "monthly" | "annually";
+	createdAt: string;
+	verifiedBy: {
+		_id: string;
+		name: string;
+	};
+	verifiedAt: string;
+}
+
 export default function AdminSubscriptionsPage() {
 	const { user } = useAuth();
 	const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
@@ -46,36 +67,36 @@ export default function AdminSubscriptionsPage() {
 
 	const fetchSubscriptions = async () => {
 		try {
-			// For now, we'll fetch from the pending payments to show what's available
-			// In a real app, you'd have a dedicated subscriptions endpoint
 			const response = await fetch(
 				"/api/admin/verify-payment?status=all"
 			);
 			if (response.ok) {
 				const data = await response.json();
 				// Convert pending payments to subscription-like format
-				const subscriptionData = data.payments.map((payment: any) => ({
-					_id: payment._id,
-					userId: payment.userId,
-					planId: payment.planId,
-					planName: payment.planName,
-					tier: payment.planId === "free" ? "free" : "premium",
-					status:
-						payment.status === "verified"
-							? "active"
-							: payment.status,
-					amount: payment.amount,
-					billingCycle: payment.billingCycle,
-					currentPeriodStart: payment.createdAt,
-					currentPeriodEnd: payment.createdAt, // Simplified for demo
-					createdAt: payment.createdAt,
-				}));
+				const subscriptionData = data.payments.map(
+					(payment: PaymentType) => ({
+						_id: payment._id,
+						userId: payment.userId,
+						planId: payment.planId,
+						planName: payment.planName,
+						tier: payment.planId === "free" ? "free" : "premium",
+						status:
+							payment.status === "active" ? "active" : "pending",
+						amount: payment.amount,
+						billingCycle: payment.billingCycle,
+						currentPeriodStart: payment.createdAt,
+						currentPeriodEnd: payment.createdAt, // Simplified for demo
+						createdAt: payment.createdAt,
+					})
+				);
 				setSubscriptions(subscriptionData);
 			} else {
 				throw new Error("Failed to fetch subscriptions");
 			}
-		} catch (err: any) {
-			setError(err.message || "Failed to fetch subscriptions");
+		} catch (err: unknown) {
+			setError(
+				(err as Error)?.message || "Failed to fetch subscriptions"
+			);
 		} finally {
 			setLoading(false);
 		}

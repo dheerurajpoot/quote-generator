@@ -63,7 +63,7 @@ export async function POST(request: Request) {
 			);
 		}
 
-		let settings = new AutoPostingCampaign({
+		const settings = new AutoPostingCampaign({
 			userId,
 			campaignName,
 			isEnabled,

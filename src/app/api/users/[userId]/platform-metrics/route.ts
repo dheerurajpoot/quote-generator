@@ -6,6 +6,38 @@ import { getUserFromToken } from "@/lib/utils";
 import { MetaApi } from "@/lib/meta-api";
 import mongoose from "mongoose";
 
+// Define interfaces for better type safety
+interface SocialConnectionData {
+	_id: string;
+	accessToken: string;
+	userId: string;
+	platform: string;
+	profileId?: string;
+	instagramAccountId?: string;
+}
+
+interface PlatformMetricsData {
+	apiLimit: number;
+	apiUsed: number;
+	followers?: number;
+	totalPosts?: number;
+	postsThisMonth?: number;
+	postsThisWeek?: number;
+	engagementRate?: number;
+	reach?: number;
+	impressions?: number;
+	clickRate?: number;
+	pageViews?: number;
+	growthRate?: number;
+	responseTime?: number;
+	contentQuality?: string;
+	lastPostAt?: Date;
+	bestPerformingPost?: string;
+	following?: number;
+	storyViews?: number;
+	videoViews?: number;
+}
+
 // GET - Fetch platform metrics for a user
 export async function GET(
 	request: NextRequest,
@@ -116,7 +148,7 @@ export async function GET(
 			success: true,
 			metrics: validMetrics,
 		});
-	} catch (error) {
+	} catch (error: unknown) {
 		console.error("Error fetching platform metrics:", error);
 		return NextResponse.json(
 			{ success: false, message: "Internal server error" },
@@ -126,7 +158,7 @@ export async function GET(
 }
 
 // Function to fetch real metrics from social media platforms
-async function fetchRealPlatformMetrics(connection: any) {
+async function fetchRealPlatformMetrics(connection: SocialConnectionData) {
 	try {
 		const metaApi = new MetaApi({
 			accessToken: connection.accessToken,
@@ -134,7 +166,7 @@ async function fetchRealPlatformMetrics(connection: any) {
 			platform: connection.platform,
 		});
 
-		let metrics: any = {
+		let metrics: PlatformMetricsData = {
 			// Default API limits based on platform
 			apiLimit: connection.platform === "instagram" ? 200 : 300,
 			apiUsed: 0, // This would need to be tracked separately
@@ -142,6 +174,14 @@ async function fetchRealPlatformMetrics(connection: any) {
 
 		if (connection.platform === "facebook") {
 			// Fetch Facebook page insights
+			if (!connection.profileId) {
+				console.error(
+					"Facebook Profile ID missing for connection:",
+					connection._id
+				);
+				return metrics;
+			}
+
 			const pageInsights = await metaApi.getPageInsights(
 				connection.profileId
 			);
@@ -206,7 +246,7 @@ async function fetchRealPlatformMetrics(connection: any) {
 		}
 
 		return metrics;
-	} catch (error) {
+	} catch (error: unknown) {
 		console.error(
 			`Error fetching real metrics for ${connection.platform}:`,
 			error

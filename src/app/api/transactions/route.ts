@@ -2,6 +2,18 @@ import { NextRequest, NextResponse } from "next/server";
 import { connectDb } from "@/lib/dbconfig";
 import { getUserFromToken } from "@/lib/utils";
 
+// Define interface for transaction data
+interface Transaction {
+	id: string;
+	amount: number;
+	currency: string;
+	status: string;
+	paymentMethod: string;
+	description: string;
+	planName: string;
+	createdAt: string;
+}
+
 export async function GET(request: NextRequest) {
 	try {
 		const token = request.cookies.get("token")?.value;
@@ -35,13 +47,13 @@ export async function GET(request: NextRequest) {
 
 		// For now, return empty transactions since we're using UPI payments
 		// In the future, you can create a Transaction model and store UPI payment details
-		const transactions: any[] = [];
+		const transactions: Transaction[] = [];
 
 		return NextResponse.json({
 			success: true,
 			transactions,
 		});
-	} catch (error) {
+	} catch (error: unknown) {
 		console.error("Error fetching transactions:", error);
 		return NextResponse.json(
 			{ message: "Failed to fetch transactions", success: false },

@@ -3,11 +3,33 @@ import { connectDb } from "@/lib/dbconfig";
 import { ScheduledPost } from "@/models/scheduledPost.model";
 import { MetaApi } from "@/lib/meta-api";
 import { SocialConnection } from "@/models/socialConnection.model";
-import mongoose from "mongoose";
 
-// Cron endpoint for processing scheduled posts
-// Call this URL: https://yourdomain.com/api/cron/scheduled-posts
-// Set cron job to run every minute: * * * * *
+// Define interfaces for better type safety
+interface PublishResult {
+	success: boolean;
+	platform: string;
+	result?: unknown;
+	error?: string;
+}
+
+interface ScheduledPostData {
+	_id: string;
+	title: string;
+	content: string;
+	platforms: string[];
+	mediaFiles?: string[];
+	userId: string;
+}
+
+interface SocialConnectionData {
+	accessToken: string;
+	userId: string;
+	platform: string;
+	pageId?: string;
+	pageAccessToken?: string;
+	instagramAccountId?: string;
+}
+
 export async function GET() {
 	try {
 		console.log(
@@ -87,7 +109,9 @@ export async function GET() {
 				// Check results
 				const successfulPlatforms = publishResults
 					.filter(
-						(result): result is PromiseFulfilledResult<any> =>
+						(
+							result
+						): result is PromiseFulfilledResult<PublishResult> =>
 							result.status === "fulfilled" &&
 							result.value.success
 					)
@@ -99,7 +123,7 @@ export async function GET() {
 							result
 						): result is
 							| PromiseRejectedResult
-							| PromiseFulfilledResult<any> =>
+							| PromiseFulfilledResult<PublishResult> =>
 							result.status === "rejected" ||
 							(result.status === "fulfilled" &&
 								!result.value.success)
@@ -144,7 +168,7 @@ export async function GET() {
 				}
 
 				processedCount++;
-			} catch (error) {
+			} catch (error: unknown) {
 				console.error(`❌ Error processing post ${post._id}:`, error);
 				await markPostAsFailed(
 					post._id,
@@ -168,7 +192,7 @@ export async function GET() {
 			failed: failureCount,
 			timestamp: now.toISOString(),
 		});
-	} catch (error) {
+	} catch (error: unknown) {
 		console.error("❌ Cron job error:", error);
 		return NextResponse.json(
 			{
@@ -183,7 +207,11 @@ export async function GET() {
 }
 
 // Helper function to publish post to a specific platform
-async function publishToPlatform(post: any, connection: any, platform: string) {
+async function publishToPlatform(
+	post: ScheduledPostData,
+	connection: SocialConnectionData,
+	platform: string
+) {
 	try {
 		console.log(`📤 Publishing to ${platform}...`);
 
@@ -250,7 +278,7 @@ async function publishToPlatform(post: any, connection: any, platform: string) {
 			platform,
 			result: publishResult,
 		};
-	} catch (error) {
+	} catch (error: unknown) {
 		console.error(`❌ Failed to publish to ${platform}:`, error);
 		return {
 			success: false,
@@ -269,7 +297,7 @@ async function markPostAsPublished(postId: string, platforms: string[]) {
 			publishedPlatforms: platforms,
 			updatedAt: new Date(),
 		});
-	} catch (error) {
+	} catch (error: unknown) {
 		console.error("Error marking post as published:", error);
 	}
 }
@@ -282,7 +310,7 @@ async function markPostAsFailed(postId: string, reason: string) {
 			failureReasons: { general: reason },
 			updatedAt: new Date(),
 		});
-	} catch (error) {
+	} catch (error: unknown) {
 		console.error("Error marking post as failed:", error);
 	}
 }

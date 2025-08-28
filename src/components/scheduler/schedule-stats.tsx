@@ -7,13 +7,19 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
 	Clock,
-	Calendar,
 	CheckCircle,
 	AlertCircle,
 	FileText,
 	ImageIcon,
 	Video,
 } from "lucide-react";
+
+interface ScheduledPost {
+	_id: string;
+	platforms: string[];
+	postType: string;
+	status: string;
+}
 
 interface ScheduleStats {
 	totalPosts: number;
@@ -57,38 +63,41 @@ export function ScheduleStats() {
 				// Calculate stats
 				const totalPosts = posts.length;
 				const scheduledPosts = posts.filter(
-					(p: any) => p.status === "scheduled"
+					(p: ScheduledPost) => p.status === "scheduled"
 				).length;
 				const publishedPosts = posts.filter(
-					(p: any) => p.status === "published"
+					(p: ScheduledPost) => p.status === "published"
 				).length;
 				const draftPosts = posts.filter(
-					(p: any) => p.status === "draft"
+					(p: ScheduledPost) => p.status === "draft"
 				).length;
 				const failedPosts = posts.filter(
-					(p: any) => p.status === "failed"
+					(p: ScheduledPost) => p.status === "failed"
 				).length;
 
 				const postsByType = {
-					text: posts.filter((p: any) => p.postType === "text")
-						.length,
-					image: posts.filter((p: any) => p.postType === "image")
-						.length,
-					video: posts.filter((p: any) => p.postType === "video")
-						.length,
+					text: posts.filter(
+						(p: ScheduledPost) => p.postType === "text"
+					).length,
+					image: posts.filter(
+						(p: ScheduledPost) => p.postType === "image"
+					).length,
+					video: posts.filter(
+						(p: ScheduledPost) => p.postType === "video"
+					).length,
 				};
 
 				const postsByPlatform = {
-					facebook: posts.filter((p: any) =>
+					facebook: posts.filter((p: ScheduledPost) =>
 						p.platforms.includes("facebook")
 					).length,
-					instagram: posts.filter((p: any) =>
+					instagram: posts.filter((p: ScheduledPost) =>
 						p.platforms.includes("instagram")
 					).length,
-					twitter: posts.filter((p: any) =>
+					twitter: posts.filter((p: ScheduledPost) =>
 						p.platforms.includes("twitter")
 					).length,
-					linkedin: posts.filter((p: any) =>
+					linkedin: posts.filter((p: ScheduledPost) =>
 						p.platforms.includes("linkedin")
 					).length,
 				};

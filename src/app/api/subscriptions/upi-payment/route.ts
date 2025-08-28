@@ -125,7 +125,7 @@ export async function POST(request: NextRequest) {
 			transactionId: transactionResult._id,
 			status: "success",
 		});
-	} catch (error: any) {
+	} catch (error) {
 		console.error("UPI payment submission error:", error);
 		return NextResponse.json(
 			{ message: "Internal server error" },

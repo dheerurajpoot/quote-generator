@@ -78,8 +78,10 @@ export default function PendingPaymentsPage() {
 			} else {
 				throw new Error("Failed to fetch subscriptions");
 			}
-		} catch (err: any) {
-			setError(err.message || "Failed to fetch subscriptions");
+		} catch (err: unknown) {
+			setError(
+				(err as Error)?.message || "Failed to fetch subscriptions"
+			);
 		} finally {
 			setLoading(false);
 		}
@@ -112,8 +114,8 @@ export default function PendingPaymentsPage() {
 				const errorData = await response.json();
 				throw new Error(errorData.error || "Failed to verify payment");
 			}
-		} catch (err: any) {
-			setError(err.message || "Failed to verify payment");
+		} catch (err: unknown) {
+			setError((err as Error)?.message || "Failed to verify payment");
 		} finally {
 			setVerifying(false);
 		}
@@ -238,7 +240,13 @@ export default function PendingPaymentsPage() {
 											: "outline"
 									}
 									onClick={() =>
-										setStatusFilter(status as any)
+										setStatusFilter(
+											status as
+												| "all"
+												| "pending"
+												| "active"
+												| "rejected"
+										)
 									}
 									className='capitalize'>
 									{status}

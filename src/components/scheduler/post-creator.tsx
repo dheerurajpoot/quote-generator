@@ -244,9 +244,11 @@ export function PostCreator() {
 				setUploadedFiles([]);
 				setHashtags([]);
 			}
-		} catch (error: any) {
-			console.error("Error creating post:", error);
-			toast.error(error.response?.data?.error || "Failed to create post");
+		} catch (error: unknown) {
+			if (error instanceof Error) {
+				console.error("Error creating post:", error);
+				toast.error(error.message || "Failed to create post");
+			}
 		} finally {
 			setLoading(false);
 		}
@@ -318,11 +320,12 @@ export function PostCreator() {
 					toast.error("Failed to publish post");
 				}
 			}
-		} catch (error: any) {
-			console.error("Error publishing post:", error);
-			toast.error(
-				error.response?.data?.error || "Failed to publish post"
-			);
+		} catch (error: unknown) {
+			if (error instanceof Error) {
+				toast.error(error.message || "Failed to publish post");
+			} else {
+				toast.error("Failed to publish post");
+			}
 		} finally {
 			setLoading(false);
 		}

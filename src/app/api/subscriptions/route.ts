@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
 		await connectDb();
 
 		const body = await request.json();
-		const { userId: requestUserId, planId, amount } = body;
+		const { userId: requestUserId, planId } = body;
 
 		// Validate user can only create subscriptions for themselves
 		if (requestUserId !== user._id.toString()) {

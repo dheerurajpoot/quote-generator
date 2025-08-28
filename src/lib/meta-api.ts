@@ -455,12 +455,13 @@ export class MetaApi {
 					);
 
 					postsThisMonth = posts.filter(
-						(post: any) =>
+						(post: { created_time: string }) =>
 							new Date(post.created_time) >= oneMonthAgo
 					).length;
 
 					postsThisWeek = posts.filter(
-						(post: any) => new Date(post.created_time) >= oneWeekAgo
+						(post: { created_time: string }) =>
+							new Date(post.created_time) >= oneWeekAgo
 					).length;
 
 					if (posts.length > 0) {
@@ -468,6 +469,7 @@ export class MetaApi {
 					}
 				}
 			} catch (error) {
+				console.error("Error fetching page insights:", error);
 				console.log(
 					"Feed endpoint not available, using estimated post count"
 				);
@@ -478,7 +480,7 @@ export class MetaApi {
 			}
 
 			// Get page insights (requires additional permissions)
-			let insights: any[] = [];
+			let insights: { name: string; values: { value: number }[] }[] = [];
 			let pageViews = 0;
 			let reach = 0;
 			let impressions = 0;
@@ -525,6 +527,7 @@ export class MetaApi {
 					);
 				}
 			} catch (error) {
+				console.error("Error fetching page insights:", error);
 				console.log(
 					"Page insights not available, using estimated metrics"
 				);
@@ -617,22 +620,24 @@ export class MetaApi {
 			);
 
 			const postsThisMonth = media.filter(
-				(post: any) =>
+				(post: { timestamp: string }) =>
 					new Date(post.timestamp || Date.now()) >= oneMonthAgo
 			).length;
 
 			const postsThisWeek = media.filter(
-				(post: any) =>
+				(post: { timestamp: string }) =>
 					new Date(post.timestamp || Date.now()) >= oneWeekAgo
 			).length;
 
 			// Calculate engagement metrics
 			const totalLikes = media.reduce(
-				(sum: number, post: any) => sum + (post.like_count || 0),
+				(sum: number, post: { like_count: number }) =>
+					sum + (post.like_count || 0),
 				0
 			);
 			const totalComments = media.reduce(
-				(sum: number, post: any) => sum + (post.comments_count || 0),
+				(sum: number, post: { comments_count: number }) =>
+					sum + (post.comments_count || 0),
 				0
 			);
 			const totalEngagement = totalLikes + totalComments;
@@ -748,31 +753,34 @@ export class MetaApi {
 		return Math.random() * 2.5 + 0.5;
 	}
 
-	private extractInsightValue(insights: any[], metric: string): number {
-		const insight = insights.find((i: any) => i.name === metric);
+	private extractInsightValue(
+		insights: { name: string; values: { value: number }[] }[],
+		metric: string
+	): number {
+		const insight = insights.find((i) => i.name === metric);
 		return insight ? insight.values?.[0]?.value || 0 : 0;
 	}
 
-	private calculateGrowthRate(posts: any[]): number {
+	private calculateGrowthRate(posts: {}[]): number {
 		if (posts.length < 2) return 0;
 		// This would need historical data to calculate real growth
 		return Math.random() * 20 - 10; // Placeholder: -10% to +10%
 	}
 
-	private estimateResponseTime(posts: any[]): number {
+	private estimateResponseTime(posts: {}[]): number {
 		if (posts.length === 0) return 0;
 		// This would need comment/engagement data to calculate real response time
 		return Math.floor(Math.random() * 4 + 1); // Placeholder: 1-4 hours
 	}
 
-	private assessContentQuality(posts: any[]): string {
+	private assessContentQuality(posts: {}[]): string {
 		if (posts.length === 0) return "Unknown";
 		// This would need engagement metrics to assess real quality
 		const qualities = ["Good", "Excellent", "Very Good"];
 		return qualities[Math.floor(Math.random() * qualities.length)];
 	}
 
-	private findBestPerformingPost(posts: any[]): string {
+	private findBestPerformingPost(posts: { caption: string }[]): string {
 		if (posts.length === 0) return "N/A";
 		// This would need engagement data to find the real best post
 		const post = posts[Math.floor(Math.random() * posts.length)];
@@ -784,8 +792,8 @@ export class MetaApi {
 		return Math.floor(followers * (0.3 + Math.random() * 0.3));
 	}
 
-	private estimateVideoViews(media: any[]): number {
-		const videos = media.filter((post: any) => post.media_type === "VIDEO");
+	private estimateVideoViews(media: { media_type: string }[]): number {
+		const videos = media.filter((post) => post.media_type === "VIDEO");
 		if (videos.length === 0) return 0;
 		// Videos typically get 1.5-3x more views than reach
 		return Math.floor(videos.length * (100 + Math.random() * 200));

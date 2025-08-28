@@ -15,9 +15,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
 	MessageSquare,
 	Link,
-	Clock,
-	CheckCircle,
-	AlertCircle,
 	Loader2,
 	FileText,
 	ImageIcon,
@@ -42,20 +39,6 @@ const typeIcons = {
 	text: FileText,
 	image: ImageIcon,
 	video: Video,
-};
-
-const statusIcons = {
-	draft: Clock,
-	scheduled: Clock,
-	published: CheckCircle,
-	failed: AlertCircle,
-};
-
-const statusColors = {
-	draft: "secondary",
-	scheduled: "default",
-	published: "default",
-	failed: "destructive",
 };
 
 export function RecentActivity() {
@@ -183,9 +166,9 @@ export function RecentActivity() {
 										activity.status && (
 											<Badge
 												variant={
-													statusColors[
-														activity.status as keyof typeof statusColors
-													] as any
+													activity.status === "draft"
+														? "default"
+														: "secondary"
 												}
 												className='text-xs'>
 												{activity.status}
