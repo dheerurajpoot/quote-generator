@@ -215,7 +215,7 @@ export function PostCreator() {
 				postType,
 				platforms: selectedPlatforms,
 				status: isScheduled ? "scheduled" : "draft",
-				mediaFiles: uploadedFiles.map((file) => file.data), // Base64 data URLs for Cloudinary
+				mediaFiles: uploadedFiles.map((file) => file.data),
 				hashtags,
 				scheduledDate: isScheduled ? scheduleDate : undefined,
 				scheduledTime: isScheduled ? scheduleTime : undefined,
@@ -283,7 +283,7 @@ export function PostCreator() {
 				content: postContent.trim(),
 				postType,
 				platforms: selectedPlatforms,
-				status: "draft", // Save as draft first
+				status: "published",
 				mediaFiles: uploadedFiles.map((file) => file.data),
 				hashtags,
 			};
@@ -295,30 +295,18 @@ export function PostCreator() {
 			);
 
 			if (createResponse.data.success) {
-				// Now publish it immediately
-				const publishResponse = await axios.post(
-					`/api/users/${user._id}/scheduled-posts/publish`,
-					{
-						postId: createResponse.data.post._id,
-					}
-				);
+				toast.success("Post published in 2 minutes! Please wait");
 
-				if (publishResponse.data.success) {
-					toast.success("Post published immediately!");
-
-					// Reset form
-					setPostTitle("");
-					setPostContent("");
-					setSelectedPlatforms(["facebook", "instagram"]);
-					setPostType("text");
-					setScheduleDate(undefined);
-					setScheduleTime("09:00");
-					setIsScheduled(false);
-					setUploadedFiles([]);
-					setHashtags([]);
-				} else {
-					toast.error("Failed to publish post");
-				}
+				// Reset form
+				setPostTitle("");
+				setPostContent("");
+				setSelectedPlatforms(["facebook", "instagram"]);
+				setPostType("text");
+				setScheduleDate(undefined);
+				setScheduleTime("09:00");
+				setIsScheduled(false);
+				setUploadedFiles([]);
+				setHashtags([]);
 			}
 		} catch (error: unknown) {
 			if (error instanceof Error) {
@@ -534,7 +522,7 @@ export function PostCreator() {
 												className={cn(
 													"flex items-center space-x-3 p-3 border rounded-lg cursor-pointer transition-colors",
 													isSelected
-														? "border-secondary bg-secondary/10"
+														? "border-green-600 "
 														: "border-border hover:bg-muted"
 												)}
 												onClick={() =>
@@ -559,7 +547,7 @@ export function PostCreator() {
 												{isSelected && (
 													<Badge
 														variant='secondary'
-														className='ml-auto'>
+														className='ml-auto text-green-600'>
 														Selected
 													</Badge>
 												)}
@@ -621,32 +609,92 @@ export function PostCreator() {
 									</div>
 
 									<div className='space-y-2'>
-										<Label>Time</Label>
-										<Select
-											value={scheduleTime}
-											onValueChange={setScheduleTime}>
-											<SelectTrigger>
-												<Clock className='mr-2 h-4 w-4' />
-												<SelectValue />
-											</SelectTrigger>
-											<SelectContent>
-												{Array.from(
-													{ length: 24 },
-													(_, i) => {
-														const hour = i
-															.toString()
-															.padStart(2, "0");
-														return (
-															<SelectItem
-																key={`${hour}:00`}
-																value={`${hour}:00`}>
-																{hour}:00
-															</SelectItem>
-														);
-													}
-												)}
-											</SelectContent>
-										</Select>
+										<Label>Hour</Label>
+										<div className='flex gap-2'>
+											<Select
+												value={
+													scheduleTime.split(":")[0]
+												}
+												onValueChange={(hour) => {
+													const minute =
+														scheduleTime.split(
+															":"
+														)[1];
+													setScheduleTime(
+														`${hour}:${minute}`
+													);
+												}}>
+												<SelectTrigger className='w-20'>
+													<Clock className='h-4 w-4' />
+													Hour
+													<SelectValue />
+												</SelectTrigger>
+												<SelectContent>
+													{Array.from(
+														{ length: 24 },
+														(_, i) => {
+															const hour = i
+																.toString()
+																.padStart(
+																	2,
+																	"0"
+																);
+															return (
+																<SelectItem
+																	key={hour}
+																	value={
+																		hour
+																	}>
+																	{hour}
+																</SelectItem>
+															);
+														}
+													)}
+												</SelectContent>
+											</Select>
+											<span className='text-lg font-medium text-muted-foreground'>
+												:
+											</span>
+											<Select
+												value={
+													scheduleTime.split(":")[1]
+												}
+												onValueChange={(minute) => {
+													const hour =
+														scheduleTime.split(
+															":"
+														)[0];
+													setScheduleTime(
+														`${hour}:${minute}`
+													);
+												}}>
+												<SelectTrigger className='w-20'>
+													<SelectValue />
+												</SelectTrigger>
+												<SelectContent>
+													{Array.from(
+														{ length: 60 },
+														(_, i) => {
+															const minute = i
+																.toString()
+																.padStart(
+																	2,
+																	"0"
+																);
+															return (
+																<SelectItem
+																	key={minute}
+																	value={
+																		minute
+																	}>
+																	{minute}
+																</SelectItem>
+															);
+														}
+													)}
+												</SelectContent>
+											</Select>
+										</div>
 									</div>
 								</div>
 							)}
@@ -658,16 +706,20 @@ export function PostCreator() {
 							<div className='space-y-2'>
 								<input
 									type='text'
-									placeholder='#motivation #inspiration'
+									placeholder='Type hashtags like: motivation inspiration success'
 									value={hashtags.join(" ")}
 									onChange={(e) => {
-										const tags = e.target.value
+										const inputValue = e.target.value;
+										// Allow typing freely, but format hashtags properly
+										const tags = inputValue
 											.split(" ")
-											.filter(
-												(tag) =>
-													tag.startsWith("#") &&
-													tag.length > 1
-											);
+											.map((tag) => {
+												// Add # if not present
+												const cleanTag = tag.trim();
+												return cleanTag.startsWith("#")
+													? cleanTag
+													: `#${cleanTag}`;
+											});
 										setHashtags(tags);
 									}}
 									className='w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent'

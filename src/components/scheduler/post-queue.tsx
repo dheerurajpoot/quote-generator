@@ -32,9 +32,7 @@ import { format } from "date-fns";
 import {
 	Search,
 	MoreHorizontal,
-	Edit,
 	Trash2,
-	Copy,
 	Clock,
 	CheckCircle,
 	AlertCircle,
@@ -44,6 +42,7 @@ import {
 	FileText,
 	ImageIcon,
 	Video,
+	Loader2,
 } from "lucide-react";
 
 interface ScheduledPost {
@@ -217,7 +216,7 @@ export function PostQueue() {
 				<TabsContent value='all' className='space-y-4'>
 					{loading ? (
 						<div className='flex items-center justify-center py-8'>
-							<div className='animate-spin rounded-full h-8 w-8 border-b-2 border-primary'></div>
+							<Loader2 className='animate-spin rounded-full h-8 w-8' />
 						</div>
 					) : (
 						<PostList
@@ -230,7 +229,7 @@ export function PostQueue() {
 				<TabsContent value='draft' className='space-y-4'>
 					{loading ? (
 						<div className='flex items-center justify-center py-8'>
-							<div className='animate-spin rounded-full h-8 w-8 border-b-2 border-primary'></div>
+							<Loader2 className='animate-spin rounded-full h-8 w-8' />
 						</div>
 					) : (
 						<PostList
@@ -244,7 +243,7 @@ export function PostQueue() {
 					{loading ? (
 						<div className='flex items-center justify-center py-8'>
 							<div className='flex items-center justify-center py-8'>
-								<div className='animate-spin rounded-full h-8 w-8 border-b-2 border-primary'></div>
+								<Loader2 className='animate-spin rounded-full h-8 w-8' />
 							</div>
 						</div>
 					) : (
@@ -258,7 +257,7 @@ export function PostQueue() {
 				<TabsContent value='published' className='space-y-4'>
 					{loading ? (
 						<div className='flex items-center justify-center py-8'>
-							<div className='animate-spin rounded-full h-8 w-8 border-b-2 border-primary'></div>
+							<Loader2 className='animate-spin rounded-full h-8 w-8' />
 						</div>
 					) : (
 						<PostList
@@ -271,7 +270,7 @@ export function PostQueue() {
 				<TabsContent value='failed' className='space-y-4'>
 					{loading ? (
 						<div className='flex items-center justify-center py-8'>
-							<div className='animate-spin rounded-full h-8 w-8 border-b-2 border-primary'></div>
+							<Loader2 className='animate-spin rounded-full h-8 w-8' />
 						</div>
 					) : (
 						<PostList
@@ -295,6 +294,38 @@ function PostList({
 	onRefresh: () => void;
 	user: User | null;
 }) {
+	const handleInstantPublish = async (
+		post: ScheduledPost,
+		userId: string
+	) => {
+		try {
+			const postData = {
+				title: post.title.trim(),
+				content: post.content.trim(),
+				postType: post.postType,
+				platforms: post.platforms,
+				status: "published",
+				mediaFiles: post.mediaFiles,
+				hashtags: post.hashtags,
+			};
+
+			// Create the post
+			const createResponse = await axios.post(
+				`/api/users/${userId}/scheduled-posts`,
+				postData
+			);
+
+			if (createResponse.data.success) {
+				toast.success("Post published in 2 minutes! Please wait");
+			}
+		} catch (error: unknown) {
+			if (error instanceof Error) {
+				toast.error(error.message || "Failed to publish post");
+			} else {
+				toast.error("Failed to publish post");
+			}
+		}
+	};
 	if (posts.length === 0) {
 		return (
 			<Card>
@@ -402,40 +433,16 @@ function PostList({
 									<DropdownMenuContent align='end'>
 										{post.status === "draft" && (
 											<DropdownMenuItem
-												onClick={async () => {
-													try {
-														await axios.post(
-															`/api/users/${user?._id}/scheduled-posts/publish`,
-															{
-																postId: post._id,
-															}
-														);
-														toast.success(
-															"Post published successfully!"
-														);
-														onRefresh();
-													} catch (error) {
-														console.error(
-															"Error publishing post:",
-															error
-														);
-														toast.error(
-															"Failed to publish post"
-														);
-													}
-												}}>
+												onClick={() =>
+													handleInstantPublish(
+														post,
+														user?._id || ""
+													)
+												}>
 												<CheckCircle className='mr-2 h-4 w-4' />
 												Publish Now
 											</DropdownMenuItem>
 										)}
-										<DropdownMenuItem>
-											<Edit className='mr-2 h-4 w-4' />
-											Edit
-										</DropdownMenuItem>
-										<DropdownMenuItem>
-											<Copy className='mr-2 h-4 w-4' />
-											Duplicate
-										</DropdownMenuItem>
 										<DropdownMenuItem
 											className='text-destructive'
 											onClick={async () => {

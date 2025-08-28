@@ -4,6 +4,7 @@ import { ScheduledPost } from "@/models/scheduledPost.model";
 import { getUserFromToken } from "@/lib/utils";
 import mongoose from "mongoose";
 import { uploadImage, uploadVideo } from "@/lib/image-utils";
+import { User } from "@/models/user.model";
 
 // Define the query interface for MongoDB queries
 interface ScheduledPostQuery {
@@ -125,22 +126,8 @@ export async function POST(
 		const { userId } = await params;
 		const body = await request.json();
 
-		// Get token from cookie
-		const token = request.headers
-			.get("cookie")
-			?.split("; ")
-			?.find((row) => row.startsWith("token="))
-			?.split("=")[1];
-
-		if (!token) {
-			return NextResponse.json(
-				{ message: "Authentication required", success: false },
-				{ status: 401 }
-			);
-		}
-
 		// Verify user
-		const user = await getUserFromToken(token);
+		const user = await User.findById(userId);
 		if (!user) {
 			return NextResponse.json(
 				{ message: "User not found", success: false },
@@ -272,6 +259,8 @@ export async function POST(
 			}
 
 			scheduledAt = scheduledDate;
+		} else if (body.status === "published") {
+			scheduledAt = new Date(new Date().getTime() + 1 * 60 * 1000);
 		}
 
 		// Create post with new structure
@@ -279,8 +268,9 @@ export async function POST(
 			...body,
 			userId: new mongoose.Types.ObjectId(userId),
 			lastModifiedBy: user._id,
-			mediaFiles, // Cloudinary URLs
-			scheduledAt, // Single datetime field for cron compatibility
+			mediaFiles,
+			status: "scheduled",
+			scheduledAt,
 		});
 
 		await post.save();

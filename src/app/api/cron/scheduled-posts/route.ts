@@ -19,39 +19,71 @@ interface ScheduledPostData {
 	platforms: string[];
 	mediaFiles?: string[];
 	userId: string;
+	scheduledAt?: Date;
+	status: string;
+	hashtags?: string[];
 }
 
 interface SocialConnectionData {
 	accessToken: string;
 	userId: string;
 	platform: string;
-	pageId?: string;
+	profileId: string; // Changed from pageId to profileId
 	pageAccessToken?: string;
 	instagramAccountId?: string;
 }
 
+// Function to check if it's time to post based on scheduledAt
+const shouldPostNow = (
+	scheduledAt: Date,
+	bufferMinutes: number = 2
+): boolean => {
+	const now = new Date();
+	const scheduledTime = new Date(scheduledAt);
+
+	// Calculate time difference in minutes
+	const timeDiffMinutes = Math.floor(
+		(now.getTime() - scheduledTime.getTime()) / (1000 * 60)
+	);
+
+	// Post is ready if it's within the buffer window (past scheduled time but not too old)
+	return timeDiffMinutes >= 0 && timeDiffMinutes <= bufferMinutes;
+};
+
+// Function to get next posting time for a post
+const getNextPostingTime = (scheduledAt: Date): Date => {
+	return new Date(scheduledAt);
+};
+
 export async function GET() {
 	try {
-		console.log(
-			"🕐 Cron job triggered for scheduled posts at:",
-			new Date().toISOString()
-		);
-
 		await connectDb();
 
-		// Find all posts that are scheduled and ready to publish
+		// Find all posts that need to be processed
 		const now = new Date();
-		const readyPosts = await ScheduledPost.find({
-			status: "scheduled",
-			scheduledAt: { $lte: now }, // Posts scheduled for now or in the past
+		const bufferMinutes = 2;
+
+		const postsToProcess = await ScheduledPost.find({
+			$or: [
+				// Scheduled posts that are ready
+				{
+					status: "scheduled",
+					scheduledAt: {
+						$lte: new Date(
+							now.getTime() + bufferMinutes * 60 * 1000
+						), // Within buffer window
+						$gte: new Date(
+							now.getTime() - bufferMinutes * 60 * 1000
+						), // Not too old
+					},
+				},
+			],
 		}).populate("userId", "email");
 
-		console.log(`📝 Found ${readyPosts.length} posts ready to publish`);
-
-		if (readyPosts.length === 0) {
+		if (postsToProcess.length === 0) {
 			return NextResponse.json({
 				success: true,
-				message: "No posts ready to publish",
+				message: "No posts to process",
 				processed: 0,
 				timestamp: now.toISOString(),
 			});
@@ -60,13 +92,24 @@ export async function GET() {
 		let processedCount = 0;
 		let successCount = 0;
 		let failureCount = 0;
+		let skippedCount = 0;
 
-		// Process each ready post
-		for (const post of readyPosts) {
+		// Process each post
+		for (const post of postsToProcess) {
 			try {
-				console.log(
-					`🚀 Processing post: ${post.title} (ID: ${post._id})`
-				);
+				// For scheduled posts, check if it's actually time to post
+				if (post.status === "scheduled" && post.scheduledAt) {
+					if (!shouldPostNow(post.scheduledAt, bufferMinutes)) {
+						const nextTime = getNextPostingTime(post.scheduledAt);
+						console.log(
+							`⏰ Scheduled post ${
+								post.title
+							} not ready yet. Next check: ${nextTime?.toISOString()}`
+						);
+						skippedCount++;
+						continue;
+					}
+				}
 
 				// Get user's social connections for the platforms
 				const connections = await SocialConnection.find({
@@ -141,9 +184,6 @@ export async function GET() {
 					if (failedPlatforms.length === 0) {
 						// All platforms successful
 						successCount++;
-						console.log(
-							`✅ Post published successfully to all platforms: ${post.title}`
-						);
 					} else {
 						// Partial success
 						successCount++;
@@ -181,7 +221,7 @@ export async function GET() {
 		}
 
 		console.log(
-			`🏁 Cron job completed. Processed: ${processedCount}, Success: ${successCount}, Failed: ${failureCount}`
+			`🏁 Cron job completed. Processed: ${processedCount}, Success: ${successCount}, Failed: ${failureCount}, Skipped: ${skippedCount}`
 		);
 
 		return NextResponse.json({
@@ -190,6 +230,7 @@ export async function GET() {
 			processed: processedCount,
 			successCount: successCount,
 			failed: failureCount,
+			skipped: skippedCount,
 			timestamp: now.toISOString(),
 		});
 	} catch (error: unknown) {
@@ -213,8 +254,6 @@ async function publishToPlatform(
 	platform: string
 ) {
 	try {
-		console.log(`📤 Publishing to ${platform}...`);
-
 		const metaApi = new MetaApi({
 			accessToken: connection.accessToken,
 			userId: connection.userId.toString(),
@@ -225,20 +264,25 @@ async function publishToPlatform(
 
 		switch (platform) {
 			case "facebook":
-				// For Facebook, we need pageId and pageAccessToken
-				if (connection.pageId && connection.pageAccessToken) {
+				// For Facebook, we need profileId and pageAccessToken
+				if (connection.profileId && connection.pageAccessToken) {
 					const mediaFile =
 						post.mediaFiles && post.mediaFiles.length > 0
 							? post.mediaFiles[0]
 							: "";
+					const caption = `${post.content} \n\n ${post.hashtags?.join(
+						" "
+					)}`;
 					publishResult = await metaApi.postToFacebook(
-						connection.pageId,
+						connection.profileId,
 						connection.pageAccessToken,
 						mediaFile,
-						post.content
+						caption
 					);
 				} else {
-					throw new Error("Missing Facebook page ID or access token");
+					throw new Error(
+						"Missing Facebook profile ID or page access token"
+					);
 				}
 				break;
 			case "instagram":
@@ -251,11 +295,15 @@ async function publishToPlatform(
 						post.mediaFiles && post.mediaFiles.length > 0
 							? post.mediaFiles[0]
 							: "";
+
+					const caption = `${post.content} \n\n ${post.hashtags?.join(
+						" "
+					)}`;
 					publishResult = await metaApi.postToInstagram(
 						connection.instagramAccountId,
 						connection.pageAccessToken,
 						mediaFile,
-						post.content
+						caption
 					);
 				} else {
 					throw new Error(

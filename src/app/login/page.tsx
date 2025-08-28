@@ -38,7 +38,7 @@ export default function LoginPage() {
 
 		const success = await signIn(email, password);
 		if (success) {
-			router.push("/");
+			router.push("/dashboard");
 		}
 	};
 
