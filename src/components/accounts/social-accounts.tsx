@@ -94,6 +94,57 @@ interface AvailablePlatform {
 	userBase: string;
 }
 
+// Platform metrics interface based on the model
+interface PlatformMetric {
+	connectionId: string;
+	platform: "facebook" | "instagram";
+	userId: string;
+	followers: number;
+	following?: number;
+	totalPosts: number;
+	postsThisMonth: number;
+	postsThisWeek: number;
+	engagementRate: number;
+	reach: number;
+	impressions: number;
+	clickRate: number;
+	apiLimit: number;
+	apiUsed: number;
+	growthRate: number;
+	responseTime: number;
+	contentQuality: string;
+	lastPostAt?: Date;
+	bestPerformingPost?: string;
+	nextScheduledPost?: Date;
+	pageViews?: number;
+	storyViews?: number;
+	videoViews?: number;
+	lastFetched: Date;
+	createdAt: Date;
+	updatedAt: Date;
+}
+
+// Facebook SDK response types
+interface FacebookLoginResponse {
+	authResponse: {
+		accessToken: string;
+		expiresIn: number;
+		signedRequest: string;
+		userID: string;
+	} | null;
+	status: string;
+}
+
+interface FacebookApiResponse {
+	instagram_business_account?: {
+		id: string;
+		name: string;
+		username: string;
+		profile_picture_url: string;
+	};
+	error?: FacebookError;
+}
+
 // Available platforms data
 const availablePlatforms: AvailablePlatform[] = [
 	{
@@ -168,7 +219,7 @@ export function SocialAccounts() {
 	const [availablePages, setAvailablePages] = useState<FacebookPage[]>([]);
 	const [showPageDialog, setShowPageDialog] = useState(false);
 	const [platformMetrics, setPlatformMetrics] = useState<{
-		[key: string]: any;
+		[key: string]: PlatformMetric;
 	}>({});
 	const [availableAccounts, setAvailableAccounts] = useState<
 		InstagramAccount[]
@@ -212,8 +263,8 @@ export function SocialAccounts() {
 				`/api/users/${user?._id}/platform-metrics`
 			);
 			if (response.data.success) {
-				const metricsMap: { [key: string]: any } = {};
-				response.data.metrics.forEach((metric: any) => {
+				const metricsMap: { [key: string]: PlatformMetric } = {};
+				response.data.metrics.forEach((metric: PlatformMetric) => {
 					// Find the connection this metric belongs to
 					const connection = connections.find(
 						(conn) => conn._id === metric.connectionId
@@ -248,23 +299,27 @@ export function SocialAccounts() {
 			await initializeFacebookSDK();
 
 			// Request Facebook login
-			const loginResponse = await new Promise<any>((resolve, reject) => {
-				window.FB.login(
-					(response: any) => {
-						if (response.authResponse) {
-							resolve(response);
-						} else {
-							reject(
-								new Error("Facebook login cancelled or failed")
-							);
+			const loginResponse = await new Promise<FacebookLoginResponse>(
+				(resolve, reject) => {
+					window.FB.login(
+						(response: FacebookLoginResponse) => {
+							if (response.authResponse) {
+								resolve(response);
+							} else {
+								reject(
+									new Error(
+										"Facebook login cancelled or failed"
+									)
+								);
+							}
+						},
+						{
+							scope: "pages_manage_posts,pages_read_engagement,pages_show_list,pages_manage_metadata",
+							return_scopes: true,
 						}
-					},
-					{
-						scope: "pages_manage_posts,pages_read_engagement,pages_show_list,pages_manage_metadata",
-						return_scopes: true,
-					}
-				);
-			});
+					);
+				}
+			);
 
 			if (!loginResponse.authResponse?.accessToken) {
 				throw new Error("Failed to get access token from Facebook");
@@ -327,23 +382,27 @@ export function SocialAccounts() {
 			await initializeFacebookSDK();
 
 			// Request Facebook login with Instagram permissions
-			const loginResponse = await new Promise<any>((resolve, reject) => {
-				window.FB.login(
-					(response: any) => {
-						if (response.authResponse) {
-							resolve(response);
-						} else {
-							reject(
-								new Error("Instagram login cancelled or failed")
-							);
+			const loginResponse = await new Promise<FacebookLoginResponse>(
+				(resolve, reject) => {
+					window.FB.login(
+						(response: FacebookLoginResponse) => {
+							if (response.authResponse) {
+								resolve(response);
+							} else {
+								reject(
+									new Error(
+										"Instagram login cancelled or failed"
+									)
+								);
+							}
+						},
+						{
+							scope: "pages_manage_posts,pages_read_engagement,pages_show_list,pages_manage_metadata,instagram_basic,instagram_content_publish",
+							return_scopes: true,
 						}
-					},
-					{
-						scope: "instagram_basic,instagram_content_publish,pages_show_list,pages_read_engagement,pages_manage_posts,pages_manage_metadata,business_management",
-						return_scopes: true,
-					}
-				);
-			});
+					);
+				}
+			);
 
 			if (!loginResponse.authResponse?.accessToken) {
 				throw new Error("Failed to get access token from Instagram");
@@ -399,7 +458,7 @@ export function SocialAccounts() {
 							(resolve) => {
 								window.FB.api(
 									`/${page.id}?fields=instagram_business_account{id,name,username,profile_picture_url}&access_token=${longLivedUserAccessToken}`,
-									(response: any) => {
+									(response: FacebookApiResponse) => {
 										if (response.error) {
 											console.error(
 												`Error fetching Instagram account for page ${page.name}:`,
@@ -416,16 +475,18 @@ export function SocialAccounts() {
 												pageName: page.name,
 												pageAccessToken:
 													page.access_token,
-												instagramAccountId: (
-													response as any
-												).instagram_business_account.id,
-												username: (response as any)
-													.instagram_business_account
-													.username,
-												profilePicture: (
-													response as any
-												).instagram_business_account
-													.profile_picture_url,
+												instagramAccountId:
+													response
+														.instagram_business_account
+														.id,
+												username:
+													response
+														.instagram_business_account
+														.username,
+												profilePicture:
+													response
+														.instagram_business_account
+														.profile_picture_url,
 											});
 										} else {
 											console.log(
@@ -1104,7 +1165,7 @@ export function SocialAccounts() {
 																			new Date(
 																				platformMetrics[
 																					connection._id.toString()
-																				].lastPostAt
+																				].lastPostAt!
 																			),
 																			"MMM d, h:mm a"
 																	  )
@@ -1200,7 +1261,7 @@ export function SocialAccounts() {
 																			new Date(
 																				platformMetrics[
 																					connection._id.toString()
-																				].nextScheduledPost
+																				].nextScheduledPost!
 																			),
 																			"MMM d, h:mm a"
 																	  )

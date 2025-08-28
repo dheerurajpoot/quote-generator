@@ -5,6 +5,21 @@ import { getUserFromToken } from "@/lib/utils";
 import mongoose from "mongoose";
 import { uploadImage, uploadVideo } from "@/lib/image-utils";
 
+// Define the query interface for MongoDB queries
+interface ScheduledPostQuery {
+	userId: mongoose.Types.ObjectId;
+	status?: string;
+	platforms?: string;
+	$or?: Array<{
+		title?: { $regex: string; $options: string };
+		content?: { $regex: string; $options: string };
+	}>;
+	scheduledAt?: {
+		$gte: Date;
+		$lt: Date;
+	};
+}
+
 // GET - Fetch all scheduled posts for a user
 export async function GET(
 	request: NextRequest,
@@ -48,7 +63,7 @@ export async function GET(
 		await connectDb();
 
 		// Build query based on filters
-		const query: any = {
+		const query: ScheduledPostQuery = {
 			userId: new mongoose.Types.ObjectId(userId),
 		};
 
