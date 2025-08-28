@@ -692,7 +692,7 @@ export class MetaApi {
 						accountData.followers_count || 0
 					);
 				}
-			} catch (error) {
+			} catch {
 				console.log(
 					"Instagram insights not available, using estimated values"
 				);
@@ -731,7 +731,7 @@ export class MetaApi {
 	}
 
 	// Helper methods for calculating metrics
-	private calculateEngagementRate(posts: any[]): number {
+	private calculateEngagementRate(posts: { engagement?: number }[]): number {
 		if (posts.length === 0) return 0;
 		// This would need real engagement data from Facebook API
 		return Math.random() * 5 + 1; // Placeholder
@@ -761,19 +761,19 @@ export class MetaApi {
 		return insight ? insight.values?.[0]?.value || 0 : 0;
 	}
 
-	private calculateGrowthRate(posts: {}[]): number {
+	private calculateGrowthRate(posts: { timestamp?: string }[]): number {
 		if (posts.length < 2) return 0;
 		// This would need historical data to calculate real growth
 		return Math.random() * 20 - 10; // Placeholder: -10% to +10%
 	}
 
-	private estimateResponseTime(posts: {}[]): number {
+	private estimateResponseTime(posts: { timestamp?: string }[]): number {
 		if (posts.length === 0) return 0;
 		// This would need comment/engagement data to calculate real response time
 		return Math.floor(Math.random() * 4 + 1); // Placeholder: 1-4 hours
 	}
 
-	private assessContentQuality(posts: {}[]): string {
+	private assessContentQuality(posts: { engagement?: number }[]): string {
 		if (posts.length === 0) return "Unknown";
 		// This would need engagement metrics to assess real quality
 		const qualities = ["Good", "Excellent", "Very Good"];
