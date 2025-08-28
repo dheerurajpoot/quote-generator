@@ -10,7 +10,8 @@ export function cn(...inputs: ClassValue[]) {
 
 export function generateHashtags(content: string, count: number = 5): string[] {
 	const hashtagPattern = /#\w+/g;
-	const existingHashtags = content.match(hashtagPattern) || [];
+	const existingHashtags =
+		content.match(hashtagPattern)?.map((match) => match) || [];
 
 	// Common motivational hashtags
 	const commonHashtags = [
