@@ -245,6 +245,7 @@ export default function AutoQuotePoster() {
 	const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([]);
 	const [isAutoPosting, setIsAutoPosting] = useState(false);
 	const [postingInterval, setPostingInterval] = useState("60");
+	const [campaignName, setCampaignName] = useState("");
 	const [selectedLanguage, setSelectedLanguage] = useState<
 		"hindi" | "english"
 	>("hindi");
@@ -365,6 +366,7 @@ export default function AutoQuotePoster() {
 				try {
 					await axios.post("/api/auto-posting-settings", {
 						userId: user._id,
+						campaignName: campaignName,
 						isEnabled: false,
 						interval: parseInt(postingInterval),
 						platforms: selectedPlatforms,
@@ -394,6 +396,7 @@ export default function AutoQuotePoster() {
 					try {
 						const settingsData = {
 							userId: user._id,
+							campaignName: campaignName,
 							isEnabled: true,
 							interval: parseInt(postingInterval),
 							platforms: selectedPlatforms,

@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import { connectDb } from "@/lib/dbconfig";
-import { AutoPostingSettings } from "@/models/autoPostingSettings.model";
 import { MetaApi } from "@/lib/meta-api";
 import { SocialConnection } from "@/models/socialConnection.model";
 import axios from "axios";
+import { AutoPostingCampaign } from "@/models/autoPostingCampaign.model";
 
 interface AutoPostingSettings {
 	_id: string;
@@ -232,15 +232,6 @@ const shouldPost = (settings: AutoPostingSettings) => {
 		lastPost.getTime() + settings.interval * 60 * 1000
 	);
 
-	console.log(`Posting check for user ${settings.userId}:`, {
-		lastPostTime: lastPost.toISOString(),
-		currentTime: now.toISOString(),
-		minutesSinceLastPost,
-		interval: settings.interval,
-		shouldPost: shouldPostNow,
-		nextPostTime: nextPostTime.toISOString(),
-	});
-
 	return {
 		shouldPost: shouldPostNow,
 		message: shouldPostNow
@@ -259,7 +250,7 @@ async function retryUpdateLastPostTime(
 	let attempt = 0;
 	let updatedSettings = null;
 	while (attempt < maxRetries) {
-		updatedSettings = await AutoPostingSettings.findByIdAndUpdate(
+		updatedSettings = await AutoPostingCampaign.findByIdAndUpdate(
 			id,
 			{ lastPostTime: newLastPostTime },
 			{ new: true }
@@ -285,20 +276,14 @@ const handleUserAutoPosting = async (settings: AutoPostingSettings) => {
 				nextPostTime: postingCheck.nextPostTime,
 			};
 		}
-
 		// Get a new quote based on language setting
 		const response = await axios.get(
-			`${process.env.NEXT_PUBLIC_APP_URL}/api/quotes/generate?userId=${
-				settings.userId
-			}&language=${settings.language || "hindi"}&template=${
-				settings.template || "classic"
-			}`,
+			`${process.env.NEXT_PUBLIC_APP_URL}/api/quotes/generate?userId=${settings.userId}&language=${settings.language}&template=${settings.template}`,
 			{
 				timeout: 60000, // 60 seconds
 				validateStatus: (status) => status >= 200 && status < 500,
 			}
 		);
-
 		if (!response.data) {
 			throw new Error("Empty response from quote generation");
 		}
@@ -329,13 +314,6 @@ const handleUserAutoPosting = async (settings: AutoPostingSettings) => {
 				`Failed to update lastPostTime for user ${settings.userId} after multiple attempts`
 			);
 		}
-		console.log(
-			`Updated lastPostTime for user ${settings.userId} (pre-post):`,
-			{
-				oldLastPostTime: settings.lastPostTime,
-				newLastPostTime,
-			}
-		);
 
 		if (!connections || connections.length === 0) {
 			return {
@@ -385,11 +363,9 @@ const handleUserAutoPosting = async (settings: AutoPostingSettings) => {
 				});
 
 				const hashtags = generateHashtags(text, author, 15);
-				console.log("HashTags: ", hashtags);
 				const caption = `${text}\n\n— ${author}\n\n${hashtags.join(
 					" "
 				)}`;
-				console.log("caption: ", caption);
 				if (platform === "facebook") {
 					const postResponse = await metaApi.postToFacebook(
 						connection.profileId,
@@ -454,7 +430,7 @@ export async function GET(request: Request): Promise<Response> {
 		const apiKey = request.headers.get("x-api-key");
 		if (!apiKey || apiKey !== process.env.CRON_API_KEY) {
 			return NextResponse.json(
-				{ success: false, error: "Unauthorized access" },
+				{ success: false, message: "Unauthorized access" },
 				{ status: 401 }
 			);
 		}
@@ -462,7 +438,7 @@ export async function GET(request: Request): Promise<Response> {
 		await connectDb();
 
 		// Get all enabled auto-posting settings
-		const settings = await AutoPostingSettings.find({ isEnabled: true });
+		const settings = await AutoPostingCampaign.find({ isEnabled: true });
 
 		// Merge jobs by userId: combine platforms for each user
 		const userJobMap = new Map();

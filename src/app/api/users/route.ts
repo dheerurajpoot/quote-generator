@@ -7,11 +7,14 @@ export async function GET() {
 	try {
 		await connectDb();
 		const users = await User.find({}, { password: 0 });
-		return NextResponse.json(users);
+		return NextResponse.json(
+			{ message: "Users fetched successfully", users, success: true },
+			{ status: 200 }
+		);
 	} catch (error) {
 		console.error("Error fetching users:", error);
 		return NextResponse.json(
-			{ error: "Failed to fetch users" },
+			{ message: "Failed to fetch users", success: false },
 			{ status: 500 }
 		);
 	}
@@ -24,7 +27,7 @@ export async function PUT(request: Request) {
 
 		if (!userRole || userRole !== "admin") {
 			return NextResponse.json(
-				{ error: "Unauthorized" },
+				{ message: "Unauthorized", success: false },
 				{ status: 401 }
 			);
 		}
@@ -34,7 +37,7 @@ export async function PUT(request: Request) {
 
 		if (!userId || !updates) {
 			return NextResponse.json(
-				{ error: "Missing required fields" },
+				{ message: "Missing required fields", success: false },
 				{ status: 400 }
 			);
 		}
@@ -47,7 +50,7 @@ export async function PUT(request: Request) {
 
 		if (!user) {
 			return NextResponse.json(
-				{ error: "User not found" },
+				{ message: "User not found", success: false },
 				{ status: 404 }
 			);
 		}
@@ -75,11 +78,14 @@ export async function PUT(request: Request) {
 			});
 		}
 
-		return NextResponse.json(user);
+		return NextResponse.json(
+			{ message: "User updated successfully", user, success: true },
+			{ status: 200 }
+		);
 	} catch (error) {
 		console.error("Error updating user:", error);
 		return NextResponse.json(
-			{ error: "Failed to update user" },
+			{ message: "Failed to update user", success: false },
 			{ status: 500 }
 		);
 	}
@@ -92,7 +98,7 @@ export async function DELETE(request: Request) {
 
 		if (!userRole || userRole !== "admin") {
 			return NextResponse.json(
-				{ error: "Unauthorized" },
+				{ message: "Unauthorized", success: false },
 				{ status: 401 }
 			);
 		}
@@ -102,7 +108,7 @@ export async function DELETE(request: Request) {
 
 		if (!userId) {
 			return NextResponse.json(
-				{ error: "User ID is required" },
+				{ message: "User ID is required", success: false },
 				{ status: 400 }
 			);
 		}
@@ -112,16 +118,19 @@ export async function DELETE(request: Request) {
 
 		if (!user) {
 			return NextResponse.json(
-				{ error: "User not found" },
+				{ message: "User not found", success: false },
 				{ status: 404 }
 			);
 		}
 
-		return NextResponse.json({ message: "User deleted successfully" });
+		return NextResponse.json(
+			{ message: "User deleted successfully", success: true },
+			{ status: 200 }
+		);
 	} catch (error) {
 		console.error("Error deleting user:", error);
 		return NextResponse.json(
-			{ error: "Failed to delete user" },
+			{ message: "Failed to delete user", success: false },
 			{ status: 500 }
 		);
 	}

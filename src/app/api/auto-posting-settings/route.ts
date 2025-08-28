@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import mongoose from "mongoose";
 import { connectDb } from "@/lib/dbconfig";
-import { AutoPostingSettings } from "@/models/autoPostingSettings.model";
+import { AutoPostingCampaign } from "@/models/autoPostingCampaign.model";
 
 export async function GET(request: Request) {
 	try {
@@ -12,45 +12,30 @@ export async function GET(request: Request) {
 
 		if (!userId) {
 			return NextResponse.json(
-				{ error: "User ID is required" },
+				{ message: "User ID is required", success: false },
 				{ status: 400 }
 			);
 		}
 
-		let settings = await AutoPostingSettings.findOne({
+		const settings = await AutoPostingCampaign.find({
 			userId: new mongoose.Types.ObjectId(userId),
 		});
 
-		// If settings exist but don't have language or template field, add them
-		if (settings && (!settings.language || !settings.template)) {
-			const update: { language?: string; template?: string } = {};
-			if (!settings.language) update.language = "hindi";
-			if (!settings.template) update.template = "classic";
-			if (Object.keys(update).length > 0) {
-				console.log(
-					"Migrating existing settings to include language/template field"
-				);
-				settings = await AutoPostingSettings.findOneAndUpdate(
-					{ userId: new mongoose.Types.ObjectId(userId) },
-					{ $set: update },
-					{ new: true }
-				);
-			}
-		}
-
 		return NextResponse.json(
-			settings || {
-				isEnabled: false,
-				platforms: [],
-				interval: 1,
-				language: "hindi",
-				template: "classic",
-			}
+			{
+				message: "Auto-posting settings fetched successfully",
+				settings,
+				success: true,
+			},
+			{ status: 200 }
 		);
 	} catch (error) {
 		console.error("Error fetching auto-posting settings:", error);
 		return NextResponse.json(
-			{ error: "Failed to fetch auto-posting settings" },
+			{
+				message: "Failed to fetch auto-posting settings",
+				success: false,
+			},
 			{ status: 500 }
 		);
 	}
@@ -61,36 +46,53 @@ export async function POST(request: Request) {
 		await connectDb();
 
 		const body = await request.json();
-		const { userId, isEnabled, interval, platforms, language, template } =
-			body;
+		const {
+			userId,
+			isEnabled,
+			campaignName,
+			interval,
+			platforms,
+			language,
+			template,
+		} = body;
 
 		if (!userId) {
 			return NextResponse.json(
-				{ error: "User ID is required" },
+				{ message: "User ID is required", success: false },
 				{ status: 400 }
 			);
 		}
 
-		const settings = await AutoPostingSettings.findOneAndUpdate(
-			{ userId: new mongoose.Types.ObjectId(userId) },
-			{
-				$set: {
-					isEnabled,
-					interval,
-					platforms,
-					language: language || "hindi",
-					template: template || "classic",
-					lastPostTime: isEnabled ? new Date() : null,
-				},
-			},
-			{ upsert: true, new: true }
-		);
+		let settings = new AutoPostingCampaign({
+			userId,
+			campaignName,
+			isEnabled,
+			interval,
+			platforms,
+			language,
+			template,
+			lastPostTime: isEnabled
+				? new Date(new Date().getTime() - interval * 60 * 1000)
+				: null,
+		});
+		await settings.save();
 
-		return NextResponse.json(settings);
+		return NextResponse.json(
+			{
+				message:
+					"Campaign created successfully, auto posting will start in 1 minute",
+				settings,
+				success: true,
+			},
+			{ status: 200 }
+		);
 	} catch (error) {
 		console.error("Error updating auto-posting settings:", error);
 		return NextResponse.json(
-			{ error: "Failed to update auto-posting settings" },
+			{
+				message: "Failed to update auto-posting settings",
+				success: false,
+			},
 			{ status: 500 }
 		);
 	}
@@ -100,31 +102,85 @@ export async function PUT(request: Request) {
 	try {
 		await connectDb();
 
-		const body = await request.json();
-		const { userId, interval } = body;
-
-		if (!userId) {
+		const { searchParams } = new URL(request.url);
+		const campaignId = searchParams.get("campaignId");
+		if (!campaignId) {
 			return NextResponse.json(
-				{ error: "User ID is required" },
+				{ message: "Campaign ID is required", success: false },
 				{ status: 400 }
 			);
 		}
 
-		const settings = await AutoPostingSettings.findOneAndUpdate(
-			{ userId: new mongoose.Types.ObjectId(userId) },
+		const { isEnabled, interval } = await request.json();
+
+		if (!campaignId) {
+			return NextResponse.json(
+				{ message: "Campaign ID is required", success: false },
+				{ status: 400 }
+			);
+		}
+
+		const settings = await AutoPostingCampaign.findByIdAndUpdate(
+			{ _id: new mongoose.Types.ObjectId(campaignId) },
 			{
 				$set: {
-					interval: interval,
+					isEnabled,
+					lastPostTime: isEnabled
+						? new Date(new Date().getTime() - interval * 60 * 1000)
+						: null,
 				},
 			},
 			{ new: true }
 		);
 
-		return NextResponse.json(settings);
+		return NextResponse.json(
+			{
+				message: isEnabled
+					? "Auto posting has been started in 1 minute"
+					: "Auto posting has been stopped",
+				settings,
+				success: true,
+			},
+			{ status: 200 }
+		);
 	} catch (error) {
 		console.error("Error updating last post time:", error);
 		return NextResponse.json(
-			{ error: "Failed to update last post time" },
+			{ message: "Failed to update last post time", success: false },
+			{ status: 500 }
+		);
+	}
+}
+export async function DELETE(request: Request) {
+	try {
+		await connectDb();
+
+		const { searchParams } = new URL(request.url);
+		const campaignId = searchParams.get("campaignId");
+
+		if (!campaignId) {
+			return NextResponse.json(
+				{ message: "Campaign ID is required", success: false },
+				{ status: 400 }
+			);
+		}
+
+		const settings = await AutoPostingCampaign.findOneAndDelete({
+			_id: new mongoose.Types.ObjectId(campaignId),
+		});
+
+		return NextResponse.json(
+			{
+				message: "Campaign deleted successfully",
+				settings,
+				success: true,
+			},
+			{ status: 200 }
+		);
+	} catch (error) {
+		console.error("Error deleting campaign:", error);
+		return NextResponse.json(
+			{ message: "Failed to delete campaign", success: false },
 			{ status: 500 }
 		);
 	}

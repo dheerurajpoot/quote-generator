@@ -351,7 +351,7 @@ export function SocialConnections({
 						return new Promise<InstagramAccount | null>(
 							(resolve) => {
 								window.FB.api<FacebookPageResponse>(
-									`/${page.id}?fields=instagram_business_account{id,name,username,profile_picture_url}`,
+									`/${page.id}?fields=instagram_business_account{id,name,username,profile_picture_url}&access_token=${longLivedUserAccessToken}`,
 									(response) => {
 										if (response.error) {
 											console.error(

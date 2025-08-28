@@ -1,4 +1,4 @@
-export const SITE_NAME = "QuoteArt: Create and Customize Social Media Posts";
+export const SITE_NAME = "QuoteArt";
 export const SITE_DESCRIPTION =
 	"Create and customize beautiful social media posts with custom backgrounds, fonts, and styles.";
 export const SITE_URL = "https://www.quoteart.xyz";

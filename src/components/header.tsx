@@ -39,11 +39,6 @@ export function Header() {
 						className='text-sm font-medium flex items-center gap-1 transition-colors hover:text-primary'>
 						<span className='hidden md:inline'>Create</span>
 					</Link>
-					<Link
-						href='/auto-poster'
-						className='text-sm font-medium flex items-center gap-1 transition-colors hover:text-primary'>
-						<span className='hidden md:inline'>Auto Poster</span>
-					</Link>
 
 					<Link
 						href='/pricing'

@@ -9,6 +9,8 @@ export interface ISocialConnection extends Document {
 	profileId: string;
 	profileName: string;
 	profileImage?: string;
+	followers?: number;
+	status?: string;
 	expiresAt?: Date;
 	createdAt: Date;
 	updatedAt: Date;
@@ -23,6 +25,12 @@ const SocialConnectionSchema = new Schema<ISocialConnection>({
 	profileId: { type: String, required: true },
 	profileName: { type: String, required: true },
 	profileImage: { type: String },
+	followers: { type: Number, default: 0 },
+	status: {
+		type: String,
+		enum: ["connected", "disconnected", "expired"],
+		default: "connected",
+	},
 	expiresAt: { type: Date },
 	createdAt: { type: Date, default: Date.now },
 	updatedAt: { type: Date, default: Date.now },

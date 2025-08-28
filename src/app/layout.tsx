@@ -41,6 +41,7 @@ export default function RootLayout({
 					src='https://www.googletagmanager.com/gtag/js?id=G-3TRBTMGL5N'
 				/>
 				<script
+					suppressHydrationWarning
 					dangerouslySetInnerHTML={{
 						__html: `
 							window.dataLayer = window.dataLayer || [];

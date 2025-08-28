@@ -16,68 +16,55 @@ export interface SubscriptionPlan {
 	id: string;
 	name: string;
 	description: string;
-	price: number;
+	monthlyPrice: number;
+	annualPrice: number;
+	monthlyOriginalPrice?: number;
+	annualOriginalPrice?: number;
 	features: string[];
 	tier: SubscriptionTier;
-	recommended?: boolean;
+	popular?: boolean;
 }
 
 export interface Subscription {
-	id: string;
+	_id: string;
 	userId: string;
 	planId: string;
+	planName: string;
 	tier: SubscriptionTier;
-	status: "active" | "canceled" | "expired" | "pending";
+	status: "active" | "pending" | "canceled" | "expired";
+
+	// UPI Payment fields
+	transactionId?: string;
+	paymentMethod: string;
+	amount: number;
+	billingCycle: "monthly" | "annually";
+
+	// Subscription details
+	currentPeriodStart: Date;
 	currentPeriodEnd: Date;
+	planDuration: string;
+	autoRenew: boolean;
+
+	// Timestamps
 	createdAt: Date;
-	razorpaySubscriptionId?: string;
+	updatedAt: Date;
+	cancelledAt?: Date;
 }
 
 interface SubscriptionContextType {
 	subscription: Subscription | null;
 	loading: boolean;
 	warning: string | null;
-	plans: SubscriptionPlan[];
-	subscribe: (planId: string) => Promise<boolean>;
+	subscribe: (
+		planId: string,
+		billingCycle: "monthly" | "annually",
+		transactionId: string,
+		amount: number
+	) => Promise<boolean>;
 	cancelSubscription: () => Promise<boolean>;
 	isSubscribed: () => boolean;
-	canPost: () => boolean;
-	canSearchImages: () => boolean;
+	refreshSubscription: () => Promise<void>;
 }
-
-export const subscriptionPlans: SubscriptionPlan[] = [
-	{
-		id: "free",
-		name: "Free",
-		description: "Basic quote creation with limited features",
-		price: 0,
-		tier: "free",
-		features: [
-			"Create unlimited quotes",
-			"Basic backgrounds",
-			"Download as PNG",
-			"Basic fonts",
-		],
-	},
-	{
-		id: "premium",
-		name: "Premium",
-		description: "Enhanced features for serious creators",
-		price: 199,
-		tier: "premium",
-		recommended: true,
-		features: [
-			"All Free features",
-			"Premium backgrounds",
-			"Social Media Auto Poster",
-			"Unlimited AI Motivational Quotes",
-			"Posts on Facebook and Instagram",
-			"Unlimited Social Media Posts",
-			"Custom watermark",
-			"Priority support",
-		],
-	},
-];
 
 const SubscriptionContext = createContext<SubscriptionContextType | undefined>(
 	undefined
@@ -89,170 +76,195 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
 	const [loading, setLoading] = useState(true);
 	const [warning, setWarning] = useState<string | null>(null);
 
-	useEffect(() => {
-		// Check if user has a subscription
-		const checkSubscription = async () => {
-			if (!user) {
+	const fetchSubscription = async () => {
+		if (!user) {
+			setSubscription(null);
+			setLoading(false);
+			return;
+		}
+
+		try {
+			setLoading(true);
+			setWarning(null);
+
+			const response = await axios.get(
+				`/api/subscriptions?userId=${user._id}`
+			);
+
+			if (!response.data || !response.data.success) {
+				throw new Error("Failed to fetch subscription data");
+			}
+
+			const subscriptions = response.data.subscriptions;
+
+			// Handle empty subscription array
+			if (!subscriptions || subscriptions.length === 0) {
 				setSubscription(null);
 				setLoading(false);
 				return;
 			}
 
-			try {
-				setLoading(true);
-				setWarning(null);
+			// Get the most recent active subscription
+			const latestSubscription =
+				subscriptions.find((sub: any) => sub.status === "active") ||
+				subscriptions[0];
 
-				const response = await axios.get(
-					`/api/subscriptions?userId=${user._id}`
-				);
-
-				// Ensure response.data exists before proceeding
-				if (!response.data) {
-					throw new Error(
-						"API returned no data for subscription check."
-					);
-				}
-
-				if (response.status !== 200) {
-					console.error(
-						"Subscription check failed with status",
-						response.status,
-						response.data
-					);
-					setLoading(false);
-					return;
-				}
-
-				const data = response.data;
-
-				// Handle empty subscription array
-				if (!data || data.length === 0) {
-					setSubscription(null);
-					setLoading(false);
-					return;
-				}
-
-				// Get the most recent subscription
-				const latestSubscription = data[0];
-
+			if (latestSubscription) {
 				// Check subscription status and show warnings
-				if (latestSubscription) {
-					if (latestSubscription.status === "expired") {
-						setWarning(
-							"Your premium subscription has expired. You have been moved to the free plan."
-						);
-						// Automatically convert to free plan
-						const convertResponse = await axios.post(
-							"/api/subscriptions",
-							{
-								userId: user._id,
-								planId: "free",
-							}
-						);
-						if (
-							convertResponse.status === 200 &&
-							convertResponse.data
-						) {
-							const freeSubscription = convertResponse.data;
-							setSubscription({
-								...freeSubscription,
-								currentPeriodEnd: new Date(
-									freeSubscription.currentPeriodEnd
-								),
-								createdAt: new Date(freeSubscription.createdAt),
-							});
-						}
-					} else if (latestSubscription.status === "canceled") {
-						setWarning(
-							"Your premium subscription has been canceled. You have been moved to the free plan."
-						);
-						// Automatically convert to free plan
-						const convertResponse = await axios.post(
-							"/api/subscriptions",
-							{
-								userId: user._id,
-								planId: "free",
-							}
-						);
-
-						if (
-							convertResponse.status === 200 &&
-							convertResponse.data
-						) {
-							const freeSubscription = convertResponse.data;
-							setSubscription({
-								...freeSubscription,
-								currentPeriodEnd: new Date(
-									freeSubscription.currentPeriodEnd
-								),
-								createdAt: new Date(freeSubscription.createdAt),
-							});
-						}
-					} else {
-						setSubscription({
-							...latestSubscription,
-							currentPeriodEnd: new Date(
-								latestSubscription.currentPeriodEnd
-							),
-							createdAt: new Date(latestSubscription.createdAt),
-						});
-					}
+				if (latestSubscription.status === "expired") {
+					setWarning(
+						"Your premium subscription has expired. You have been moved to the free plan."
+					);
+					// Automatically convert to free plan
+					await convertToFreePlan();
+				} else if (latestSubscription.status === "canceled") {
+					setWarning(
+						"Your premium subscription has been canceled. You have been moved to the free plan."
+					);
+					// Automatically convert to free plan
+					await convertToFreePlan();
 				} else {
-					setSubscription(null);
+					setSubscription({
+						...latestSubscription,
+						currentPeriodStart: new Date(
+							latestSubscription.currentPeriodStart
+						),
+						currentPeriodEnd: new Date(
+							latestSubscription.currentPeriodEnd
+						),
+						createdAt: new Date(latestSubscription.createdAt),
+						updatedAt: new Date(latestSubscription.updatedAt),
+						cancelledAt: latestSubscription.cancelledAt
+							? new Date(latestSubscription.cancelledAt)
+							: undefined,
+					});
 				}
-			} catch (error) {
-				console.error("Subscription check failed:", error);
+			} else {
 				setSubscription(null);
-			} finally {
-				setLoading(false);
 			}
-		};
+		} catch (error) {
+			console.error("Subscription check failed:", error);
+			setSubscription(null);
+		} finally {
+			setLoading(false);
+		}
+	};
 
-		checkSubscription();
+	const convertToFreePlan = async () => {
+		if (!user) return;
+
+		try {
+			const convertResponse = await axios.post("/api/subscriptions", {
+				userId: user._id,
+				planId: "free",
+			});
+
+			if (
+				convertResponse.status === 200 &&
+				convertResponse.data.success
+			) {
+				const freeSubscription = convertResponse.data.subscription;
+				setSubscription({
+					...freeSubscription,
+					currentPeriodStart: new Date(
+						freeSubscription.currentPeriodStart
+					),
+					currentPeriodEnd: new Date(
+						freeSubscription.currentPeriodEnd
+					),
+					createdAt: new Date(freeSubscription.currentPeriodStart),
+					updatedAt: new Date(freeSubscription.updatedAt),
+				});
+			}
+		} catch (error) {
+			console.error("Failed to convert to free plan:", error);
+		}
+	};
+
+	useEffect(() => {
+		fetchSubscription();
 	}, [user]);
 
-	const subscribe = async (planId: string): Promise<boolean> => {
+	const subscribe = async (
+		planId: string,
+		billingCycle: "monthly" | "annually",
+		transactionId: string,
+		amount: number
+	): Promise<boolean> => {
 		if (!user) return false;
 
 		try {
 			setLoading(true);
 			setWarning(null);
 
-			const response = await axios.post("/api/subscriptions", {
-				userId: user._id,
-				planId,
-			});
+			// For free plan, create subscription directly
+			if (planId === "free") {
+				const response = await axios.post("/api/subscriptions", {
+					userId: user._id,
+					planId: "free",
+				});
 
-			// Ensure response.data exists
-			if (!response.data) {
-				throw new Error("API returned no data for subscription.");
-			}
-
-			if (response.status !== 200) {
-				setWarning("Failed to create subscription");
+				if (response.data && response.data.success) {
+					const freeSubscription = response.data.subscription;
+					setSubscription({
+						...freeSubscription,
+						currentPeriodStart: new Date(
+							freeSubscription.currentPeriodStart
+						),
+						currentPeriodEnd: new Date(
+							freeSubscription.currentPeriodEnd
+						),
+						createdAt: new Date(freeSubscription.createdAt),
+						updatedAt: new Date(freeSubscription.updatedAt),
+					});
+					return true;
+				}
 				return false;
 			}
 
-			const data = response.data;
+			// For paid plans, submit UPI payment
+			const paymentResponse = await axios.post(
+				"/api/subscriptions/upi-payment",
+				{
+					userId: user._id,
+					planId,
+					planName: getPlanName(planId),
+					amount,
+					billingCycle,
+					transactionId: transactionId,
+					upiId: "adsenseservices90@axl",
+				}
+			);
 
-			// For free plan, update subscription state
-			if (planId === "free") {
-				setSubscription({
-					...data,
-					currentPeriodEnd: new Date(data.currentPeriodEnd),
-					createdAt: new Date(data.createdAt),
-				});
+			if (paymentResponse.data && paymentResponse.data.success) {
+				setWarning(
+					"Payment submitted successfully! Your subscription will be activated after admin verification."
+				);
+				// Refresh subscription data to show pending status
+				await fetchSubscription();
 				return true;
 			}
 
-			// For premium plan, Razorpay checkout will be handled in the component
-			return true;
+			return false;
 		} catch (error) {
 			console.error("Subscribe failed:", error);
-			setWarning("Failed to process subscription");
+			setWarning("Failed to process subscription. Please try again.");
 			return false;
 		} finally {
 			setLoading(false);
+		}
+	};
+
+	const getPlanName = (planId: string): string => {
+		switch (planId) {
+			case "basic":
+				return "Basic Plan";
+			case "premium":
+				return "Premium Plan";
+			case "enterprise":
+				return "Enterprise Plan";
+			default:
+				return "Unknown Plan";
 		}
 	};
 
@@ -264,27 +276,27 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
 			setWarning(null);
 
 			const response = await axios.put("/api/subscriptions", {
-				subscriptionId: subscription.id,
+				subscriptionId: subscription._id,
+				action: "cancel",
 			});
 
-			// Ensure response.data exists
-			if (!response.data) {
-				throw new Error(
-					"API returned no data for subscription cancellation."
-				);
-			}
-
-			if (response.status !== 200) {
-				setWarning("Failed to cancel subscription");
-				return false;
+			if (!response.data || !response.data.success) {
+				throw new Error("Failed to cancel subscription");
 			}
 
 			const data = response.data;
 
 			setSubscription({
-				...data,
-				currentPeriodEnd: new Date(data.currentPeriodEnd),
-				createdAt: new Date(data.createdAt),
+				...data.subscription,
+				currentPeriodStart: new Date(
+					data.subscription.currentPeriodStart
+				),
+				currentPeriodEnd: new Date(data.subscription.currentPeriodEnd),
+				createdAt: new Date(data.subscription.createdAt),
+				updatedAt: new Date(data.subscription.updatedAt),
+				cancelledAt: data.subscription.cancelledAt
+					? new Date(data.subscription.cancelledAt)
+					: undefined,
 			});
 
 			setWarning(
@@ -302,7 +314,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
 
 	const isSubscribed = (): boolean => {
 		if (!subscription) return false;
-		if (subscription.tier !== "premium") return false;
+		if (subscription.tier === "free") return false;
 		if (subscription.status === "active") return true;
 		// Allow access if canceled but still within the current period
 		if (
@@ -314,12 +326,8 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
 		return false;
 	};
 
-	const canPost = (): boolean => {
-		return isSubscribed();
-	};
-
-	const canSearchImages = (): boolean => {
-		return isSubscribed();
+	const refreshSubscription = async () => {
+		await fetchSubscription();
 	};
 
 	return (
@@ -328,12 +336,10 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
 				subscription,
 				loading,
 				warning,
-				plans: subscriptionPlans,
 				subscribe,
 				cancelSubscription,
 				isSubscribed,
-				canPost,
-				canSearchImages,
+				refreshSubscription,
 			}}>
 			{children}
 		</SubscriptionContext.Provider>

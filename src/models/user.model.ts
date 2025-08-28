@@ -26,7 +26,6 @@ const userModel = new mongoose.Schema(
 			type: Boolean,
 			default: false,
 		},
-		razorpayCustomerId: { type: String },
 		role: {
 			type: String,
 			enum: ["user", "admin"],
@@ -40,12 +39,12 @@ const userModel = new mongoose.Schema(
 		facebookAppSecret: { type: String },
 		author: {
 			type: String,
-			default: function(this: mongoose.Document) {
-				return this.get('name');
+			default: function (this: mongoose.Document) {
+				return this.get("name");
 			},
 		},
 	},
 	{ timestamps: true }
 );
 
-export const User = mongoose.models.User || mongoose.model("User", userModel);
+export const User = mongoose.models?.User || mongoose.model("User", userModel);

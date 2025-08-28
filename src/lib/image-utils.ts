@@ -1,4 +1,4 @@
-// uploading images to cloudinary
+// uploading images and videos to cloudinary
 
 import { v2 as cloudinary } from "cloudinary";
 
@@ -25,37 +25,52 @@ try {
 }
 
 export async function uploadImage(input: string | Buffer): Promise<string> {
+	return await uploadMedia(input, "image");
+}
+
+export async function uploadVideo(input: string | Buffer): Promise<string> {
+	return await uploadMedia(input, "video");
+}
+
+export async function uploadMedia(
+	input: string | Buffer,
+	resourceType: "image" | "video" = "image"
+): Promise<string> {
 	try {
 		// If Cloudinary is not configured, return a placeholder URL
 		if (!cloudinaryConfigured) {
 			console.error(
 				"Cloudinary is not configured, using placeholder URL"
 			);
-			return "https://via.placeholder.com/1200x1200?text=Quote+Image";
+			return resourceType === "video"
+				? "https://via.placeholder.com/1280x720?text=Video+Placeholder"
+				: "https://via.placeholder.com/1200x1200?text=Image+Placeholder";
 		}
 
 		let result;
 
 		if (Buffer.isBuffer(input)) {
 			// If input is a Buffer, convert it to base64 with data URI prefix
-			const base64Data = `data:image/png;base64,${input.toString(
+			const mimeType =
+				resourceType === "video" ? "video/mp4" : "image/png";
+			const base64Data = `data:${mimeType};base64,${input.toString(
 				"base64"
 			)}`;
 			result = await cloudinary.uploader.upload(base64Data, {
 				folder: "quote-generator",
-				resource_type: "auto",
+				resource_type: resourceType,
 			});
 		} else if (input.startsWith("data:")) {
 			// If it's a data URL, upload it directly
 			result = await cloudinary.uploader.upload(input, {
 				folder: "quote-generator",
-				resource_type: "auto",
+				resource_type: resourceType,
 			});
 		} else {
 			// If it's an HTTPS URL, upload it using the URL
 			result = await cloudinary.uploader.upload(input, {
 				folder: "quote-generator",
-				resource_type: "auto",
+				resource_type: resourceType,
 			});
 		}
 
@@ -65,9 +80,11 @@ export async function uploadImage(input: string | Buffer): Promise<string> {
 
 		return result.secure_url;
 	} catch (error) {
-		console.error("Error uploading image to Cloudinary:", error);
+		console.error(`Error uploading ${resourceType} to Cloudinary:`, error);
 		// Return a placeholder URL if upload fails
-		return "https://via.placeholder.com/1200x1200?text=Quote+Image";
+		return resourceType === "video"
+			? "https://via.placeholder.com/1280x720?text=Video+Upload+Failed"
+			: "https://via.placeholder.com/1200x1200?text=Image+Upload+Failed";
 	}
 }
 

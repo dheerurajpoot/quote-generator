@@ -23,7 +23,7 @@ export async function POST(request: Request) {
 		// Validate input
 		if (!userId) {
 			return NextResponse.json(
-				{ error: "User ID is required" },
+				{ message: "User ID is required", success: false },
 				{ status: 400 }
 			);
 		}
@@ -32,7 +32,7 @@ export async function POST(request: Request) {
 		const user = await User.findById(userId);
 		if (!user) {
 			return NextResponse.json(
-				{ error: "User not found" },
+				{ message: "User not found", success: false },
 				{ status: 404 }
 			);
 		}
@@ -120,7 +120,7 @@ export async function POST(request: Request) {
 						`No ${platform} connection found for user ${userId}`
 					);
 					return NextResponse.json(
-						{ error: `No ${platform} connection found` },
+						{ message: `No ${platform} connection found` },
 						{ status: 400 }
 					);
 				}
@@ -155,7 +155,10 @@ export async function POST(request: Request) {
 						);
 					} else {
 						return NextResponse.json(
-							{ error: "Unsupported platform" },
+							{
+								message: "Unsupported platform",
+								success: false,
+							},
 							{ status: 400 }
 						);
 					}
@@ -173,7 +176,7 @@ export async function POST(request: Request) {
 					console.error(`Error posting to ${platform}:`, error);
 					return NextResponse.json(
 						{
-							error:
+							message:
 								error instanceof Error
 									? error.message
 									: `Failed to post to ${platform}`,
@@ -186,7 +189,8 @@ export async function POST(request: Request) {
 				console.error("Invalid image URL:", e);
 				return NextResponse.json(
 					{
-						error: "Invalid image URL provided",
+						message: "Invalid image URL provided",
+						success: false,
 						details:
 							e instanceof Error ? e.message : "Unknown error",
 					},
@@ -195,11 +199,14 @@ export async function POST(request: Request) {
 			}
 		}
 
-		return NextResponse.json({ error: "Invalid request" }, { status: 400 });
+		return NextResponse.json(
+			{ message: "Invalid request", success: false },
+			{ status: 400 }
+		);
 	} catch (error) {
 		console.error("Error in social API:", error);
 		return NextResponse.json(
-			{ error: "An error occurred" },
+			{ message: "An error occurred", success: false },
 			{ status: 500 }
 		);
 	}
@@ -215,7 +222,10 @@ export async function DELETE(request: Request) {
 
 		if (!userId || !platform) {
 			return NextResponse.json(
-				{ error: "User ID and platform are required" },
+				{
+					message: "User ID and platform are required",
+					success: false,
+				},
 				{ status: 400 }
 			);
 		}
@@ -228,7 +238,7 @@ export async function DELETE(request: Request) {
 
 		if (!connection) {
 			return NextResponse.json(
-				{ error: "No connection found to delete" },
+				{ message: "No connection found to delete", success: false },
 				{ status: 404 }
 			);
 		}
@@ -241,7 +251,7 @@ export async function DELETE(request: Request) {
 
 		if (result.deletedCount === 0) {
 			return NextResponse.json(
-				{ error: "Failed to delete connection" },
+				{ message: "Failed to delete connection", success: false },
 				{ status: 500 }
 			);
 		}
@@ -253,7 +263,7 @@ export async function DELETE(request: Request) {
 	} catch (error) {
 		console.error("Error disconnecting social account:", error);
 		return NextResponse.json(
-			{ error: "Failed to disconnect social account" },
+			{ message: "Failed to disconnect social account", success: false },
 			{ status: 500 }
 		);
 	}
@@ -268,7 +278,7 @@ export async function GET(request: Request) {
 
 		if (!userId) {
 			return NextResponse.json(
-				{ error: "User ID is required" },
+				{ message: "User ID is required", success: false },
 				{ status: 400 }
 			);
 		}
@@ -282,7 +292,7 @@ export async function GET(request: Request) {
 	} catch (error) {
 		console.error("Error fetching social connections:", error);
 		return NextResponse.json(
-			{ error: "Failed to fetch social connections" },
+			{ message: "Failed to fetch social connections", success: false },
 			{ status: 500 }
 		);
 	}

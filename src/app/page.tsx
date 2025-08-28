@@ -131,9 +131,9 @@ export default function Home() {
 									variant='outline'
 									className='px-8 py-6 text-lg border-2'>
 									<Link
-										href='/auto-poster'
+										href='/dashboard/autoposter'
 										className='flex items-center'>
-										Auto Poster
+										Auto Posting
 									</Link>
 								</Button>
 							</div>

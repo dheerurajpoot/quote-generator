@@ -4,19 +4,12 @@ declare global {
 	}
 }
 
-async function getFacebookCredentials() {
-	const response = await fetch("/api/users/facebook-credentials");
-	const data = await response.json();
-	return data;
-}
-
 export async function initializeFacebookSDK(): Promise<void> {
-	const { appId } = await getFacebookCredentials();
 	if (!window.FB) {
 		return new Promise<void>((resolve) => {
 			window.fbAsyncInit = function () {
 				window.FB.init({
-					appId: appId,
+					appId: "995595962511563",
 					cookie: true,
 					xfbml: true,
 					version: "v18.0",

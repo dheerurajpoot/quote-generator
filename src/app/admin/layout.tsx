@@ -10,9 +10,9 @@ import {
 	Users,
 	CreditCard,
 	BarChart3,
-	Settings,
 	LogOut,
 	Home,
+	Clock,
 } from "lucide-react";
 import {
 	SidebarProvider,
@@ -80,9 +80,9 @@ export default function AdminLayout({
 						</SidebarMenuItem>
 						<SidebarMenuItem>
 							<SidebarMenuButton asChild>
-								<Link href='/admin/settings'>
-									<Settings className='h-4 w-4 mr-2' />
-									Settings
+								<Link href='/admin/pending-payments'>
+									<Clock className='h-4 w-4 mr-2' />
+									Pending Payments
 								</Link>
 							</SidebarMenuButton>
 						</SidebarMenuItem>

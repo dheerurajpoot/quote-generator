@@ -17,9 +17,16 @@ import {
 	Legend,
 	ResponsiveContainer,
 } from "recharts";
-import { Users, CreditCard, DollarSign, TrendingUp } from "lucide-react";
+import {
+	Users,
+	CreditCard,
+	DollarSign,
+	TrendingUp,
+	RefreshCw,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
+import axios from "axios";
 
 interface DashboardStats {
 	totalUsers: number;
@@ -38,7 +45,13 @@ interface Subscription {
 	_id: string;
 	userId: string;
 	tier: "free" | "premium";
-	status: "active" | "inactive" | "pending" | "cancelled";
+	status:
+		| "active"
+		| "inactive"
+		| "pending"
+		| "cancelled"
+		| "canceled"
+		| "expired";
 	currentPeriodEnd: string;
 	createdAt: string;
 	updatedAt: string;
@@ -55,6 +68,7 @@ export default function AdminDashboardPage() {
 	const [userStats, setUserStats] = useState<ChartData[]>([]);
 	const [revenueStats, setRevenueStats] = useState<ChartData[]>([]);
 	const [isLoading, setIsLoading] = useState(true);
+	const [isRefreshing, setIsRefreshing] = useState(false);
 
 	useEffect(() => {
 		fetchDashboardData();
@@ -62,68 +76,35 @@ export default function AdminDashboardPage() {
 
 	const fetchDashboardData = async () => {
 		try {
+			setIsRefreshing(true);
 			setIsLoading(true);
-			const [usersResponse, subscriptionsResponse] = await Promise.all([
-				fetch("/api/users"),
-				fetch("/api/subscriptions?userId=all"),
-			]);
 
-			if (!usersResponse.ok || !subscriptionsResponse.ok) {
-				throw new Error("Failed to fetch dashboard data");
+			const response = await axios.get("/api/admin/dashboard");
+
+			if (!response.data.success) {
+				throw new Error(
+					response.data.message || "Failed to fetch dashboard data"
+				);
 			}
 
-			const users = await usersResponse.json();
-			const subscriptions: Subscription[] =
-				await subscriptionsResponse.json();
+			const { data } = response.data;
 
-			// Calculate total users and premium users
-			const totalUsers = users.length;
-			const premiumUsers = subscriptions.filter(
-				(sub: Subscription) =>
-					sub.tier === "premium" && sub.status === "active"
-			).length;
+			// Set stats
+			setStats(data.stats);
 
-			// Calculate total revenue (assuming ₹69 per premium subscription)
-			const totalRevenue = premiumUsers * 69;
-
-			// Calculate growth percentages (mock data for now)
-			const revenueGrowth = 18; // This should be calculated based on historical data
-			const userGrowth = 12; // This should be calculated based on historical data
-
-			// Generate chart data for the last 7 months
-			const currentDate = new Date();
-			const userChartData = Array.from({ length: 7 }, (_, i) => {
-				const date = new Date(currentDate);
-				date.setMonth(date.getMonth() - (6 - i));
-				return {
-					name: date.toLocaleString("default", { month: "short" }),
-					total: Math.floor(Math.random() * 100) + 50, // Replace with actual data
-				};
-			});
-
-			const revenueChartData = Array.from({ length: 7 }, (_, i) => {
-				const date = new Date(currentDate);
-				date.setMonth(date.getMonth() - (6 - i));
-				return {
-					name: date.toLocaleString("default", { month: "short" }),
-					total: Math.floor(Math.random() * 50000) + 10000, // Replace with actual data
-				};
-			});
-
-			setStats({
-				totalUsers,
-				premiumUsers,
-				totalRevenue,
-				revenueGrowth,
-				userGrowth,
-			});
-			setUserStats(userChartData);
-			setRevenueStats(revenueChartData);
-		} catch (error) {
+			// Set chart data
+			setUserStats(data.userStats);
+			setRevenueStats(data.revenueStats);
+		} catch (error: any) {
 			console.error("Error fetching dashboard data:", error);
-			toast.error("Failed to load dashboard data");
+			const errorMessage =
+				error.response?.data?.message ||
+				error.message ||
+				"Failed to load dashboard data";
+			toast.error(errorMessage);
 		} finally {
 			setIsLoading(false);
+			setIsRefreshing(false);
 		}
 	};
 
@@ -143,19 +124,13 @@ export default function AdminDashboardPage() {
 				</h1>
 				<button
 					onClick={fetchDashboardData}
-					className='p-2 hover:bg-gray-100 rounded-full'>
-					<svg
-						className='w-5 h-5'
-						fill='none'
-						stroke='currentColor'
-						viewBox='0 0 24 24'>
-						<path
-							strokeLinecap='round'
-							strokeLinejoin='round'
-							strokeWidth={2}
-							d='M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15'
-						/>
-					</svg>
+					disabled={isRefreshing}
+					className='p-2 hover:bg-gray-100 rounded-full disabled:opacity-50 disabled:cursor-not-allowed'>
+					<RefreshCw
+						className={`w-5 h-5 ${
+							isRefreshing ? "animate-spin" : ""
+						}`}
+					/>
 				</button>
 			</div>
 
@@ -169,10 +144,11 @@ export default function AdminDashboardPage() {
 					</CardHeader>
 					<CardContent>
 						<div className='text-2xl font-bold'>
-							{stats.totalUsers}
+							{stats.totalUsers.toLocaleString()}
 						</div>
 						<p className='text-xs text-muted-foreground'>
-							+{stats.userGrowth}% from last month
+							{stats.userGrowth >= 0 ? "+" : ""}
+							{stats.userGrowth}% from last month
 						</p>
 					</CardContent>
 				</Card>
@@ -186,7 +162,7 @@ export default function AdminDashboardPage() {
 					</CardHeader>
 					<CardContent>
 						<div className='text-2xl font-bold'>
-							{stats.premiumUsers}
+							{stats.premiumUsers.toLocaleString()}
 						</div>
 						<p className='text-xs text-muted-foreground'>
 							Active premium subscriptions
@@ -206,7 +182,8 @@ export default function AdminDashboardPage() {
 							₹{stats.totalRevenue.toLocaleString()}
 						</div>
 						<p className='text-xs text-muted-foreground'>
-							+{stats.revenueGrowth}% from last month
+							{stats.revenueGrowth >= 0 ? "+" : ""}
+							{stats.revenueGrowth}% from last month
 						</p>
 					</CardContent>
 				</Card>
@@ -220,10 +197,13 @@ export default function AdminDashboardPage() {
 					</CardHeader>
 					<CardContent>
 						<div className='text-2xl font-bold'>
-							{(
-								(stats.premiumUsers / stats.totalUsers) *
-								100
-							).toFixed(1)}
+							{stats.totalUsers > 0
+								? (
+										(stats.premiumUsers /
+											stats.totalUsers) *
+										100
+								  ).toFixed(1)
+								: "0.0"}
 							%
 						</div>
 						<p className='text-xs text-muted-foreground'>
@@ -284,7 +264,9 @@ export default function AdminDashboardPage() {
 									<YAxis />
 									<Tooltip
 										formatter={(value) => [
-											`₹${value.toLocaleString()}`,
+											`₹${Number(
+												value
+											).toLocaleString()}`,
 											"Revenue",
 										]}
 									/>

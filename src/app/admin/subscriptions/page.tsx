@@ -1,9 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/context/auth-context";
-import { useRouter } from "next/navigation";
-import { toast } from "react-hot-toast";
 import {
 	Card,
 	CardContent,
@@ -11,41 +9,10 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card";
-import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from "@/components/ui/table";
-import {
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuItem,
-	DropdownMenuLabel,
-	DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { MoreHorizontal, Search, Edit, Ban, Calendar } from "lucide-react";
-import {
-	Dialog,
-	DialogContent,
-	DialogDescription,
-	DialogFooter,
-	DialogHeader,
-	DialogTitle,
-} from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Loader2, Users, Crown, Zap } from "lucide-react";
 
 interface Subscription {
 	_id: string;
@@ -55,430 +22,288 @@ interface Subscription {
 		email: string;
 	};
 	planId: string;
-	tier: string;
-	status: string;
+	planName: string;
+	tier: "free" | "premium";
+	status: "active" | "pending" | "canceled" | "expired";
+	amount: number;
+	billingCycle: "monthly" | "annually";
+	currentPeriodStart: string;
 	currentPeriodEnd: string;
 	createdAt: string;
-	razorpaySubscriptionId?: string;
 }
 
-export default function SubscriptionsPage() {
+export default function AdminSubscriptionsPage() {
 	const { user } = useAuth();
-	const router = useRouter();
 	const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
-	const [isLoading, setIsLoading] = useState(true);
-	const [error, setError] = useState<string | null>(null);
-	const [searchQuery, setSearchQuery] = useState("");
-	const [isEditSubOpen, setIsEditSubOpen] = useState(false);
-	const [currentSubscription, setCurrentSubscription] =
-		useState<Subscription | null>(null);
+	const [loading, setLoading] = useState(true);
+	const [error, setError] = useState("");
 
 	useEffect(() => {
-		if (!user || user.role !== "admin") {
-			router.push("/unauthorized");
-			return;
+		if (user) {
+			fetchSubscriptions();
 		}
-
-		fetchSubscriptions();
-	}, [user, router]);
+	}, [user]);
 
 	const fetchSubscriptions = async () => {
 		try {
-			setIsLoading(true);
-			setError(null);
-
-			// If user is admin, fetch all subscriptions
-			if (user?.role === "admin") {
-				const response = await fetch("/api/subscriptions?userId=all");
-				if (!response.ok) {
-					const data = await response.json();
-					throw new Error(
-						data.error || "Failed to fetch subscriptions"
-					);
-				}
-				const data = await response.json();
-				setSubscriptions(data);
-			} else {
-				// If user is not admin, fetch only their subscriptions
-				const response = await fetch(
-					`/api/subscriptions?userId=${user?._id}`
-				);
-				if (!response.ok) {
-					const data = await response.json();
-					throw new Error(
-						data.error || "Failed to fetch subscriptions"
-					);
-				}
-				const data = await response.json();
-				setSubscriptions(data);
-			}
-		} catch (err) {
-			setError(
-				err instanceof Error
-					? err.message
-					: "Failed to fetch subscriptions"
-			);
-			toast.error("Failed to fetch subscriptions");
-		} finally {
-			setIsLoading(false);
-		}
-	};
-
-	const handleUpdateSubscription = async (
-		subscriptionId: string,
-		updates: Partial<Subscription>
-	) => {
-		try {
-			const response = await fetch("/api/subscriptions", {
-				method: "PUT",
-				headers: {
-					"Content-Type": "application/json",
-				},
-				body: JSON.stringify({ subscriptionId, updates }),
-			});
-
-			if (!response.ok) {
-				const data = await response.json();
-				throw new Error(data.error || "Failed to update subscription");
-			}
-
-			await fetchSubscriptions();
-			toast.success("Subscription updated successfully");
-		} catch (err) {
-			toast.error(
-				err instanceof Error
-					? err.message
-					: "Failed to update subscription"
-			);
-		}
-	};
-
-	const handleDeleteSubscription = async (subscriptionId: string) => {
-		if (!confirm("Are you sure you want to delete this subscription?")) {
-			return;
-		}
-
-		try {
+			// For now, we'll fetch from the pending payments to show what's available
+			// In a real app, you'd have a dedicated subscriptions endpoint
 			const response = await fetch(
-				`/api/subscriptions?subscriptionId=${subscriptionId}`,
-				{
-					method: "DELETE",
-				}
+				"/api/admin/verify-payment?status=all"
 			);
-
-			if (!response.ok) {
+			if (response.ok) {
 				const data = await response.json();
-				throw new Error(data.error || "Failed to delete subscription");
+				// Convert pending payments to subscription-like format
+				const subscriptionData = data.payments.map((payment: any) => ({
+					_id: payment._id,
+					userId: payment.userId,
+					planId: payment.planId,
+					planName: payment.planName,
+					tier: payment.planId === "free" ? "free" : "premium",
+					status:
+						payment.status === "verified"
+							? "active"
+							: payment.status,
+					amount: payment.amount,
+					billingCycle: payment.billingCycle,
+					currentPeriodStart: payment.createdAt,
+					currentPeriodEnd: payment.createdAt, // Simplified for demo
+					createdAt: payment.createdAt,
+				}));
+				setSubscriptions(subscriptionData);
+			} else {
+				throw new Error("Failed to fetch subscriptions");
 			}
-
-			await fetchSubscriptions();
-			toast.success("Subscription deleted successfully");
-		} catch (err) {
-			toast.error(
-				err instanceof Error
-					? err.message
-					: "Failed to delete subscription"
-			);
+		} catch (err: any) {
+			setError(err.message || "Failed to fetch subscriptions");
+		} finally {
+			setLoading(false);
 		}
 	};
 
-	// Filter subscriptions based on search query
-	const filteredSubscriptions = subscriptions.filter(
-		(sub) =>
-			sub.userId.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-			sub.userId.email
-				.toLowerCase()
-				.includes(searchQuery.toLowerCase()) ||
-			sub.planId.toLowerCase().includes(searchQuery.toLowerCase())
-	);
+	const getStatusBadge = (status: string) => {
+		switch (status) {
+			case "active":
+				return (
+					<Badge className='bg-green-100 text-green-800'>
+						Active
+					</Badge>
+				);
+			case "pending":
+				return (
+					<Badge className='bg-yellow-100 text-yellow-800'>
+						Pending
+					</Badge>
+				);
+			case "canceled":
+				return (
+					<Badge className='bg-red-100 text-red-800'>Canceled</Badge>
+				);
+			case "expired":
+				return (
+					<Badge className='bg-gray-100 text-gray-800'>Expired</Badge>
+				);
+			default:
+				return (
+					<Badge className='bg-gray-100 text-gray-800'>
+						{status}
+					</Badge>
+				);
+		}
+	};
 
-	if (isLoading) {
-		return (
-			<div className='flex items-center justify-center min-h-screen'>
-				<div className='animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500'></div>
-			</div>
-		);
-	}
+	const getTierIcon = (tier: string) => {
+		switch (tier) {
+			case "premium":
+				return <Crown className='h-4 w-4 text-blue-500' />;
+			case "free":
+				return <Zap className='h-4 w-4 text-yellow-500' />;
+			default:
+				return <Users className='h-4 w-4 text-gray-500' />;
+		}
+	};
 
-	if (error) {
+	if (!user) {
 		return (
-			<div className='flex items-center justify-center min-h-screen'>
-				<div className='text-red-500'>{error}</div>
+			<div className='min-h-screen flex items-center justify-center'>
+				<Card className='w-full max-w-md'>
+					<CardHeader>
+						<CardTitle>Access Denied</CardTitle>
+						<CardDescription>
+							You need to be logged in to access this page.
+						</CardDescription>
+					</CardHeader>
+				</Card>
 			</div>
 		);
 	}
 
 	return (
-		<div className='space-y-6'>
-			<div className='flex justify-between items-center'>
-				<h1 className='text-3xl font-bold tracking-tight'>
-					Subscription Management
-				</h1>
-			</div>
+		<div className='min-h-screen bg-gray-50 py-8'>
+			<div className='container mx-auto px-4'>
+				<div className='mb-8'>
+					<h1 className='text-3xl font-bold text-gray-900 mb-2'>
+						All Subscriptions
+					</h1>
+					<p className='text-gray-600'>
+						View and manage all user subscriptions
+					</p>
+				</div>
 
-			<div className='flex w-full max-w-sm items-center space-x-2'>
-				<Input
-					placeholder='Search subscriptions...'
-					value={searchQuery}
-					onChange={(e) => setSearchQuery(e.target.value)}
-					className='w-full'
-				/>
-				<Button type='submit' size='icon' variant='ghost'>
-					<Search className='h-4 w-4' />
-				</Button>
-			</div>
+				{/* Stats */}
+				<div className='grid grid-cols-1 md:grid-cols-3 gap-6 mb-8'>
+					<Card>
+						<CardContent className='p-6'>
+							<div className='flex items-center space-x-2'>
+								<Users className='h-8 w-8 text-blue-500' />
+								<div>
+									<p className='text-2xl font-bold'>
+										{subscriptions.length}
+									</p>
+									<p className='text-sm text-gray-600'>
+										Total Subscriptions
+									</p>
+								</div>
+							</div>
+						</CardContent>
+					</Card>
+					<Card>
+						<CardContent className='p-6'>
+							<div className='flex items-center space-x-2'>
+								<Crown className='h-8 w-8 text-blue-500' />
+								<div>
+									<p className='text-2xl font-bold'>
+										{
+											subscriptions.filter(
+												(s) => s.tier === "premium"
+											).length
+										}
+									</p>
+									<p className='text-sm text-gray-600'>
+										Premium Users
+									</p>
+								</div>
+							</div>
+						</CardContent>
+					</Card>
+					<Card>
+						<CardContent className='p-6'>
+							<div className='flex items-center space-x-2'>
+								<Zap className='h-8 w-8 text-yellow-500' />
+								<div>
+									<p className='text-2xl font-bold'>
+										{
+											subscriptions.filter(
+												(s) => s.tier === "free"
+											).length
+										}
+									</p>
+									<p className='text-sm text-gray-600'>
+										Free Users
+									</p>
+								</div>
+							</div>
+						</CardContent>
+					</Card>
+				</div>
 
-			<Card>
-				<CardHeader>
-					<CardTitle>Active Subscriptions</CardTitle>
-					<CardDescription>
-						Manage user subscriptions, extend or cancel plans
-					</CardDescription>
-				</CardHeader>
-				<CardContent>
-					<Table>
-						<TableHeader>
-							<TableRow>
-								<TableHead>User</TableHead>
-								<TableHead>Plan</TableHead>
-								<TableHead>Status</TableHead>
-								<TableHead>Current Period End</TableHead>
-								<TableHead>Created</TableHead>
-								<TableHead className='text-right'>
-									Actions
-								</TableHead>
-							</TableRow>
-						</TableHeader>
-						<TableBody>
-							{filteredSubscriptions.map((subscription) => (
-								<TableRow key={subscription._id}>
-									<TableCell>
-										<div>
-											<div className='font-medium'>
-												{subscription.userId.name}
-											</div>
-											<div className='text-sm text-muted-foreground'>
-												{subscription.userId.email}
+				{/* Error Alert */}
+				{error && (
+					<Alert variant='destructive' className='mb-6'>
+						<AlertDescription>{error}</AlertDescription>
+					</Alert>
+				)}
+
+				{/* Subscriptions List */}
+				{loading ? (
+					<div className='flex items-center justify-center py-12'>
+						<Loader2 className='h-8 w-8 animate-spin text-blue-600' />
+					</div>
+				) : subscriptions.length === 0 ? (
+					<Card>
+						<CardContent className='py-12 text-center'>
+							<p className='text-gray-500'>
+								No subscriptions found.
+							</p>
+						</CardContent>
+					</Card>
+				) : (
+					<div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'>
+						{subscriptions.map((subscription) => (
+							<Card
+								key={subscription._id}
+								className='hover:shadow-lg transition-shadow'>
+								<CardHeader className='pb-3'>
+									<div className='flex items-start justify-between'>
+										<div className='flex items-center space-x-2'>
+											{getTierIcon(subscription.tier)}
+											<div>
+												<CardTitle className='text-lg'>
+													{subscription.planName}
+												</CardTitle>
+												<CardDescription className='text-sm'>
+													{subscription.billingCycle ===
+													"monthly"
+														? "Monthly"
+														: "Annual"}{" "}
+													Plan
+												</CardDescription>
 											</div>
 										</div>
-									</TableCell>
-									<TableCell>
-										<Badge
-											variant={
-												subscription.planId ===
-												"premium"
-													? "secondary"
-													: "outline"
-											}>
-											{subscription.tier}
-										</Badge>
-									</TableCell>
-									<TableCell>
-										<span
-											className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-												subscription.status === "active"
-													? "bg-green-100 text-green-800"
-													: subscription.status ===
-													  "canceled"
-													? "bg-yellow-100 text-yellow-800"
-													: "bg-red-100 text-red-800"
-											}`}>
-											{subscription.status}
-										</span>
-									</TableCell>
-									<TableCell>
-										{new Date(
-											subscription.currentPeriodEnd
-										).toLocaleDateString()}
-									</TableCell>
-									<TableCell>
-										{new Date(
-											subscription.createdAt
-										).toLocaleDateString()}
-									</TableCell>
-									<TableCell className='text-right'>
-										<DropdownMenu>
-											<DropdownMenuTrigger asChild>
-												<Button
-													variant='ghost'
-													className='h-8 w-8 p-0'>
-													<span className='sr-only'>
-														Open menu
-													</span>
-													<MoreHorizontal className='h-4 w-4' />
-												</Button>
-											</DropdownMenuTrigger>
-											<DropdownMenuContent align='end'>
-												<DropdownMenuLabel>
-													Actions
-												</DropdownMenuLabel>
-												<DropdownMenuItem
-													onClick={() => {
-														setCurrentSubscription(
-															subscription
-														);
-														setIsEditSubOpen(true);
-													}}>
-													<Edit className='mr-2 h-4 w-4' />
-													Edit
-												</DropdownMenuItem>
-												<DropdownMenuItem
-													onClick={() =>
-														handleUpdateSubscription(
-															subscription._id,
-															{
-																status:
-																	subscription.status ===
-																	"active"
-																		? "canceled"
-																		: "active",
-															}
-														)
-													}>
-													<Calendar className='mr-2 h-4 w-4' />
-													{subscription.status ===
-													"active"
-														? "Cancel"
-														: "Activate"}
-												</DropdownMenuItem>
-												<DropdownMenuItem
-													onClick={() =>
-														handleDeleteSubscription(
-															subscription._id
-														)
-													}>
-													<Ban className='mr-2 h-4 w-4' />
-													Delete
-												</DropdownMenuItem>
-											</DropdownMenuContent>
-										</DropdownMenu>
-									</TableCell>
-								</TableRow>
-							))}
-						</TableBody>
-					</Table>
-				</CardContent>
-			</Card>
+										{getStatusBadge(subscription.status)}
+									</div>
+								</CardHeader>
 
-			{/* Edit Subscription Dialog */}
-			<Dialog open={isEditSubOpen} onOpenChange={setIsEditSubOpen}>
-				<DialogContent className='sm:max-w-[425px]'>
-					<DialogHeader>
-						<DialogTitle>Edit Subscription</DialogTitle>
-						<DialogDescription>
-							Make changes to the subscription. Click save when
-							you&quot;re done.
-						</DialogDescription>
-					</DialogHeader>
-					{currentSubscription && (
-						<div className='grid gap-4 py-4'>
-							<div className='grid grid-cols-4 items-center gap-4'>
-								<Label
-									htmlFor='edit-plan'
-									className='text-right'>
-									Plan
-								</Label>
-								<Select
-									value={currentSubscription.planId}
-									onValueChange={(value) =>
-										setCurrentSubscription({
-											...currentSubscription,
-											planId: value,
-											tier:
-												value === "premium"
-													? "premium"
-													: "free",
-										})
-									}>
-									<SelectTrigger className='col-span-3'>
-										<SelectValue placeholder='Select plan' />
-									</SelectTrigger>
-									<SelectContent>
-										<SelectItem value='free'>
-											Free
-										</SelectItem>
-										<SelectItem value='premium'>
-											Premium
-										</SelectItem>
-									</SelectContent>
-								</Select>
-							</div>
-							<div className='grid grid-cols-4 items-center gap-4'>
-								<Label
-									htmlFor='edit-status'
-									className='text-right'>
-									Status
-								</Label>
-								<Select
-									value={currentSubscription.status}
-									onValueChange={(value: string) =>
-										setCurrentSubscription({
-											...currentSubscription,
-											status: value,
-										})
-									}>
-									<SelectTrigger className='col-span-3'>
-										<SelectValue placeholder='Select status' />
-									</SelectTrigger>
-									<SelectContent>
-										<SelectItem value='active'>
-											Active
-										</SelectItem>
-										<SelectItem value='canceled'>
-											Canceled
-										</SelectItem>
-										<SelectItem value='expired'>
-											Expired
-										</SelectItem>
-									</SelectContent>
-								</Select>
-							</div>
-							<div className='grid grid-cols-4 items-center gap-4'>
-								<Label
-									htmlFor='edit-end-date'
-									className='text-right'>
-									End Date
-								</Label>
-								<Input
-									id='edit-end-date'
-									type='date'
-									value={currentSubscription.currentPeriodEnd}
-									onChange={(e) =>
-										setCurrentSubscription({
-											...currentSubscription,
-											currentPeriodEnd: e.target.value,
-										})
-									}
-									className='col-span-3'
-								/>
-							</div>
-						</div>
-					)}
-					<DialogFooter>
-						<Button
-							type='submit'
-							onClick={() => {
-								if (currentSubscription) {
-									const updates = {
-										planId: currentSubscription.planId,
-										tier: currentSubscription.tier,
-										status: currentSubscription.status,
-										currentPeriodEnd: new Date(
-											currentSubscription.currentPeriodEnd
-										).toISOString(),
-									};
-									handleUpdateSubscription(
-										currentSubscription._id,
-										updates
-									);
-								}
-								setIsEditSubOpen(false);
-							}}>
-							Save changes
-						</Button>
-					</DialogFooter>
-				</DialogContent>
-			</Dialog>
+								<CardContent className='space-y-3'>
+									<div className='grid grid-cols-2 gap-2 text-sm'>
+										<div>
+											<span className='text-gray-500'>
+												Amount:
+											</span>
+											<p className='font-semibold'>
+												₹{subscription.amount}
+											</p>
+										</div>
+										<div>
+											<span className='text-gray-500'>
+												User:
+											</span>
+											<p className='font-semibold'>
+												{subscription.userId.name}
+											</p>
+										</div>
+										<div>
+											<span className='text-gray-500'>
+												Email:
+											</span>
+											<p className='font-semibold text-xs'>
+												{subscription.userId.email}
+											</p>
+										</div>
+										<div>
+											<span className='text-gray-500'>
+												Tier:
+											</span>
+											<p className='font-semibold capitalize'>
+												{subscription.tier}
+											</p>
+										</div>
+									</div>
+
+									<div className='pt-2 border-t'>
+										<div className='text-xs text-gray-500'>
+											Created:{" "}
+											{new Date(
+												subscription.createdAt
+											).toLocaleDateString()}
+										</div>
+									</div>
+								</CardContent>
+							</Card>
+						))}
+					</div>
+				)}
+			</div>
 		</div>
 	);
 }

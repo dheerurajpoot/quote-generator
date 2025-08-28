@@ -32,14 +32,14 @@ export const GET = async (request: Request) => {
 
 		if (!accessToken) {
 			return NextResponse.json(
-				{ error: "Access token is required" },
+				{ message: "Access token is required", success: false },
 				{ status: 400 }
 			);
 		}
 
 		if (!token) {
 			return NextResponse.json(
-				{ error: "Authentication required" },
+				{ message: "Authentication required" },
 				{ status: 401 }
 			);
 		}
@@ -48,31 +48,37 @@ export const GET = async (request: Request) => {
 		const user = await getUserFromToken(token);
 		if (!user) {
 			return NextResponse.json(
-				{ error: "User not found" },
+				{ message: "User not found", success: false },
 				{ status: 401 }
 			);
 		}
 
-		// Check if user has Facebook credentials
-		if (!user.facebookAppId || !user.facebookAppSecret) {
+		const facebookAppId = process.env.FACEBOOK_APP_ID;
+		const facebookAppSecret = process.env.FACEBOOK_APP_SECRET;
+
+		if (!facebookAppId || !facebookAppSecret) {
 			return NextResponse.json(
 				{
-					error: "Facebook credentials not found. Please set up your Facebook app credentials first.",
+					message: "Facebook app credentials not configured",
+					success: false,
 				},
-				{ status: 400 }
+				{ status: 500 }
 			);
 		}
 
 		// Exchange short-lived token for long-lived token
 		const response = await fetch(
-			`https://graph.facebook.com/v18.0/oauth/access_token?grant_type=fb_exchange_token&client_id=${user.facebookAppId}&client_secret=${user.facebookAppSecret}&fb_exchange_token=${accessToken}`
+			`https://graph.facebook.com/v18.0/oauth/access_token?grant_type=fb_exchange_token&client_id=${facebookAppId}&client_secret=${facebookAppSecret}&fb_exchange_token=${accessToken}`
 		);
 
 		if (!response.ok) {
 			const error = await response.json();
 			console.error(`${platform} token exchange error:`, error);
 			return NextResponse.json(
-				{ error: error.error?.message || "Failed to exchange token" },
+				{
+					message: error.error?.message || "Failed to exchange token",
+					success: false,
+				},
 				{ status: 500 }
 			);
 		}
@@ -91,23 +97,23 @@ export const GET = async (request: Request) => {
 		if (platform === "instagram") {
 			// First, exchange the short-lived token for a long-lived one
 			const igTokenResponse = await fetch(
-				`https://graph.instagram.com/access_token?grant_type=ig_exchange_token&client_secret=${user.facebookAppSecret}&access_token=${accessToken}`
+				`https://graph.instagram.com/access_token?grant_type=ig_exchange_token&client_secret=${facebookAppSecret}&access_token=${accessToken}`
 			);
 
 			if (!igTokenResponse.ok) {
 				const error = await igTokenResponse.json();
 				return NextResponse.json(
 					{
-						error:
+						message:
 							error.error?.message ||
 							"Failed to exchange Instagram token",
+						success: false,
 					},
 					{ status: 500 }
 				);
 			}
 
 			const igTokenData = await igTokenResponse.json();
-			console.log("Instagram token data:", igTokenData);
 
 			// Update the access token and expiration with the long-lived token data
 			data.access_token = igTokenData.access_token;
@@ -126,9 +132,10 @@ export const GET = async (request: Request) => {
 				console.error("Error getting Instagram account:", error);
 				return NextResponse.json(
 					{
-						error:
+						message:
 							error.error?.message ||
 							"Failed to get Instagram account",
+						success: false,
 					},
 					{ status: 500 }
 				);
@@ -137,7 +144,10 @@ export const GET = async (request: Request) => {
 			const accountData = await accountResponse.json();
 			if (!accountData.data?.[0]?.id) {
 				return NextResponse.json(
-					{ error: "No Instagram Business Account found" },
+					{
+						message: "No Instagram Business Account found",
+						success: false,
+					},
 					{ status: 400 }
 				);
 			}
@@ -155,9 +165,10 @@ export const GET = async (request: Request) => {
 				);
 				return NextResponse.json(
 					{
-						error:
+						message:
 							error.error?.message ||
 							"Failed to get Instagram business account",
+						success: false,
 					},
 					{ status: 500 }
 				);
@@ -166,7 +177,10 @@ export const GET = async (request: Request) => {
 			const instagramData = await instagramTokenResponse.json();
 			if (!instagramData.instagram_business_account?.id) {
 				return NextResponse.json(
-					{ error: "No Instagram Business Account ID found" },
+					{
+						message: "No Instagram Business Account ID found",
+						success: false,
+					},
 					{ status: 400 }
 				);
 			}
@@ -219,7 +233,7 @@ export const GET = async (request: Request) => {
 	} catch (error) {
 		console.error("Error exchanging token:", error);
 		return NextResponse.json(
-			{ error: "Failed to exchange token" },
+			{ message: "Failed to exchange token", success: false },
 			{ status: 500 }
 		);
 	}

@@ -1,362 +1,226 @@
-import { NextResponse } from "next/server";
-import mongoose from "mongoose";
-import {
-	createRazorpayOrder,
-	createRazorpayCustomer,
-	cancelRazorpaySubscription,
-	PREMIUM_PLAN_PRICE,
-	RAZORPAY_KEY_ID,
-} from "@/lib/razorpay";
+import { NextRequest, NextResponse } from "next/server";
 import { connectDb } from "@/lib/dbconfig";
+import { getUserFromToken } from "@/lib/utils";
 import { Subscription } from "@/models/subscription.model";
-import { User } from "@/models/user.model";
-import { cookies } from "next/headers";
-import jwt from "jsonwebtoken";
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
 	try {
-		const cookieStore = await cookies();
-		const token = cookieStore.get("token")?.value;
+		const token = request.cookies.get("token")?.value;
 
 		if (!token) {
 			return NextResponse.json(
-				{ error: "User not authenticated" },
+				{ message: "Authentication required", success: false },
 				{ status: 401 }
 			);
 		}
-
-		// Verify token and get user data
-		const decoded = jwt.verify(token, process.env.TOKEN_SECRET!) as {
-			userId: string;
-		};
-
-		const userId = decoded.userId;
 
 		await connectDb();
+
 		const { searchParams } = new URL(request.url);
-		const requestedUserId = searchParams.get("userId");
+		const userId = searchParams.get("userId");
 
-		// If no userId is provided in query params, return 400
-		if (!requestedUserId) {
-			return NextResponse.json(
-				{ error: "User ID is required" },
-				{ status: 400 }
-			);
-		}
+		const subscriptions = await Subscription.find({
+			userId: userId,
+		}).sort({ createdAt: -1 });
 
-		// Get user role from database
-		const user = await User.findById(userId);
-		if (!user) {
-			return NextResponse.json(
-				{ error: "User not found" },
-				{ status: 404 }
-			);
-		}
-
-		// Allow access if user is admin or if user is requesting their own subscription
-		if (
-			user.role !== "admin" &&
-			userId !== requestedUserId &&
-			requestedUserId !== "all"
-		) {
-			console.log("Authorization failed:", {
-				userRole: user.role,
-				userId,
-				requestedUserId,
-				path: request.url,
-			});
-			return NextResponse.json(
-				{
-					error: "Unauthorized - You can only access your own subscription",
-				},
-				{ status: 401 }
-			);
-		}
-
-		// Build query based on requestedUserId
-		let query = {};
-		if (requestedUserId === "all") {
-			// Admin can see all subscriptions
-			query = {};
-		} else {
-			// Regular users can only see their own subscriptions
-			query = { userId: new mongoose.Types.ObjectId(requestedUserId) };
-		}
-
-		const subscriptions = await Subscription.find(query)
-			.populate("userId", "name email")
-			.sort({ createdAt: -1 });
-
-		if (!subscriptions || subscriptions.length === 0) {
-			// Automatically create a free subscription for new users
-			const newSubscription = await Subscription.create({
-				userId: new mongoose.Types.ObjectId(requestedUserId),
-				planId: "free",
-				tier: "free",
-				status: "active",
-				currentPeriodEnd: new Date(
-					Date.now() + 365 * 24 * 60 * 60 * 1000
-				), // 1 year from now
-			});
-
-			return NextResponse.json([
-				{
-					id: newSubscription._id,
-					userId: newSubscription.userId.toString(),
-					planId: newSubscription.planId,
-					tier: newSubscription.tier,
-					status: newSubscription.status,
-					currentPeriodEnd: newSubscription.currentPeriodEnd,
-					createdAt: newSubscription.createdAt,
-				},
-			]);
-		}
-
-		return NextResponse.json(subscriptions);
+		return NextResponse.json({
+			success: true,
+			subscriptions,
+		});
 	} catch (error) {
 		console.error("Error fetching subscriptions:", error);
 		return NextResponse.json(
-			{ error: "Failed to fetch subscriptions" },
+			{ message: "Failed to fetch subscriptions", success: false },
 			{ status: 500 }
 		);
 	}
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
 	try {
+		const token = request.cookies.get("token")?.value;
+
+		if (!token) {
+			return NextResponse.json(
+				{ message: "Authentication required", success: false },
+				{ status: 401 }
+			);
+		}
+
+		const user = await getUserFromToken(token);
+		if (!user) {
+			return NextResponse.json(
+				{ message: "User not found", success: false },
+				{ status: 500 }
+			);
+		}
+
 		await connectDb();
 
 		const body = await request.json();
-		const { userId, planId } = body;
+		const { userId: requestUserId, planId, amount } = body;
 
-		// Validate input
-		if (!userId || !planId) {
+		// Validate user can only create subscriptions for themselves
+		if (requestUserId !== user._id.toString()) {
 			return NextResponse.json(
-				{ error: "User ID and plan ID are required" },
-				{ status: 400 }
+				{ message: "Unauthorized", success: false },
+				{ status: 403 }
 			);
 		}
 
-		// Check if user exists
-		const user = await User.findById(userId);
-		if (!user) {
-			return NextResponse.json(
-				{ error: "User not found" },
-				{ status: 404 }
-			);
-		}
-
-		// Find existing active subscription
-		const existingSubscription = await Subscription.findOne({
-			userId: new mongoose.Types.ObjectId(userId),
-			status: "active",
-		});
-
-		// For free plan
+		// Handle free plan
 		if (planId === "free") {
-			// If user has an active premium subscription, prevent conversion
-			if (
-				existingSubscription &&
-				existingSubscription.tier === "premium"
-			) {
-				return NextResponse.json(
-					{
-						error: "Cannot convert premium subscription to free while it's active",
-					},
-					{ status: 400 }
-				);
-			}
+			// Check if user already has a free subscription
+			const existingSubscription = await Subscription.findOne({
+				userId: user._id,
+				planId: "free",
+			});
 
-			// If user has an expired or canceled premium subscription, convert to free
 			if (existingSubscription) {
-				// If they have a Razorpay subscription, cancel it
-				if (existingSubscription.razorpaySubscriptionId) {
-					try {
-						await cancelRazorpaySubscription(
-							existingSubscription.razorpaySubscriptionId
-						);
-					} catch (error) {
-						console.error(
-							"Error canceling Razorpay subscription:",
-							error
-						);
-					}
-				}
-
-				// Update to free plan
-				existingSubscription.planId = "free";
-				existingSubscription.tier = "free";
-				existingSubscription.status = "active";
-				existingSubscription.razorpaySubscriptionId = undefined;
-				existingSubscription.razorpayOrderId = undefined;
-				existingSubscription.razorpayPaymentId = undefined;
-				existingSubscription.currentPeriodEnd = new Date(
-					Date.now() + 365 * 24 * 60 * 60 * 1000
-				);
-				existingSubscription.updatedAt = new Date();
-				await existingSubscription.save();
-
 				return NextResponse.json({
-					id: existingSubscription._id,
-					userId: existingSubscription.userId.toString(),
-					planId: existingSubscription.planId,
-					tier: existingSubscription.tier,
-					status: existingSubscription.status,
-					currentPeriodEnd: existingSubscription.currentPeriodEnd,
-					createdAt: existingSubscription.createdAt,
+					success: true,
+					message: "Free plan already active",
+					subscription: existingSubscription,
 				});
 			}
 
-			// Create new free subscription
-			const newSubscription = await Subscription.create({
-				userId: new mongoose.Types.ObjectId(userId),
+			// Create free subscription
+			const freeSubscription = new Subscription({
+				userId: user._id,
 				planId: "free",
+				planName: "Free Plan",
 				tier: "free",
 				status: "active",
+				amount: 0,
+				billingCycle: "monthly",
+				currentPeriodStart: new Date(),
 				currentPeriodEnd: new Date(
 					Date.now() + 365 * 24 * 60 * 60 * 1000
-				), // 1 year from now
+				), // 1 year
+				planDuration: "monthly",
+				paymentMethod: "Free",
+				autoRenew: true,
 			});
 
+			await freeSubscription.save();
+
 			return NextResponse.json({
-				id: newSubscription._id,
-				userId: newSubscription.userId.toString(),
-				planId: newSubscription.planId,
-				tier: newSubscription.tier,
-				status: newSubscription.status,
-				currentPeriodEnd: newSubscription.currentPeriodEnd,
-				createdAt: newSubscription.createdAt,
+				success: true,
+				message: "Free plan activated successfully",
+				subscription: freeSubscription,
 			});
 		}
 
-		// For premium plan
-		if (planId === "premium") {
-			// If user already has an active premium subscription
-			if (
-				existingSubscription &&
-				existingSubscription.tier === "premium"
-			) {
-				return NextResponse.json(
-					{
-						error: "You already have an active premium subscription",
-					},
-					{ status: 400 }
-				);
-			}
-
-			// Check if user already has a Razorpay customer ID
-			if (!user.razorpayCustomerId) {
-				// Create a Razorpay customer
-				const customer = await createRazorpayCustomer(
-					user.name || user.email,
-					user.email
-				);
-
-				// Update user with Razorpay customer ID
-				user.razorpayCustomerId = customer.id;
-				await user.save();
-			}
-
-			// Create a Razorpay order
-			const order = await createRazorpayOrder(
-				PREMIUM_PLAN_PRICE,
-				`subscription_${user._id.toString()}`
-			);
-
-			// If user has an active free subscription, mark it as expired
-			if (existingSubscription && existingSubscription.tier === "free") {
-				existingSubscription.status = "expired";
-				existingSubscription.updatedAt = new Date();
-				await existingSubscription.save();
-			}
-
-			// Create new premium subscription
-			await Subscription.create({
-				userId: new mongoose.Types.ObjectId(userId),
-				planId: "premium",
-				tier: "premium",
-				status: "pending",
-				razorpayOrderId: order.id,
-				currentPeriodEnd: new Date(
-					Date.now() + 30 * 24 * 60 * 60 * 1000
-				), // Will be updated after payment
-			});
-
-			// Return order details for client-side payment
-			return NextResponse.json({
-				orderId: order.id,
-				amount: order.amount,
-				currency: order.currency,
-				keyId: RAZORPAY_KEY_ID,
-			});
-		}
-
-		return NextResponse.json({ error: "Invalid plan ID" }, { status: 400 });
+		return NextResponse.json(
+			{ message: "Invalid plan", success: false },
+			{ status: 400 }
+		);
 	} catch (error) {
 		console.error("Error creating subscription:", error);
 		return NextResponse.json(
-			{ error: "Failed to create subscription" },
+			{ message: "Failed to create subscription", success: false },
 			{ status: 500 }
 		);
 	}
 }
 
-// Cancel subscription
-export async function PUT(request: Request) {
+export async function PUT(request: NextRequest) {
 	try {
-		const cookieStore = await cookies();
-		const userRole = cookieStore.get("user_role")?.value;
+		const token = request.cookies.get("token")?.value;
 
-		if (!userRole || userRole !== "admin") {
+		if (!token) {
 			return NextResponse.json(
-				{ error: "Unauthorized" },
+				{ message: "Authentication required", success: false },
+				{ status: 401 }
+			);
+		}
+
+		const user = await getUserFromToken(token);
+		if (!user) {
+			return NextResponse.json(
+				{ message: "User not found", success: false },
 				{ status: 401 }
 			);
 		}
 
 		await connectDb();
-		const body = await request.json();
-		const { subscriptionId, updates } = body;
 
-		if (!subscriptionId || !updates) {
+		const body = await request.json();
+		const { subscriptionId, action } = body;
+
+		if (!subscriptionId || !action) {
 			return NextResponse.json(
-				{ error: "Missing required fields" },
+				{
+					message: "Subscription ID and action are required",
+					success: false,
+				},
 				{ status: 400 }
 			);
 		}
 
-		const subscription = await Subscription.findByIdAndUpdate(
-			subscriptionId,
-			{ $set: updates },
-			{ new: true }
-		).populate("userId", "name email");
+		const subscription = await Subscription.findOne({
+			_id: subscriptionId,
+			userId: user._id,
+		});
 
 		if (!subscription) {
 			return NextResponse.json(
-				{ error: "Subscription not found" },
+				{ message: "Subscription not found", success: false },
 				{ status: 404 }
 			);
 		}
 
-		return NextResponse.json(subscription);
+		if (action === "cancel") {
+			subscription.status = "canceled";
+			subscription.cancelledAt = new Date();
+			await subscription.save();
+
+			return NextResponse.json({
+				success: true,
+				subscription,
+			});
+		}
+
+		return NextResponse.json(
+			{ message: "Invalid action", success: false },
+			{ status: 400 }
+		);
 	} catch (error) {
 		console.error("Error updating subscription:", error);
 		return NextResponse.json(
-			{ error: "Failed to update subscription" },
+			{ message: "Failed to update subscription", success: false },
 			{ status: 500 }
 		);
 	}
 }
 
-export async function DELETE(request: Request) {
+export async function DELETE(request: NextRequest) {
 	try {
-		const cookieStore = await cookies();
-		const userRole = cookieStore.get("user_role")?.value;
+		const token = request.cookies.get("token")?.value;
 
-		if (!userRole || userRole !== "admin") {
+		if (!token) {
 			return NextResponse.json(
-				{ error: "Unauthorized" },
+				{ message: "Authentication required", success: false },
 				{ status: 401 }
+			);
+		}
+
+		const user = await getUserFromToken(token);
+		if (!user) {
+			return NextResponse.json(
+				{ message: "User not found", success: false },
+				{ status: 401 }
+			);
+		}
+
+		// Only allow admins to delete subscriptions
+		if (user.role !== "admin") {
+			return NextResponse.json(
+				{
+					message: "Unauthorized - Admin access required",
+					success: false,
+				},
+				{ status: 403 }
 			);
 		}
 
@@ -366,7 +230,7 @@ export async function DELETE(request: Request) {
 
 		if (!subscriptionId) {
 			return NextResponse.json(
-				{ error: "Subscription ID is required" },
+				{ message: "Subscription ID is required", success: false },
 				{ status: 400 }
 			);
 		}
@@ -377,18 +241,19 @@ export async function DELETE(request: Request) {
 
 		if (!subscription) {
 			return NextResponse.json(
-				{ error: "Subscription not found" },
+				{ message: "Subscription not found", success: false },
 				{ status: 404 }
 			);
 		}
 
 		return NextResponse.json({
+			success: true,
 			message: "Subscription deleted successfully",
 		});
 	} catch (error) {
 		console.error("Error deleting subscription:", error);
 		return NextResponse.json(
-			{ error: "Failed to delete subscription" },
+			{ message: "Failed to delete subscription", success: false },
 			{ status: 500 }
 		);
 	}

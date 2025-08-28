@@ -87,7 +87,7 @@ export default function UsersPage() {
 			}
 
 			const data = await response.json();
-			setUsers(data);
+			setUsers(data.users || []);
 		} catch (err) {
 			setError(
 				err instanceof Error ? err.message : "Failed to fetch users"
@@ -147,7 +147,7 @@ export default function UsersPage() {
 	};
 
 	// Filter users based on search query
-	const filteredUsers = users.filter(
+	const filteredUsers = users?.filter(
 		(user) =>
 			user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
 			user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -215,7 +215,7 @@ export default function UsersPage() {
 							</TableRow>
 						</TableHeader>
 						<TableBody>
-							{filteredUsers.map((user) => (
+							{filteredUsers?.map((user) => (
 								<TableRow key={user._id}>
 									<TableCell>
 										<div className='font-medium'>
