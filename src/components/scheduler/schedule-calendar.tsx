@@ -22,17 +22,27 @@ import {
 	Facebook,
 	Instagram,
 	Twitter,
+	FileText,
+	ImageIcon,
+	Video,
+	Clock,
+	CheckCircle,
+	AlertCircle,
+	Loader2,
 } from "lucide-react";
+import Link from "next/link";
 
 interface ScheduledPost {
 	_id: string;
 	title: string;
 	content: string;
 	platforms: string[];
-	scheduledDate?: string;
-	scheduledTime?: string;
+	scheduledAt?: string; // Updated to use scheduledAt
 	status: "draft" | "scheduled" | "published" | "failed" | "cancelled";
 	postType: "text" | "image" | "video";
+	mediaFiles?: string[];
+	hashtags?: string[];
+	createdAt: string;
 }
 
 const platformIcons = {
@@ -45,6 +55,20 @@ const platformColors = {
 	facebook: "#1877F2",
 	instagram: "#E1306C",
 	twitter: "#1DA1F2",
+};
+
+const typeIcons = {
+	text: FileText,
+	image: ImageIcon,
+	video: Video,
+};
+
+const statusConfig = {
+	draft: { color: "secondary", icon: AlertCircle },
+	scheduled: { color: "default", icon: Clock },
+	published: { color: "default", icon: CheckCircle },
+	failed: { color: "destructive", icon: AlertCircle },
+	cancelled: { color: "secondary", icon: AlertCircle },
 };
 
 export function ScheduleCalendar() {
@@ -80,8 +104,8 @@ export function ScheduleCalendar() {
 
 	const getPostsForDate = (date: Date) => {
 		return scheduledPosts.filter((post) => {
-			if (!post.scheduledDate) return false;
-			const postDate = new Date(post.scheduledDate);
+			if (!post.scheduledAt) return false;
+			const postDate = new Date(post.scheduledAt);
 			return isSameDay(postDate, date);
 		});
 	};
@@ -89,9 +113,9 @@ export function ScheduleCalendar() {
 	const selectedDatePosts = selectedDate ? getPostsForDate(selectedDate) : [];
 
 	return (
-		<div className='grid gap-6 lg:grid-cols-3'>
+		<div className='grid gap-6 lg:grid-cols-2'>
 			{/* Calendar */}
-			<div className='lg:col-span-2'>
+			<div>
 				<Card>
 					<CardHeader>
 						<CardTitle>Content Calendar</CardTitle>
@@ -100,17 +124,17 @@ export function ScheduleCalendar() {
 							platforms
 						</CardDescription>
 					</CardHeader>
-					<CardContent>
+					<CardContent className='flex justify-center flex-col items-center'>
 						{loading ? (
 							<div className='flex items-center justify-center py-8'>
-								<div className='animate-spin rounded-full h-8 w-8 border-b-2 border-primary'></div>
+								<Loader2 className='animate-spin rounded-full' />
 							</div>
 						) : (
 							<Calendar
 								mode='single'
 								selected={selectedDate}
 								onSelect={setSelectedDate}
-								className='rounded-md border'
+								className='rounded-md border w-[67%]'
 								modifiers={{
 									hasPost: (date) =>
 										getPostsForDate(date).length > 0,
@@ -136,7 +160,7 @@ export function ScheduleCalendar() {
 			</div>
 
 			{/* Selected Date Details */}
-			<div className='space-y-6'>
+			<div>
 				<Card>
 					<CardHeader>
 						<CardTitle>
@@ -152,46 +176,164 @@ export function ScheduleCalendar() {
 								: "No posts scheduled"}
 						</CardDescription>
 					</CardHeader>
-					<CardContent className='space-y-4'>
+					<CardContent className='grid gap-4 grid-cols-2'>
 						{selectedDatePosts.length > 0 ? (
 							selectedDatePosts.map((post) => {
-								const platform = post.platforms[0]; // Show first platform icon
-								const PlatformIcon =
-									platformIcons[
-										platform as keyof typeof platformIcons
+								const statusConfig_ =
+									statusConfig[
+										post.status as keyof typeof statusConfig
 									];
-								const platformColor =
-									platformColors[
-										platform as keyof typeof platformColors
+								const StatusIcon = statusConfig_.icon;
+								const TypeIcon =
+									typeIcons[
+										post.postType as keyof typeof typeIcons
 									];
 
 								return (
-									<div
+									<Card
 										key={post._id}
-										className='flex items-start gap-3 p-3 border border-border rounded-lg'>
-										<PlatformIcon
-											className='h-5 w-5 mt-0.5'
-											style={{ color: platformColor }}
-										/>
-										<div className='flex-1 space-y-1'>
-											<h4 className='text-sm font-medium'>
+										className='border border-border'>
+										<CardContent className='p-4'>
+											{/* Header with status and type */}
+											<div className='flex items-center justify-between mb-3'>
+												<div className='flex items-center gap-2'>
+													<TypeIcon className='h-4 w-4 text-muted-foreground' />
+													<span className='text-xs text-muted-foreground capitalize'>
+														{post.postType}
+													</span>
+												</div>
+												<Badge
+													variant={
+														statusConfig_.color as
+															| "secondary"
+															| "default"
+															| "destructive"
+															| "outline"
+													}
+													className='text-xs'>
+													<StatusIcon className='h-3 w-3 mr-1' />
+													{post.status}
+												</Badge>
+											</div>
+
+											{/* Post Title */}
+											<h4 className='text-sm font-medium mb-2 line-clamp-2'>
 												{post.title}
 											</h4>
-											<p className='text-xs text-muted-foreground'>
-												{post.scheduledTime} •{" "}
-												{post.platforms.join(", ")}
+
+											{/* Post Content Preview */}
+											<p className='text-xs text-muted-foreground mb-3 line-clamp-2'>
+												{post.content}
 											</p>
-											<Badge
-												variant={
-													post.status === "scheduled"
-														? "default"
-														: "secondary"
-												}
-												className='text-xs'>
-												{post.status}
-											</Badge>
-										</div>
-									</div>
+
+											{/* Media Preview */}
+											{post.mediaFiles &&
+												post.mediaFiles.length > 0 && (
+													<div className='mb-3'>
+														{post.postType ===
+														"image" ? (
+															<div className='flex gap-1'>
+																{post.mediaFiles
+																	.slice(0, 3)
+																	.map(
+																		(
+																			file,
+																			index
+																		) => (
+																			<div
+																				key={
+																					index
+																				}
+																				className='relative'>
+																				<img
+																					src={
+																						file
+																					}
+																					alt={`Media ${
+																						index +
+																						1
+																					}`}
+																					className='w-full h-full object-cover rounded border'
+																				/>
+																				{index ===
+																					2 &&
+																					post.mediaFiles!
+																						.length >
+																						3 && (
+																						<div className='absolute inset-0 bg-black/50 rounded flex items-center justify-center'>
+																							<span className='text-white text-xs'>
+																								+
+																								{post.mediaFiles!
+																									.length -
+																									3}
+																							</span>
+																						</div>
+																					)}
+																			</div>
+																		)
+																	)}
+															</div>
+														) : post.postType ===
+														  "video" ? (
+															<div className='w-12 h-12 bg-muted rounded border flex items-center justify-center'>
+																<Video className='h-4 w-4 text-muted-foreground' />
+															</div>
+														) : null}
+													</div>
+												)}
+
+											{/* Platforms */}
+											<div className='flex items-center gap-1 mb-3'>
+												{post.platforms.map(
+													(platform) => {
+														const PlatformIcon =
+															platformIcons[
+																platform as keyof typeof platformIcons
+															];
+														const platformColor =
+															platformColors[
+																platform as keyof typeof platformColors
+															];
+
+														return PlatformIcon ? (
+															<div
+																key={platform}
+																className='flex items-center gap-1 px-2 py-1 rounded border text-xs'
+																style={{
+																	borderColor:
+																		platformColor,
+																}}>
+																<PlatformIcon
+																	className='h-3 w-3'
+																	style={{
+																		color: platformColor,
+																	}}
+																/>
+																<span className='capitalize'>
+																	{platform}
+																</span>
+															</div>
+														) : null;
+													}
+												)}
+											</div>
+
+											{/* Scheduled Time */}
+											{post.scheduledAt && (
+												<div className='flex items-center gap-1 text-xs text-muted-foreground'>
+													<Clock className='h-3 w-3' />
+													<span>
+														{format(
+															new Date(
+																post.scheduledAt
+															),
+															"h:mm a"
+														)}
+													</span>
+												</div>
+											)}
+										</CardContent>
+									</Card>
 								);
 							})
 						) : (
@@ -199,37 +341,14 @@ export function ScheduleCalendar() {
 								<p className='text-sm text-muted-foreground mb-4'>
 									No posts scheduled for this date
 								</p>
-								<Button size='sm'>
-									<Plus className='h-4 w-4 mr-2' />
-									Schedule Post
-								</Button>
+								<Link href='/dashboard/scheduler'>
+									<Button size='sm'>
+										<Plus className='h-4 w-4 mr-2' />
+										Schedule Post
+									</Button>
+								</Link>
 							</div>
 						)}
-					</CardContent>
-				</Card>
-
-				{/* Quick Actions */}
-				<Card>
-					<CardHeader>
-						<CardTitle>Quick Actions</CardTitle>
-					</CardHeader>
-					<CardContent className='space-y-3'>
-						<Button className='w-full justify-start'>
-							<Plus className='h-4 w-4 mr-2' />
-							Create New Post
-						</Button>
-						<Button
-							variant='outline'
-							className='w-full justify-start bg-transparent'>
-							<ChevronLeft className='h-4 w-4 mr-2' />
-							Previous Week
-						</Button>
-						<Button
-							variant='outline'
-							className='w-full justify-start bg-transparent'>
-							<ChevronRight className='h-4 w-4 mr-2' />
-							Next Week
-						</Button>
 					</CardContent>
 				</Card>
 			</div>

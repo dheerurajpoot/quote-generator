@@ -43,7 +43,9 @@ import {
 	ImageIcon,
 	Video,
 	Loader2,
+	Monitor,
 } from "lucide-react";
+import Link from "next/link";
 
 interface ScheduledPost {
 	_id: string;
@@ -317,6 +319,7 @@ function PostList({
 
 			if (createResponse.data.success) {
 				toast.success("Post published in 2 minutes! Please wait");
+				onRefresh(); // Refresh the list after publishing
 			}
 		} catch (error: unknown) {
 			if (error instanceof Error) {
@@ -326,6 +329,7 @@ function PostList({
 			}
 		}
 	};
+
 	if (posts.length === 0) {
 		return (
 			<Card>
@@ -339,90 +343,29 @@ function PostList({
 	}
 
 	return (
-		<div className='space-y-4'>
+		<div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'>
 			{posts.map((post) => {
-				const platform = post.platforms[0]; // Show first platform icon
-				const PlatformIcon =
-					platformIcons[platform as keyof typeof platformIcons];
-				const platformColor =
-					platformColors[platform as keyof typeof platformColors];
-				const TypeIcon =
-					typeIcons[post.postType as keyof typeof typeIcons];
 				const statusConfig_ =
 					statusConfig[post.status as keyof typeof statusConfig];
 				const StatusIcon = statusConfig_.icon;
 
 				return (
-					<Card key={post._id}>
-						<CardContent className='p-6'>
-							<div className='flex items-start justify-between'>
-								<div className='flex items-start gap-4 flex-1'>
-									<div className='flex items-center gap-2'>
-										<PlatformIcon
-											className='h-5 w-5'
-											style={{ color: platformColor }}
-										/>
-										<TypeIcon className='h-4 w-4 text-muted-foreground' />
-									</div>
-
-									<div className='flex-1 space-y-2'>
-										<div className='flex items-center gap-2'>
-											<h3 className='font-medium'>
-												{post.title}
-											</h3>
-											<Badge
-												variant={
-													statusConfig_.color as
-														| "secondary"
-														| "default"
-														| "destructive"
-														| "outline"
-												}
-												className='flex items-center gap-1'>
-												<StatusIcon className='h-3 w-3' />
-												{post.status}
-											</Badge>
-										</div>
-
-										<p className='text-sm text-muted-foreground line-clamp-2'>
-											{post.content}
-										</p>
-
-										<div className='flex items-center gap-4 text-xs text-muted-foreground'>
-											<span>
-												Created:{" "}
-												{format(
-													new Date(post.createdAt),
-													"MMM d, yyyy"
-												)}
-											</span>
-											{post.status === "scheduled" &&
-												post.scheduledAt && (
-													<span>
-														Scheduled:{" "}
-														{format(
-															new Date(
-																post.scheduledAt
-															),
-															"MMM d, yyyy 'at' h:mm a"
-														)}
-													</span>
-												)}
-											{post.status === "published" &&
-												post.scheduledAt && (
-													<span>
-														Published:{" "}
-														{format(
-															new Date(
-																post.scheduledAt
-															),
-															"MMM d, yyyy 'at' h:mm a"
-														)}
-													</span>
-												)}
-										</div>
-									</div>
-								</div>
+					<Card key={post._id} className='h-full flex flex-col'>
+						<CardContent className='p-6 flex flex-col h-full'>
+							{/* Header with status and actions */}
+							<div className='flex items-start justify-between mb-4'>
+								<Badge
+									variant={
+										statusConfig_.color as
+											| "secondary"
+											| "default"
+											| "destructive"
+											| "outline"
+									}
+									className='flex items-center gap-1'>
+									<StatusIcon className='h-3 w-3' />
+									{post.status}
+								</Badge>
 
 								<DropdownMenu>
 									<DropdownMenuTrigger asChild>
@@ -443,38 +386,234 @@ function PostList({
 												Publish Now
 											</DropdownMenuItem>
 										)}
-										<DropdownMenuItem
-											className='text-destructive'
-											onClick={async () => {
-												if (
-													confirm(
-														"Are you sure you want to delete this post?"
-													)
-												) {
-													try {
-														await axios.delete(
-															`/api/users/${user?._id}/scheduled-posts/${post._id}`
-														);
-														toast.success(
-															"Post deleted successfully"
-														);
-														onRefresh();
-													} catch (error) {
-														console.error(
-															"Error deleting post:",
-															error
-														);
-														toast.error(
-															"Failed to delete post"
-														);
+										<Link href='/dashboard'>
+											<DropdownMenuItem className='cursor-pointer'>
+												<Monitor className='mr-2 h-4 w-4' />
+												Dashboard
+											</DropdownMenuItem>
+										</Link>
+										{post.status === "scheduled" && (
+											<DropdownMenuItem
+												className='text-destructive'
+												onClick={async () => {
+													if (
+														confirm(
+															"Are you sure you want to delete this post?"
+														)
+													) {
+														try {
+															await axios.delete(
+																`/api/users/${user?._id}/scheduled-posts/${post._id}`
+															);
+															toast.success(
+																"Post deleted successfully"
+															);
+															onRefresh();
+														} catch (error) {
+															console.error(
+																"Error deleting post:",
+																error
+															);
+															toast.error(
+																"Failed to delete post"
+															);
+														}
 													}
-												}
-											}}>
-											<Trash2 className='mr-2 h-4 w-4' />
-											Delete
-										</DropdownMenuItem>
+												}}>
+												<Trash2 className='mr-2 h-4 w-4' />
+												Delete
+											</DropdownMenuItem>
+										)}
 									</DropdownMenuContent>
 								</DropdownMenu>
+							</div>
+
+							{/* Post Type Icon */}
+							<div className='flex items-center gap-2 mb-3'>
+								{(() => {
+									const TypeIcon =
+										typeIcons[
+											post.postType as keyof typeof typeIcons
+										];
+									return (
+										<TypeIcon className='h-5 w-5 text-muted-foreground' />
+									);
+								})()}
+								<span className='text-sm text-muted-foreground capitalize'>
+									{post.postType} Post
+								</span>
+							</div>
+
+							{/* Post Title */}
+							<h3 className='font-semibold text-lg mb-2 line-clamp-2'>
+								Campaign Name: {post.title}
+							</h3>
+
+							{/* Post Content */}
+							<p className='text-sm text-muted-foreground line-clamp-3 mb-4 flex-1'>
+								Content: {post.content}
+							</p>
+
+							{/* Media Preview */}
+							{post.mediaFiles && post.mediaFiles.length > 0 && (
+								<div className='mb-4'>
+									{post.postType === "image" ? (
+										<div className='grid'>
+											{post.mediaFiles
+												.slice(0, 4)
+												.map((file, index) => (
+													<div
+														key={index}
+														className='relative aspect-square'>
+														<img
+															src={file}
+															alt={`Media ${
+																index + 1
+															}`}
+															className='w-full h-full object-cover rounded-md border'
+														/>
+														{index === 3 &&
+															post.mediaFiles!
+																.length > 4 && (
+																<div className='absolute inset-0 bg-black/50 rounded-md flex items-center justify-center'>
+																	<span className='text-white text-xs font-medium'>
+																		+
+																		{post.mediaFiles!
+																			.length -
+																			4}{" "}
+																		more
+																	</span>
+																</div>
+															)}
+													</div>
+												))}
+										</div>
+									) : post.postType === "video" ? (
+										<div className='space-y-2'>
+											{post.mediaFiles
+												.slice(0, 2)
+												.map((file, index) => (
+													<div
+														key={index}
+														className='relative'>
+														<div className='w-full h-24 bg-muted rounded-md border flex items-center justify-center'>
+															<Video className='h-6 w-6 text-muted-foreground' />
+															<span className='text-xs text-muted-foreground ml-2'>
+																Video{" "}
+																{index + 1}
+															</span>
+														</div>
+													</div>
+												))}
+											{post.mediaFiles.length > 2 && (
+												<p className='text-xs text-muted-foreground'>
+													+
+													{post.mediaFiles.length - 2}{" "}
+													more videos
+												</p>
+											)}
+										</div>
+									) : null}
+								</div>
+							)}
+
+							{/* Hashtags */}
+							{post.hashtags && post.hashtags.length > 0 && (
+								<div className='mb-4'>
+									<div className='flex flex-wrap gap-1'>
+										{post.hashtags
+											.slice(0, 6)
+											.map((tag, index) => (
+												<span
+													key={index}
+													className='text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded-full'>
+													{tag}
+												</span>
+											))}
+										{post.hashtags.length > 6 && (
+											<span className='text-xs text-muted-foreground'>
+												+{post.hashtags.length - 6} more
+											</span>
+										)}
+									</div>
+								</div>
+							)}
+
+							{/* Platforms */}
+							<div className='mb-4'>
+								<div className='flex items-center gap-2 flex-wrap'>
+									{post.platforms.map((platform) => {
+										const PlatformIcon =
+											platformIcons[
+												platform as keyof typeof platformIcons
+											];
+										const platformColor =
+											platformColors[
+												platform as keyof typeof platformColors
+											];
+
+										return PlatformIcon ? (
+											<div
+												key={platform}
+												className='flex items-center gap-1 px-2 py-1 rounded-md border'
+												style={{
+													borderColor: platformColor,
+												}}>
+												<PlatformIcon
+													className='h-4 w-4'
+													style={{
+														color: platformColor,
+													}}
+												/>
+												<span className='text-xs font-medium capitalize'>
+													{platform}
+												</span>
+											</div>
+										) : null;
+									})}
+								</div>
+							</div>
+
+							{/* Timestamps */}
+							<div className='mt-auto space-y-2 text-xs text-muted-foreground'>
+								<div className='flex items-center gap-2'>
+									<Clock className='h-3 w-3' />
+									<span>
+										Created:{" "}
+										{format(
+											new Date(post.createdAt),
+											"MMM d, yyyy 'at' h:mm a"
+										)}
+									</span>
+								</div>
+
+								{post.status === "scheduled" &&
+									post.scheduledAt && (
+										<div className='flex items-center gap-2'>
+											<Clock className='h-3 w-3' />
+											<span>
+												Scheduled:{" "}
+												{format(
+													new Date(post.scheduledAt),
+													"MMM d, yyyy 'at' h:mm a"
+												)}
+											</span>
+										</div>
+									)}
+
+								{post.status === "published" &&
+									post.scheduledAt && (
+										<div className='flex items-center gap-2'>
+											<CheckCircle className='h-3 w-3' />
+											<span>
+												Published:{" "}
+												{format(
+													new Date(post.scheduledAt),
+													"MMM d, yyyy 'at' h:mm a"
+												)}
+											</span>
+										</div>
+									)}
 							</div>
 						</CardContent>
 					</Card>

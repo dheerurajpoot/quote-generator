@@ -609,7 +609,18 @@ export function PostCreator() {
 									</div>
 
 									<div className='space-y-2'>
-										<Label>Hour</Label>
+										<Label>Time</Label>
+										<div className='text-sm text-muted-foreground mb-2'>
+											Selected: {scheduleTime} (
+											{scheduleTime.split(":")[0]}:
+											{scheduleTime.split(":")[1]}{" "}
+											{parseInt(
+												scheduleTime.split(":")[0]
+											) >= 12
+												? "PM"
+												: "AM"}
+											)
+										</div>
 										<div className='flex gap-2'>
 											<Select
 												value={
@@ -624,10 +635,9 @@ export function PostCreator() {
 														`${hour}:${minute}`
 													);
 												}}>
-												<SelectTrigger className='w-20'>
+												<SelectTrigger className='w-26'>
 													<Clock className='h-4 w-4' />
-													Hour
-													<SelectValue />
+													<SelectValue placeholder='Hour' />
 												</SelectTrigger>
 												<SelectContent>
 													{Array.from(
@@ -751,13 +761,15 @@ export function PostCreator() {
 									? "Schedule Post"
 									: "Save as Draft"}
 							</Button>
-							<Button
-								variant='default'
-								onClick={handleInstantPublish}
-								disabled={loading}
-								className='bg-green-600 hover:bg-green-700'>
-								{loading ? "Publishing..." : "Publish Now"}
-							</Button>
+							{!isScheduled && (
+								<Button
+									variant='default'
+									onClick={handleInstantPublish}
+									disabled={loading}
+									className='bg-green-600 hover:bg-green-700'>
+									{loading ? "Publishing..." : "Publish Now"}
+								</Button>
+							)}
 							<Button variant='outline' onClick={resetForm}>
 								Reset Form
 							</Button>
