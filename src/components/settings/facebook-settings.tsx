@@ -15,11 +15,10 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Check, AlertCircle, Trash2 } from "lucide-react";
 import toast from "react-hot-toast";
 import axios from "axios";
-import Link from "next/link";
 
 export function FacebookSettings() {
-	const [appId, setAppId] = useState("");
-	const [appSecret, setAppSecret] = useState("");
+	// const [appId, setAppId] = useState("");
+	// const [appSecret, setAppSecret] = useState("");
 	const [author, setAuthor] = useState("");
 	const [error, setError] = useState("");
 	const [success, setSuccess] = useState("");
@@ -36,12 +35,12 @@ export function FacebookSettings() {
 					}
 				);
 
-				if (response.data.appId) {
-					setAppId(response.data.appId);
-				}
-				if (response.data.appSecret) {
-					setAppSecret(response.data.appSecret);
-				}
+				// if (response.data.appId) {
+				// 	setAppId(response.data.appId);
+				// }
+				// if (response.data.appSecret) {
+				// 	setAppSecret(response.data.appSecret);
+				// }
 				if (response.data.author) {
 					setAuthor(response.data.author);
 				}
@@ -71,7 +70,7 @@ export function FacebookSettings() {
 		try {
 			await axios.post(
 				"/api/users/facebook-credentials",
-				{ appId, appSecret, author },
+				{ author },
 				{
 					withCredentials: true,
 					headers: {
@@ -110,8 +109,8 @@ export function FacebookSettings() {
 				withCredentials: true,
 			});
 
-			setAppId("");
-			setAppSecret("");
+			// setAppId("");
+			// setAppSecret("");
 			setAuthor("");
 			setSuccess("Facebook credentials removed successfully!");
 			toast.success("Facebook credentials removed successfully!");
@@ -138,8 +137,7 @@ export function FacebookSettings() {
 			<CardHeader>
 				<CardTitle>Facebook App Settings</CardTitle>
 				<CardDescription>
-					Configure your Facebook App credentials for social media
-					integration
+					Configure your Watermark for your auto posts
 				</CardDescription>
 			</CardHeader>
 			<CardContent>
@@ -158,7 +156,7 @@ export function FacebookSettings() {
 				)}
 
 				<div className='space-y-4'>
-					<div className='space-y-2'>
+					{/* <div className='space-y-2'>
 						<Label htmlFor='appId'>App ID</Label>
 						<Input
 							id='appId'
@@ -166,9 +164,9 @@ export function FacebookSettings() {
 							onChange={(e) => setAppId(e.target.value)}
 							placeholder='Enter your Facebook App ID'
 						/>
-					</div>
+					</div> */}
 
-					<div className='space-y-2'>
+					{/* <div className='space-y-2'>
 						<Label htmlFor='appSecret'>App Secret</Label>
 						<Input
 							id='appSecret'
@@ -177,7 +175,7 @@ export function FacebookSettings() {
 							onChange={(e) => setAppSecret(e.target.value)}
 							placeholder='Enter your Facebook App Secret'
 						/>
-					</div>
+					</div> */}
 					<div className='space-y-2'>
 						<Label htmlFor='author'>
 							Author/Page Name/Watermark
@@ -194,10 +192,10 @@ export function FacebookSettings() {
 					<div className='flex gap-2'>
 						<Button
 							onClick={handleSave}
-							disabled={isLoading || (!appId && !appSecret)}>
+							disabled={isLoading || !author}>
 							Save Credentials
 						</Button>
-						{(appId || appSecret) && (
+						{author && (
 							<Button
 								variant='destructive'
 								onClick={handleRemove}
@@ -206,32 +204,6 @@ export function FacebookSettings() {
 								Remove
 							</Button>
 						)}
-					</div>
-				</div>
-
-				<div className='mt-6 space-y-4'>
-					<h3 className='font-semibold'>
-						How to get Facebook App ID and Secret
-					</h3>
-					<p>
-						Go to{" "}
-						<Link
-							href='https://developers.facebook.com'
-							target='_blank'
-							rel='noopener noreferrer'
-							className='text-blue-600 hover:underline'>
-							Facebook Developers
-						</Link>
-					</p>
-					<div className='relative w-full pt-[56.25%]'>
-						<iframe
-							className='absolute top-0 left-0 w-full h-full rounded-lg'
-							src='https://www.youtube.com/embed/KqGGRVQNmtk?si=SFs9N9Yll1QG1_YA'
-							title='YouTube video player'
-							frameBorder='0'
-							allow='accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share'
-							referrerPolicy='strict-origin-when-cross-origin'
-							allowFullScreen></iframe>
 					</div>
 				</div>
 			</CardContent>

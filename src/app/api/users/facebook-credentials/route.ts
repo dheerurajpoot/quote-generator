@@ -39,8 +39,8 @@ export async function GET(request: NextRequest) {
 			);
 		}
 		return NextResponse.json({
-			appId: user.facebookAppId || "",
-			appSecret: user.facebookAppSecret || "",
+			//appId: user.facebookAppId || "",
+			//appSecret: user.facebookAppSecret || "",
 			author: user.author || "",
 		});
 	} catch (error) {
@@ -71,17 +71,17 @@ export async function POST(request: NextRequest) {
 			);
 		}
 
-		const { appId, appSecret, author } = await request.json();
+		const { author } = await request.json();
 
-		if (!appId || !appSecret) {
+		if (!author) {
 			return NextResponse.json(
-				{ message: "App ID and App Secret are required" },
+				{ message: "Author is required" },
 				{ status: 400 }
 			);
 		}
 
-		user.facebookAppId = appId;
-		user.facebookAppSecret = appSecret;
+		// user.facebookAppId = appId;
+		// user.facebookAppSecret = appSecret;
 		user.author = author;
 		await user.save();
 
@@ -116,8 +116,8 @@ export async function DELETE(request: NextRequest) {
 			);
 		}
 
-		user.facebookAppId = "";
-		user.facebookAppSecret = "";
+		// user.facebookAppId = "";
+		// user.facebookAppSecret = "";
 		user.author = "";
 		await user.save();
 
