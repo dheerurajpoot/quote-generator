@@ -16,8 +16,6 @@ import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
 import { format, isSameDay } from "date-fns";
 import {
-	ChevronLeft,
-	ChevronRight,
 	Plus,
 	Facebook,
 	Instagram,
