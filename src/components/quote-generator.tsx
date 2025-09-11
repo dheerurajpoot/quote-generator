@@ -61,6 +61,9 @@ const DEFAULT_BACKGROUNDS = [
 	"/img18.jpg?height=600&width=600&text=Road",
 ];
 
+// Local storage key for persisting design settings
+const DESIGN_STORAGE_KEY = "quote_generator_design_v1";
+
 // Extended font options including Devanagari support
 const FONTS = [
 	{ name: "Sans Serif", value: "font-sans" },
@@ -104,6 +107,70 @@ export default function QuoteGenerator() {
 
 	const [quotePosition, setQuotePosition] = useState({ x: 0, y: 0 });
 	const [watermarkPosition, setWatermarkPosition] = useState({ x: 0, y: 0 });
+
+	// Load saved design settings from localStorage on mount
+	useEffect(() => {
+		try {
+			const raw =
+				typeof window !== "undefined"
+					? localStorage.getItem(DESIGN_STORAGE_KEY)
+					: null;
+			if (!raw) return;
+			const saved = JSON.parse(raw) as Partial<{
+				watermark: string;
+				backgroundColor: string;
+				backgroundOpacity: number;
+				textColor: string;
+				watermarkColor: string;
+				fontSize: number;
+				fontFamily: string;
+				fontWeight: string;
+				backgroundImage: string;
+				useSolidBackground: boolean;
+				solidBackgroundColor: string;
+				quotePosition: { x: number; y: number };
+				watermarkPosition: { x: number; y: number };
+			}>;
+
+			if (typeof saved.watermark === "string")
+				setWatermark(saved.watermark);
+			if (typeof saved.backgroundColor === "string")
+				setBackgroundColor(saved.backgroundColor);
+			if (typeof saved.backgroundOpacity === "number")
+				setBackgroundOpacity(saved.backgroundOpacity);
+			if (typeof saved.textColor === "string")
+				setTextColor(saved.textColor);
+			if (typeof saved.watermarkColor === "string")
+				setWatermarkColor(saved.watermarkColor);
+			if (typeof saved.fontSize === "number") setFontSize(saved.fontSize);
+			if (typeof saved.fontFamily === "string")
+				setFontFamily(saved.fontFamily);
+			if (typeof saved.fontWeight === "string")
+				setFontWeight(saved.fontWeight);
+			if (typeof saved.backgroundImage === "string")
+				setBackgroundImage(saved.backgroundImage);
+			if (typeof saved.useSolidBackground === "boolean")
+				setUseSolidBackground(saved.useSolidBackground);
+			if (typeof saved.solidBackgroundColor === "string")
+				setSolidBackgroundColor(saved.solidBackgroundColor);
+			if (
+				saved.quotePosition &&
+				typeof saved.quotePosition.x === "number" &&
+				typeof saved.quotePosition.y === "number"
+			) {
+				setQuotePosition(saved.quotePosition);
+			}
+			if (
+				saved.watermarkPosition &&
+				typeof saved.watermarkPosition.x === "number" &&
+				typeof saved.watermarkPosition.y === "number"
+			) {
+				setWatermarkPosition(saved.watermarkPosition);
+			}
+		} catch (err) {
+			console.error("Failed to load saved design settings", err);
+		}
+	}, []);
 
 	// Update background opacity
 	useEffect(() => {
@@ -158,6 +225,50 @@ export default function QuoteGenerator() {
 		if (!canvasRef.current) return;
 		await downloadQuoteImage(canvasRef.current, "quote-art.png");
 	};
+
+	// Persist design settings to localStorage (debounced)
+	useEffect(() => {
+		const timeout = window.setTimeout(() => {
+			try {
+				const data = {
+					// Intentionally exclude `quote` text; we preserve only design
+					watermark,
+					backgroundColor,
+					backgroundOpacity,
+					textColor,
+					watermarkColor,
+					fontSize,
+					fontFamily,
+					fontWeight,
+					backgroundImage,
+					useSolidBackground,
+					solidBackgroundColor,
+					quotePosition,
+					watermarkPosition,
+				};
+				localStorage.setItem(DESIGN_STORAGE_KEY, JSON.stringify(data));
+			} catch (err) {
+				console.error("Failed to save design settings", err);
+			}
+		}, 400);
+		return () => window.clearTimeout(timeout);
+	}, [
+		watermark,
+		backgroundColor,
+		backgroundOpacity,
+		textColor,
+		watermarkColor,
+		fontSize,
+		fontFamily,
+		fontWeight,
+		backgroundImage,
+		useSolidBackground,
+		solidBackgroundColor,
+		quotePosition.x,
+		quotePosition.y,
+		watermarkPosition.x,
+		watermarkPosition.y,
+	]);
 
 	return (
 		<>
