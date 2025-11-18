@@ -74,7 +74,7 @@ export function FacebookSettings() {
 				appSecret,
 			});
 			console.log(res.data.newUser);
-			let userData = res.data.newUser;
+			const userData = res.data.newUser;
 			localStorage.removeItem("user");
 			localStorage.setItem("user", JSON.stringify(userData));
 
