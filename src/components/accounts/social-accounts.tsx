@@ -294,9 +294,9 @@ export function SocialAccounts() {
 			setIsConnecting((prev) => ({ ...prev, facebook: true }));
 			setError("");
 			setSuccess("");
-
+			if (!user) return;
 			// Initialize Facebook SDK
-			await initializeFacebookSDK();
+			await initializeFacebookSDK(user?.appId);
 
 			// Request Facebook login
 			const loginResponse = await new Promise<FacebookLoginResponse>(
@@ -327,7 +327,7 @@ export function SocialAccounts() {
 
 			// Exchange short-lived token for long-lived token
 			const longLivedTokenResponse = await fetch(
-				`/api/social/exchange-token?access_token=${loginResponse.authResponse.accessToken}`
+				`/api/social/exchange-token?access_token=${loginResponse.authResponse.accessToken}&appId=${user?.appId}&appSecret=${user?.appSecret}`
 			);
 			if (!longLivedTokenResponse.ok) {
 				throw new Error("Failed to get long-lived access token");
@@ -379,7 +379,9 @@ export function SocialAccounts() {
 			setSuccess("");
 
 			// Initialize Facebook SDK (Instagram uses Facebook's OAuth)
-			await initializeFacebookSDK();
+			if (!user) return;
+			// Initialize Facebook SDK
+			await initializeFacebookSDK(user?.appId);
 
 			// Request Facebook login with Instagram permissions
 			const loginResponse = await new Promise<FacebookLoginResponse>(
@@ -410,7 +412,7 @@ export function SocialAccounts() {
 
 			// Exchange the Facebook User Access Token for a long-lived token (NO platform parameter)
 			const exchangeRes = await fetch(
-				`/api/social/exchange-token?access_token=${loginResponse.authResponse.accessToken}`
+				`/api/social/exchange-token?access_token=${loginResponse.authResponse.accessToken}&appId=${user?.appId}&appSecret=${user?.appSecret}`
 			);
 			if (!exchangeRes.ok) {
 				const errorData = await exchangeRes.json();

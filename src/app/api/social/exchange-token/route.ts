@@ -23,6 +23,8 @@ export const GET = async (request: Request) => {
 	try {
 		const { searchParams } = new URL(request.url);
 		const accessToken = searchParams.get("access_token");
+		const facebookAppId = searchParams.get("appId");
+		const facebookAppSecret = searchParams.get("appSecret");
 		const platform = searchParams.get("platform") || "facebook";
 		const token = request.headers
 			.get("cookie")
@@ -52,9 +54,6 @@ export const GET = async (request: Request) => {
 				{ status: 401 }
 			);
 		}
-
-		const facebookAppId = process.env.FACEBOOK_APP_ID;
-		const facebookAppSecret = process.env.FACEBOOK_APP_SECRET;
 
 		if (!facebookAppId || !facebookAppSecret) {
 			return NextResponse.json(

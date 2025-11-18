@@ -4,12 +4,12 @@ declare global {
 	}
 }
 
-export async function initializeFacebookSDK(): Promise<void> {
+export async function initializeFacebookSDK(appId: string): Promise<void> {
 	if (!window.FB) {
 		return new Promise<void>((resolve) => {
 			window.fbAsyncInit = function () {
 				window.FB.init({
-					appId: "995595962511563",
+					appId: appId,
 					cookie: true,
 					xfbml: true,
 					version: "v18.0",

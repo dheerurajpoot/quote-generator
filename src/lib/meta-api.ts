@@ -1,6 +1,7 @@
 import { SocialConnection } from "@/models/socialConnection.model";
 import { connectDb } from "./dbconfig";
 import axios from "axios";
+import { User } from "@/models/user.model";
 
 export interface MetaApiConfig {
 	accessToken: string;
@@ -8,9 +9,13 @@ export interface MetaApiConfig {
 	userId?: string;
 	platform?: string;
 }
+interface User {
+	_id: string;
+	facebookAppId: string;
+	facebookAppSecret: string;
+}
 
-const facebookAppId = process.env.FACEBOOK_APP_ID;
-const facebookAppSecret = process.env.FACEBOOK_APP_SECRET;
+let user: User | null;
 
 export class MetaApi {
 	private accessToken: string;
@@ -33,6 +38,9 @@ export class MetaApi {
 
 		try {
 			await connectDb();
+			user = await User.findOne({
+				_id: this.userId,
+			});
 			const connection = await SocialConnection.findOne({
 				userId: this.userId,
 				platform: this.platform,
@@ -99,7 +107,7 @@ export class MetaApi {
 				} else {
 					// For Facebook, use the standard token exchange
 					const response = await fetch(
-						`https://graph.facebook.com/${this.apiVersion}/oauth/access_token?grant_type=fb_exchange_token&client_id=${facebookAppId}&client_secret=${facebookAppSecret}&fb_exchange_token=${this.accessToken}`
+						`https://graph.facebook.com/${this.apiVersion}/oauth/access_token?grant_type=fb_exchange_token&client_id=${user?.facebookAppId}&client_secret=${user?.facebookAppSecret}&fb_exchange_token=${this.accessToken}`
 					);
 
 					if (!response.ok) {

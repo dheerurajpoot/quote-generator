@@ -61,7 +61,11 @@ export async function POST(request: NextRequest) {
 				name: user.name,
 				email: user.email,
 				role: user.role,
+				appId: user.facebookAppId,
+				appSecret: user.facebookAppSecret,
+				author: user.author,
 				isBlocked: user.isBlocked,
+				createdAt: user.createdAt,
 			},
 		});
 

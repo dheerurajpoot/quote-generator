@@ -39,8 +39,8 @@ export async function GET(request: NextRequest) {
 			);
 		}
 		return NextResponse.json({
-			//appId: user.facebookAppId || "",
-			//appSecret: user.facebookAppSecret || "",
+			appId: user.facebookAppId || "",
+			appSecret: user.facebookAppSecret || "",
 			author: user.author || "",
 		});
 	} catch (error) {
@@ -71,21 +71,32 @@ export async function POST(request: NextRequest) {
 			);
 		}
 
-		const { author } = await request.json();
+		const { author, appId, appSecret } = await request.json();
 
-		if (!author) {
+		if (!author || !appId || !appSecret) {
 			return NextResponse.json(
-				{ message: "Author is required" },
+				{ message: "Author, App ID, and App Secret are required" },
 				{ status: 400 }
 			);
 		}
 
-		// user.facebookAppId = appId;
-		// user.facebookAppSecret = appSecret;
+		user.facebookAppId = appId;
+		user.facebookAppSecret = appSecret;
 		user.author = author;
-		await user.save();
+		const updatedUser = await user.save();
 
 		return NextResponse.json({
+			newUser: {
+				_id: updatedUser._id,
+				name: updatedUser.name,
+				email: updatedUser.email,
+				role: updatedUser.role,
+				appId: updatedUser?.facebookAppId,
+				appSecret: updatedUser?.facebookAppSecret,
+				author: updatedUser?.author,
+				isBlocked: updatedUser.isBlocked,
+				createdAt: updatedUser.createdAt,
+			},
 			message: "Facebook credentials saved successfully",
 		});
 	} catch (error) {
@@ -116,8 +127,8 @@ export async function DELETE(request: NextRequest) {
 			);
 		}
 
-		// user.facebookAppId = "";
-		// user.facebookAppSecret = "";
+		user.facebookAppId = "";
+		user.facebookAppSecret = "";
 		user.author = "";
 		await user.save();
 

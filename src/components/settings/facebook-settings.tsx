@@ -17,8 +17,8 @@ import toast from "react-hot-toast";
 import axios from "axios";
 
 export function FacebookSettings() {
-	// const [appId, setAppId] = useState("");
-	// const [appSecret, setAppSecret] = useState("");
+	const [appId, setAppId] = useState("");
+	const [appSecret, setAppSecret] = useState("");
 	const [author, setAuthor] = useState("");
 	const [error, setError] = useState("");
 	const [success, setSuccess] = useState("");
@@ -35,12 +35,12 @@ export function FacebookSettings() {
 					}
 				);
 
-				// if (response.data.appId) {
-				// 	setAppId(response.data.appId);
-				// }
-				// if (response.data.appSecret) {
-				// 	setAppSecret(response.data.appSecret);
-				// }
+				if (response.data.appId) {
+					setAppId(response.data.appId);
+				}
+				if (response.data.appSecret) {
+					setAppSecret(response.data.appSecret);
+				}
 				if (response.data.author) {
 					setAuthor(response.data.author);
 				}
@@ -68,16 +68,15 @@ export function FacebookSettings() {
 		setSuccess("");
 
 		try {
-			await axios.post(
-				"/api/users/facebook-credentials",
-				{ author },
-				{
-					withCredentials: true,
-					headers: {
-						"Content-Type": "application/json",
-					},
-				}
-			);
+			const res = await axios.post("/api/users/facebook-credentials", {
+				author,
+				appId,
+				appSecret,
+			});
+			console.log(res.data.newUser);
+			let userData = res.data.newUser;
+			localStorage.removeItem("user");
+			localStorage.setItem("user", JSON.stringify(userData));
 
 			setSuccess("Facebook credentials saved successfully!");
 			toast.success("Facebook credentials saved successfully!");
@@ -109,8 +108,8 @@ export function FacebookSettings() {
 				withCredentials: true,
 			});
 
-			// setAppId("");
-			// setAppSecret("");
+			setAppId("");
+			setAppSecret("");
 			setAuthor("");
 			setSuccess("Facebook credentials removed successfully!");
 			toast.success("Facebook credentials removed successfully!");
@@ -156,7 +155,7 @@ export function FacebookSettings() {
 				)}
 
 				<div className='space-y-4'>
-					{/* <div className='space-y-2'>
+					<div className='space-y-2'>
 						<Label htmlFor='appId'>App ID</Label>
 						<Input
 							id='appId'
@@ -164,9 +163,9 @@ export function FacebookSettings() {
 							onChange={(e) => setAppId(e.target.value)}
 							placeholder='Enter your Facebook App ID'
 						/>
-					</div> */}
+					</div>
 
-					{/* <div className='space-y-2'>
+					<div className='space-y-2'>
 						<Label htmlFor='appSecret'>App Secret</Label>
 						<Input
 							id='appSecret'
@@ -175,7 +174,7 @@ export function FacebookSettings() {
 							onChange={(e) => setAppSecret(e.target.value)}
 							placeholder='Enter your Facebook App Secret'
 						/>
-					</div> */}
+					</div>
 					<div className='space-y-2'>
 						<Label htmlFor='author'>
 							Author/Page Name/Watermark

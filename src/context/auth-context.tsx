@@ -18,6 +18,8 @@ export interface User {
 	token?: string;
 	image?: string | null;
 	isBlocked: boolean;
+	appId: string;
+	appSecret: string;
 }
 
 interface AuthContextType {
