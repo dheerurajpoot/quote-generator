@@ -33,7 +33,6 @@ import {
 	Clock,
 	CheckCircle,
 	Loader2,
-	Sidebar,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { PlatformPerformance } from "./platform-performance";
@@ -77,7 +76,6 @@ export function DashboardOverview() {
 	const [stats, setStats] = useState<DashboardStats | null>(null);
 	const [charts, setCharts] = useState<ChartData | null>(null);
 	const [upcomingPosts, setUpcomingPosts] = useState<UpcomingPost[]>([]);
-	const [sidebarOpen, setSidebarOpen] = useState(false);
 
 	useEffect(() => {
 		if (user?._id) {

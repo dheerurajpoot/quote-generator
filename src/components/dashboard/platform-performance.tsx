@@ -11,16 +11,6 @@ import {
 	CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import {
-	BarChart,
-	Bar,
-	XAxis,
-	YAxis,
-	CartesianGrid,
-	Tooltip,
-	ResponsiveContainer,
-} from "recharts";
 import {
 	Facebook,
 	Instagram,
@@ -130,18 +120,6 @@ export function PlatformPerformance() {
 		);
 	}
 
-	// Prepare data for engagement chart
-	const engagementData = platformMetrics.map((platform) => ({
-		name:
-			platform.platform.charAt(0).toUpperCase() +
-			platform.platform.slice(1),
-		engagement: platform.metrics.avgEngagement,
-		posts: platform.metrics.totalPosts,
-		color:
-			platformColors[platform.platform as keyof typeof platformColors] ||
-			"#666",
-	}));
-
 	return (
 		<div className='space-y-6'>
 			{/* Summary Cards */}
@@ -226,15 +204,6 @@ export function PlatformPerformance() {
 						platformColors[
 							platform.platform as keyof typeof platformColors
 						] || "#666";
-					const successRate =
-						platform.metrics.totalPosts > 0
-							? (
-									(platform.metrics.publishedPosts /
-										platform.metrics.totalPosts) *
-									100
-							  ).toFixed(1)
-							: "0";
-
 					return (
 						<Card key={platform.platform}>
 							<CardHeader>
