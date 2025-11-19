@@ -145,7 +145,7 @@ export function PlatformPerformance() {
 	return (
 		<div className='space-y-6'>
 			{/* Summary Cards */}
-			<div className='grid gap-4 md:grid-cols-2 lg:grid-cols-4'>
+			<div className='grid gap-4 grid-cols-2 md:grid-cols-4'>
 				<Card>
 					<CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
 						<CardTitle className='text-sm font-medium'>
@@ -215,36 +215,6 @@ export function PlatformPerformance() {
 				</Card>
 			</div>
 
-			{/* Platform Performance Chart */}
-			<Card>
-				<CardHeader>
-					<CardTitle>Platform Performance Overview</CardTitle>
-					<CardDescription>
-						Average engagement and post count by platform
-					</CardDescription>
-				</CardHeader>
-				<CardContent>
-					<ResponsiveContainer width='100%' height={300}>
-						<BarChart data={engagementData}>
-							<CartesianGrid strokeDasharray='3 3' />
-							<XAxis dataKey='name' />
-							<YAxis />
-							<Tooltip />
-							<Bar
-								dataKey='engagement'
-								fill='var(--color-chart-1)'
-								name='Avg Engagement'
-							/>
-							<Bar
-								dataKey='posts'
-								fill='var(--color-chart-2)'
-								name='Total Posts'
-							/>
-						</BarChart>
-					</ResponsiveContainer>
-				</CardContent>
-			</Card>
-
 			{/* Individual Platform Cards */}
 			<div className='grid gap-4 md:grid-cols-2'>
 				{platformMetrics.map((platform) => {
@@ -292,85 +262,6 @@ export function PlatformPerformance() {
 									</Badge>
 								</div>
 							</CardHeader>
-							<CardContent className='space-y-4'>
-								{/* Followers */}
-								<div className='flex justify-between items-center'>
-									<span className='text-sm text-muted-foreground'>
-										Followers
-									</span>
-									<span className='font-medium'>
-										{platform.followers.toLocaleString()}
-									</span>
-								</div>
-
-								{/* Post Statistics */}
-								<div className='space-y-2'>
-									<div className='flex justify-between text-sm'>
-										<span>Total Posts</span>
-										<span>
-											{platform.metrics.totalPosts}
-										</span>
-									</div>
-									<div className='flex justify-between text-sm'>
-										<span>Published</span>
-										<span className='text-green-600'>
-											{platform.metrics.publishedPosts}
-										</span>
-									</div>
-									<div className='flex justify-between text-sm'>
-										<span>Scheduled</span>
-										<span className='text-blue-600'>
-											{platform.metrics.scheduledPosts}
-										</span>
-									</div>
-									<div className='flex justify-between text-sm'>
-										<span>Drafts</span>
-										<span className='text-yellow-600'>
-											{platform.metrics.draftPosts}
-										</span>
-									</div>
-									{platform.metrics.failedPosts > 0 && (
-										<div className='flex justify-between text-sm'>
-											<span>Failed</span>
-											<span className='text-red-600'>
-												{platform.metrics.failedPosts}
-											</span>
-										</div>
-									)}
-								</div>
-
-								{/* Success Rate */}
-								<div className='space-y-2'>
-									<div className='flex justify-between text-sm'>
-										<span>Success Rate</span>
-										<span>{successRate}%</span>
-									</div>
-									<Progress
-										value={parseFloat(successRate)}
-										className='h-2'
-									/>
-								</div>
-
-								{/* Engagement Metrics */}
-								<div className='grid grid-cols-2 gap-4 pt-2'>
-									<div className='text-center'>
-										<div className='text-lg font-bold'>
-											{platform.metrics.avgEngagement}
-										</div>
-										<div className='text-xs text-muted-foreground'>
-											Avg Engagement
-										</div>
-									</div>
-									<div className='text-center'>
-										<div className='text-lg font-bold'>
-											{platform.metrics.avgReach}
-										</div>
-										<div className='text-xs text-muted-foreground'>
-											Avg Reach
-										</div>
-									</div>
-								</div>
-							</CardContent>
 						</Card>
 					);
 				})}

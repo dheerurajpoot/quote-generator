@@ -132,7 +132,7 @@ export function ScheduleCalendar() {
 								mode='single'
 								selected={selectedDate}
 								onSelect={setSelectedDate}
-								className='rounded-md border w-[67%]'
+								className='rounded-md border'
 								modifiers={{
 									hasPost: (date) =>
 										getPostsForDate(date).length > 0,

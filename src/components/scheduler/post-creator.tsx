@@ -332,9 +332,9 @@ export function PostCreator() {
 	};
 
 	return (
-		<div className='grid gap-6 lg:grid-cols-3'>
+		<div className='grid gap-6 md:grid-cols-2'>
 			{/* Post Creation Form */}
-			<div className='lg:col-span-2 space-y-6'>
+			<div className='space-y-6'>
 				<Card>
 					<CardHeader>
 						<CardTitle>Create New Post</CardTitle>
@@ -750,7 +750,7 @@ export function PostCreator() {
 						</div>
 
 						{/* Action Buttons */}
-						<div className='flex gap-3'>
+						<div className='flex flex-col md:flex-row gap-3'>
 							<Button
 								className='flex-1'
 								onClick={handleSubmit}
@@ -779,7 +779,7 @@ export function PostCreator() {
 			</div>
 
 			{/* Preview Panel */}
-			<div className='space-y-6'>
+			<div className='md:col-span-1 space-y-6'>
 				<Card>
 					<CardHeader>
 						<CardTitle>Preview</CardTitle>

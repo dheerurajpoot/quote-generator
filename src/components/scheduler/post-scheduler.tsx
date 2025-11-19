@@ -45,7 +45,7 @@ export function PostScheduler() {
 				value={activeTab}
 				onValueChange={setActiveTab}
 				className='space-y-4'>
-				<TabsList className='grid w-full grid-cols-3'>
+				<TabsList className='grid grid-cols-3'>
 					<TabsTrigger
 						value='create'
 						className='flex items-center gap-2'>

@@ -445,7 +445,7 @@ export function AutoPosterDashboard() {
 			</div>
 
 			{/* Stats */}
-			<div className='grid gap-4 md:grid-cols-4'>
+			<div className='grid gap-4 grid-cols-2 md:grid-cols-4'>
 				<Card>
 					<CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
 						<CardTitle className='text-sm font-medium'>
@@ -547,27 +547,29 @@ export function AutoPosterDashboard() {
 					campaigns.map((campaign) => (
 						<Card key={campaign._id}>
 							<CardHeader>
-								<div className='flex items-center justify-between'>
-									<div className='flex items-center space-x-4'>
+								<div className='flex gap-2 items-center justify-between'>
+									<div className='flex flex-col md:flex-row space-x-4'>
 										<CardTitle className='text-lg'>
 											{campaign.campaignName}
 										</CardTitle>
-										<Badge
-											className={getStatusColor(
-												campaign.isEnabled
-											)}>
-											{campaign.isEnabled
-												? "Active"
-												: "Inactive"}
-										</Badge>
-										<Badge variant='outline'>
-											{campaign.language}
-										</Badge>
-										<Badge
-											variant='outline'
-											className='capitalize'>
-											{campaign.template}
-										</Badge>
+										<div className='flex items-center my-2 space-x-4'>
+											<Badge
+												className={getStatusColor(
+													campaign.isEnabled
+												)}>
+												{campaign.isEnabled
+													? "Active"
+													: "Inactive"}
+											</Badge>
+											<Badge variant='outline'>
+												{campaign.language}
+											</Badge>
+											<Badge
+												variant='outline'
+												className='capitalize'>
+												{campaign.template}
+											</Badge>
+										</div>
 									</div>
 								</div>
 								<CardDescription>
@@ -592,77 +594,81 @@ export function AutoPosterDashboard() {
 								</CardDescription>
 							</CardHeader>
 							<CardContent>
-								<div className='grid grid-cols-5 items-center gap-4 text-sm'>
-									<div>
-										<p className='text-muted-foreground'>
-											Interval
-										</p>
-										<p className='font-semibold'>
-											{campaign.interval} minute(s)
-										</p>
+								<div className='grid md:grid-cols-5 items-center gap-2 text-sm'>
+									<div className='flex flex-wrap justify-between md:flex-row gap-4 pr-6 col-span-3'>
+										<div>
+											<p className='text-muted-foreground'>
+												Interval
+											</p>
+											<p className='font-semibold'>
+												{campaign.interval} minute(s)
+											</p>
+										</div>
+										<div>
+											<p className='text-muted-foreground'>
+												Platforms
+											</p>
+											<p className='font-semibold'>
+												{campaign.platforms.length}
+											</p>
+										</div>
+										<div>
+											<p className='text-muted-foreground'>
+												Status
+											</p>
+											<p className='font-semibold'>
+												{campaign.isEnabled
+													? "Running"
+													: "Stopped"}
+											</p>
+										</div>
 									</div>
-									<div>
-										<p className='text-muted-foreground'>
-											Platforms
-										</p>
-										<p className='font-semibold'>
-											{campaign.platforms.length}
-										</p>
-									</div>
-									<div>
-										<p className='text-muted-foreground'>
-											Status
-										</p>
-										<p className='font-semibold'>
-											{campaign.isEnabled
-												? "Running"
-												: "Stopped"}
-										</p>
-									</div>
-									<div>
-										<p className='text-muted-foreground'>
-											Quote Image
-										</p>
-										<Image
-											src={getTemplateImage(
-												campaign.template
-											)}
-											alt={`${campaign.template} template`}
-											width={100}
-											height={100}
-											className='rounded-md object-cover'
-										/>
-									</div>
-									<div className='flex items-center flex-col gap-2 justify-end'>
-										<Button
-											onClick={() =>
-												handleAutoPostingToggle(
-													campaign._id,
-													campaign.interval
-												)
-											}
-											variant={
-												campaign.isEnabled
-													? "destructive"
-													: "default"
-											}
-											className='w-full py-6 text-lg cursor-pointer hover:text-white'
-											disabled={isPosting}>
-											{campaign.isEnabled
-												? "Stop Auto Posting"
-												: "Start Auto Posting"}
-										</Button>
-										<Button
-											variant='destructive'
-											className='cursor-pointer py-6 text-lg hover:bg-destructive/90 hover:text-white w-full'
-											onClick={() =>
-												handleDeleteCampaign(
-													campaign._id
-												)
-											}>
-											<Trash2 className='h-4 w-4' />
-											Delete Campaign
-										</Button>
+									<div className='flex items-center gap-8 md:col-span-2'>
+										<div>
+											<p className='text-muted-foreground'>
+												Quote Image
+											</p>
+											<Image
+												src={getTemplateImage(
+													campaign.template
+												)}
+												alt={`${campaign.template} template`}
+												width={100}
+												height={100}
+												className='rounded-md object-cover'
+											/>
+										</div>
+										<div className='flex flex-col gap-2'>
+											<Button
+												onClick={() =>
+													handleAutoPostingToggle(
+														campaign._id,
+														campaign.interval
+													)
+												}
+												variant={
+													campaign.isEnabled
+														? "destructive"
+														: "default"
+												}
+												className='py-4 px-3 text-md cursor-pointer hover:text-white'
+												disabled={isPosting}>
+												{campaign.isEnabled
+													? "Stop Auto Posting"
+													: "Start Auto Posting"}
+											</Button>
+											<Button
+												variant='destructive'
+												className='cursor-pointer py-4 px-3 text-md hover:bg-destructive/90 hover:text-white'
+												onClick={() =>
+													handleDeleteCampaign(
+														campaign._id
+													)
+												}>
+												<Trash2 className='h-4 w-4' />
+												Delete Campaign
+											</Button>
+										</div>
 									</div>
 								</div>
 							</CardContent>

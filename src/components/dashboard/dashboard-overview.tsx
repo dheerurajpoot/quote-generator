@@ -33,6 +33,7 @@ import {
 	Clock,
 	CheckCircle,
 	Loader2,
+	Sidebar,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { PlatformPerformance } from "./platform-performance";
@@ -76,6 +77,7 @@ export function DashboardOverview() {
 	const [stats, setStats] = useState<DashboardStats | null>(null);
 	const [charts, setCharts] = useState<ChartData | null>(null);
 	const [upcomingPosts, setUpcomingPosts] = useState<UpcomingPost[]>([]);
+	const [sidebarOpen, setSidebarOpen] = useState(false);
 
 	useEffect(() => {
 		if (user?._id) {
@@ -115,7 +117,7 @@ export function DashboardOverview() {
 	return (
 		<div className='space-y-6'>
 			{/* Header */}
-			<div className='flex items-center justify-between'>
+			<div className='flex justify-between'>
 				<div>
 					<h1 className='text-3xl font-bold text-foreground'>
 						Dashboard
@@ -134,7 +136,7 @@ export function DashboardOverview() {
 			</div>
 
 			{/* Stats Cards */}
-			<div className='grid gap-4 md:grid-cols-2 lg:grid-cols-4'>
+			<div className='grid gap-4 grid-cols-2 md:grid-cols-4'>
 				<Card>
 					<CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
 						<CardTitle className='text-sm font-medium'>
@@ -276,7 +278,7 @@ export function DashboardOverview() {
 			<PlatformPerformance />
 
 			{/* Recent Activity and Upcoming Posts Row */}
-			<div className='grid gap-4 md:grid-cols-2'>
+			<div className=' grid gap-4 grid-cols-1 md:grid-cols-2'>
 				<RecentActivity />
 
 				{/* Upcoming Posts */}
